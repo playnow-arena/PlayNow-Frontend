@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #39FF14;
+  --color-primary-hover: #32E612;
+  --color-dark-bg: #0a0f1c;
+  --color-dark-card: #151b2b;
+  --color-dark-border: #1f2937;
+}
+
+@layer base {
+  :root {
+    /* Safe Area Insets for mobile browsers */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[var(--color-dark-bg)] text-white font-sans antialiased overflow-x-hidden;
+    font-size: clamp(14px, 2vw, 16px); /* Fluid typography */
+  }
+
+  /* Responsive Headings */
+  h1 { @apply text-3xl md:text-5xl lg:text-7xl font-black tracking-tight; }
+  h2 { @apply text-2xl md:text-3xl lg:text-4xl font-extrabold; }
+  h3 { @apply text-xl md:text-2xl font-bold; }
+}
+
+@layer components {
+  .container-responsive {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .btn-touch {
+    @apply active:scale-95 transition-transform duration-100 cursor-pointer;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Custom utility for the energetic gradient */
+.bg-gradient-energetic {
+  background: linear-gradient(135deg, var(--color-dark-bg) 0%, #0d1b2a 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #fff, var(--color-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive Padding Utilities */
+.pb-safe { padding-bottom: calc(1rem + var(--safe-area-bottom)); }
+.pt-safe { padding-top: calc(1rem + var(--safe-area-top)); }
+
+/* Glassmorphism Mobile-specific */
+.glass-mobile {
+  @apply bg-[#151b2b]/80 backdrop-blur-xl border border-white/5;
+}
+
