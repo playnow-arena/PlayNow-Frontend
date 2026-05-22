@@ -11,8 +11,9 @@ const BottomNav = () => {
 
   const isAuthPage = path === '/login';
   const isAdminPage = path === '/super-admin-portal-2026';
+  const isBookingPage = path.startsWith('/book/');
 
-  if (isAuthPage || isAdminPage) return null;
+  if (isAuthPage || isAdminPage || isBookingPage) return null;
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
@@ -22,7 +23,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 w-full glass-mobile border-t border-white/5 pb-safe z-50">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-mobile border-t border-white/5 pb-safe z-50">
       <div className="flex justify-around items-center h-16 relative">
         {navItems.map((item) => {
           const Icon = item.icon;

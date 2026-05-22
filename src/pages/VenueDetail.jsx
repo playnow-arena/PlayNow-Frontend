@@ -287,7 +287,7 @@ const VenueDetail = () => {
       </div>
 
       {/* Mobile Sticky Booking Bar */}
-      <div className="lg:hidden fixed bottom-16 w-full glass-mobile border-t border-white/10 px-4 py-4 z-40 pb-safe">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 w-full glass-mobile border-t border-white/10 px-4 py-4 z-40 pb-safe">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Selected Slots</span>

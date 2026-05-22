@@ -249,7 +249,7 @@ const Booking = () => {
       </div>
 
       {/* Mobile Sticky Pay Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 w-full bg-[#0a0f1c]/90 backdrop-blur-lg border-t border-white/10 px-4 py-5 z-40">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-[#0a0f1c]/90 backdrop-blur-lg border-t border-white/10 px-4 py-5 z-40 pb-safe">
          <button onClick={handlePayment} className="w-full bg-[#39FF14] text-black font-black py-4 rounded-2xl text-xs uppercase tracking-[0.3em] shadow-xl flex items-center justify-center btn-touch">
             <ShieldCheck size={18} className="mr-2" /> Pay ₹{amountToPay} Securely
          </button>

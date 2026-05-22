@@ -61,7 +61,7 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile Header (Minimal) */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0f1c]/80 backdrop-blur-lg border-b border-white/5 md:hidden px-4 h-14 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 w-full z-50 bg-[#0a0f1c]/80 backdrop-blur-lg border-b border-white/5 md:hidden px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-gradient-energetic flex items-center justify-center border border-[#39FF14]/50">
             <span className="text-[#39FF14] font-bold italic text-sm">PN</span>

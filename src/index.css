@@ -20,11 +20,14 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-[var(--color-dark-bg)] text-white font-sans antialiased overflow-x-hidden;
     font-size: clamp(14px, 2vw, 16px); /* Fluid typography */
+    max-width: 100vw;
   }
 
   /* Responsive Headings */

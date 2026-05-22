@@ -37,7 +37,7 @@ const Home = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-8 md:mb-12"
           >
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4 leading-[1.1]">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4 leading-[1.1]">
               Book Courts. <br className="hidden sm:block" />
               <span className="text-gradient">Host Matches.</span><br />
               Play Now.
@@ -82,14 +82,14 @@ const Home = () => {
           <div className="flex justify-between items-end mb-6">
             <h2 className="text-2xl md:text-3xl font-black uppercase">Popular Sports</h2>
           </div>
-          <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto pb-4 md:pb-0 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pb-4 md:pb-0">
             {sportsList.map((sport, index) => (
               <motion.div 
                 key={sport.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-[#151b2b] min-w-[140px] md:min-w-0 p-5 md:p-6 rounded-2xl border border-white/5 text-center cursor-pointer hover:border-[#39FF14]/50 transition-all group btn-touch flex-shrink-0"
+                className="bg-[#151b2b] p-5 md:p-6 rounded-2xl border border-white/5 text-center cursor-pointer hover:border-[#39FF14]/50 transition-all group btn-touch"
               >
                 <div className={`w-14 h-14 md:w-16 md:h-16 mx-auto ${sport.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
                   <Trophy size={24} className="text-white" />

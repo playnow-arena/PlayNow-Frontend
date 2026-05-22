@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>playnow</title>
     <style>
-      body { 
+      #loading-wrapper { 
         background-color: #0a0f1c; 
         color: white; 
         margin: 0; 
@@ -15,6 +15,7 @@
         align-items: center; 
         min-height: 100vh; 
         font-family: sans-serif; 
+        width: 100%;
       }
       #loading-status { 
         font-size: 1.2rem; 
@@ -26,7 +27,9 @@
   </head>
   <body>
     <div id="root">
-      <div id="loading-status">Loading PlayNow...</div>
+      <div id="loading-wrapper">
+        <div id="loading-status">Loading PlayNow...</div>
+      </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
