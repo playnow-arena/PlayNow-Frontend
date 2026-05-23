@@ -12,8 +12,6 @@ import {
   Camera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { auth } from '../config/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -116,45 +114,26 @@ const Auth = () => {
 
   // ── Step 1: Send OTP via Firebase ─────────────────────────────────────────
   const handleSendOtp = async (e) => {
-    e?.preventDefault();
-    setError('');
+  e?.preventDefault();
+  setError('');
 
-    if (phone.length !== 10) {
-      setError('Please enter a valid 10-digit mobile number');
-      return;
-    }
+  if (phone.length !== 10) {
+    setError('Please enter a valid 10-digit mobile number');
+    return;
+  }
 
-    setLoading(true);
-    try {
-      // Clear any previous attempts
-      const appVerifier = setupRecaptcha();
-      if (!appVerifier) return;
-      
-      const phoneE164   = `+91${phone}`;
-      
-      console.log(`[Real-Time] Sending SMS to ${phoneE164}...`);
-      const confirmation = await signInWithPhoneNumber(auth, phoneE164, appVerifier);
-      
-      setConfirmationResult(confirmation);
-      setStep(2);
-      setResendTimer(60);
-    } catch (err) {
-      console.error('Firebase Error:', err);
-      clearRecaptcha(); 
+  setLoading(true);
 
-      if (err.code === 'auth/billing-not-enabled') {
-        setError('Firebase requires a "Blaze" plan for SMS. Use a "Test Number" in Firebase Console for free testing.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please wait 5 minutes and try again.');
-      } else if (err.code === 'auth/invalid-phone-number') {
-        setError('Invalid phone number format. Please check.');
-      } else {
-        setError(`Failed to send SMS: ${err.code || err.message}`);
-      }
-    } finally {
-      setLoading(false);
-    }
+  const tempUser = {
+    phone: `+91${phone}`,
+    name: '',
+    playNowId: `PN-${phone.slice(-4)}`
   };
+
+  setUserData(tempUser);
+  setStep(3);
+  setLoading(false);
+};
 
   // ── Step 2: Verify OTP ───────────────────────────────────────────────────
   const handleVerifyOtp = async (e) => {
@@ -347,7 +326,7 @@ const Auth = () => {
                 <Loader2 className="animate-spin" size={24} />
               ) : (
                 <>
-                  <span>SEND OTP</span>
+                  <span>CONTINUE</span>
                   <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -513,7 +492,7 @@ const Auth = () => {
         {/* Footer */}
         <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
           <Lock size={12} className="mr-1.5 text-gray-700" />
-          Secured by Firebase &amp; SSL
+          Secured by PlayNow
         </div>
       </motion.div>
     </div>
