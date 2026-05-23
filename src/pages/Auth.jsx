@@ -112,8 +112,8 @@ const Auth = () => {
     }
   };
 
-  // ── Step 1: Send OTP via Firebase ─────────────────────────────────────────
-  const handleSendOtp = async (e) => {
+// ── Step 1: Send OTP via Backend Mock OTP ─────────────────────────────────
+const handleSendOtp = async (e) => {
   e?.preventDefault();
   setError('');
 
@@ -124,56 +124,68 @@ const Auth = () => {
 
   setLoading(true);
 
-  const tempUser = {
-    phone: `+91${phone}`,
-    name: '',
-    playNowId: `PN-${phone.slice(-4)}`
-  };
+  try {
+    const res = await fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
 
-  setUserData(tempUser);
-  setStep(3);
-  setLoading(false);
-};
+    const data = await res.json();
 
-  // ── Step 2: Verify OTP ───────────────────────────────────────────────────
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    const otp = otpValues.join('');
-
-    if (otp.length !== 6) {
-      setError('Please enter all 6 digits');
+    if (!res.ok) {
+      setError(data.message || 'Failed to send OTP');
       return;
     }
 
-    setLoading(true);
-    try {
-      // 1. Verify OTP with Firebase
-      const result  = await confirmationResult.confirm(otp);
-      const idToken = await result.user.getIdToken();
+    console.log('DEV OTP:', data.devOtp);
+    setStep(2);
+    setResendTimer(60);
+  } catch (err) {
+    console.error('Send OTP Error:', err);
+    setError('Backend not connected. Please check server.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-      // 2. Authenticate with our Backend
-      const res = await fetch(`/api/auth/phone-auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-      });
-      const data = await res.json();
+// ── Step 2: Verify OTP via Backend ─────────────────────────────────────────
+const handleVerifyOtp = async (e) => {
+  e.preventDefault();
+  setError('');
 
-      if (!res.ok) {
-        setError(data.message || "Backend verification failed");
-        return;
-      }
+  const otp = otpValues.join('');
 
-      setUserData(data);
-      setStep(data.isNewUser ? 3 : 4);
-    } catch (err) {
-      console.error('Verification Error:', err);
-      setError("Invalid code. Please try again.");
-    } finally {
-      setLoading(false);
+  if (otp.length !== 6) {
+    setError('Please enter all 6 digits');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || 'OTP verification failed');
+      return;
     }
-  };
+
+    setUserData(data);
+    setStep(data.isNewUser ? 3 : 4);
+  } catch (err) {
+    console.error('Verify OTP Error:', err);
+    setError('Backend not connected. Please check server.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── Resend OTP ─────────────────────────────────────────────────────────────
   const handleResendOtp = () => {
