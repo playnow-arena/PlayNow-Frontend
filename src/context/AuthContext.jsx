@@ -22,17 +22,25 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
-    const playNowId = userData.playNowId || userData.id || `PN-${Math.floor(1000 + Math.random() * 9000)}`;
-    const fullUserData = { ...userData, id: playNowId, isVerified: true };
-    setUser(fullUserData);
-    localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
+ const login = (userData) => {
+  const fullUserData = {
+    ...userData,
+    id: userData._id,
+    isVerified: true,
   };
 
+  setUser(fullUserData);
+  localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
+
+  if (userData.token) {
+    localStorage.setItem('playnow_token', userData.token);
+  }
+};
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('playnow_user');
-  };
+  setUser(null);
+  localStorage.removeItem('playnow_user');
+  localStorage.removeItem('playnow_token');
+};
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
