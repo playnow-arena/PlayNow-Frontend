@@ -125,7 +125,7 @@ const handleSendOtp = async (e) => {
   setLoading(true);
 
   try {
-    const res = await fetch('/api/auth/send-otp', {
+    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone }),
@@ -164,7 +164,7 @@ const handleVerifyOtp = async (e) => {
   setLoading(true);
 
   try {
-    const res = await fetch('/api/auth/verify-otp', {
+    const res = await ffetch('https://playnow-backend-khtk.onrender.com/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, otp }),
