@@ -63,7 +63,7 @@ const Dashboard = () => {
             <p className="text-gray-400 mb-2">{user.phone}</p>
             <div className="bg-[#0a0f1c] border border-[#39FF14]/50 px-4 py-2 rounded-xl mb-6 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
               <span className="text-xs text-gray-400 block mb-1">PlayNow ID</span>
-              <span className="font-mono text-[#39FF14] font-bold tracking-wider">{user.id}</span>
+              <span className="font-mono text-[#39FF14] font-bold tracking-wider">{user.playNowId}</span>
             </div>
             
             <div className="w-full space-y-2 mb-6">

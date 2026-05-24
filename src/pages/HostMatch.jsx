@@ -21,9 +21,33 @@ const HostMatch = () => {
     e.preventDefault();
     if (step < 3) setStep(step + 1);
     else {
-      // Final submission
-      setStep(4); // Success step
+  try {
+    const user = JSON.parse(localStorage.getItem('playnow_user'));
+
+    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/matches', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || 'Failed to host match');
+      return;
     }
+
+    console.log('Match created:', data);
+
+    setStep(4);
+  } catch (err) {
+    console.error(err);
+    alert('Server error while hosting match');
+  }
+}
   };
 
   if (step === 4) {
