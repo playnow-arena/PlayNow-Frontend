@@ -219,16 +219,44 @@ const handleVerifyOtp = async (e) => {
   };
 
   // ── Step 3: Profile Setup ──────────────────────────────────────────────────
-  const handleSetupProfile = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setLoading(true);
-    // In a full app, call PATCH /api/auth/me to persist the name
-    // For MVP, update local state only
-    setUserData(prev => ({ ...prev, name: name.trim() }));
-    setStep(4);
+ const handleSetupProfile = async (e) => {
+  e.preventDefault();
+
+  if (!name.trim()) {
+    setError('Please enter your name');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userData.token}`,
+      },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || 'Profile update failed');
+      return;
+    }
+
+    setUserData(data);
+    login(data);
+    navigate('/');
+  } catch (err) {
+    console.error('Profile update error:', err);
+    setError('Unable to save profile. Please try again.');
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
