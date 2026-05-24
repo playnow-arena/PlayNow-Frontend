@@ -17,8 +17,8 @@ const HostMatch = () => {
 
   const pricePerPlayer = formData.totalPlayers > 0 ? (formData.totalAmount / formData.totalPlayers).toFixed(0) : 0;
 
-  const handleNext = (e) => {
-    e.preventDefault();
+const handleNext = async (e) => {
+      e.preventDefault();
     if (step < 3) setStep(step + 1);
     else {
   try {
