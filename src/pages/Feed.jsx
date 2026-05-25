@@ -1,9 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, Image as ImageIcon, Send, UserCheck } from 'lucide-react';
 import { mockFeedPosts, mockHostedMatches } from '../data/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Feed = () => {
+  const [matches, setMatches] = useState([]);
+
+useEffect(() => {
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch('https://playnow-backend-khtk.onrender.com/api/matches');
+      const data = await res.json();
+
+      setMatches(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching matches:', err);
+    }
+  };
+
+  fetchMatches();
+}, []);
   // Add interactive state to the mock posts
   const [posts, setPosts] = useState(() => 
     mockFeedPosts.map(post => ({
@@ -249,6 +265,59 @@ const Feed = () => {
             </AnimatePresence>
           </motion.div>
         ))}
+
+{matches.map((match) => (
+  <div
+    key={match._id}
+    className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] rounded-2xl border border-[#39FF14]/30 overflow-hidden relative p-5"
+  >
+    <div className="absolute top-0 right-0 bg-[#39FF14] text-black text-xs font-bold px-3 py-1 rounded-bl-lg">
+      Looking for Players
+    </div>
+
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold">
+        {match.host?.name?.charAt(0) || 'P'}
+      </div>
+
+      <div>
+        <h3 className="font-bold text-white">
+          {match.host?.name}
+        </h3>
+
+        <div className="text-xs text-gray-500">
+          Hosted a Match • {match.sport}
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="font-bold text-lg">
+          {match.venue}
+        </span>
+
+        <span className="text-[#39FF14] font-bold">
+          ₹{Math.floor(match.totalAmount / match.totalPlayers)}
+        </span>
+      </div>
+
+      <div className="text-sm text-gray-400">
+        {match.date} at {match.time}
+      </div>
+
+      <div className="mt-3 flex justify-between items-center">
+        <span className="text-xs text-[#39FF14] bg-[#39FF14]/10 px-2 py-1 rounded">
+          {match.totalPlayers - match.joinedPlayers.length} more needed
+        </span>
+      </div>
+    </div>
+
+    <button className="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl transition">
+      Join Match
+    </button>
+  </div>
+))}
 
         {/* Hosted Match appearing in Feed */}
         <div className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] rounded-2xl border border-[#39FF14]/30 overflow-hidden relative">
