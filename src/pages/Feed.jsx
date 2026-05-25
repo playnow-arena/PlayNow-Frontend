@@ -313,9 +313,41 @@ useEffect(() => {
       </div>
     </div>
 
-    <button className="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl transition">
-      Join Match
-    </button>
+    <button
+  onClick={async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('playnow_user'));
+
+      const res = await fetch(
+        `https://playnow-backend-khtk.onrender.com/api/matches/${match._id}/join`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert('Joined Match Successfully 🔥');
+
+      window.location.reload();
+
+    } catch (err) {
+      console.error(err);
+      alert('Error joining match');
+    }
+  }}
+  className="w-full bg-white text-black hover:bg-gray-200 font-bold py-2 rounded-xl transition"
+>
+  Join Match
+</button>
   </div>
 ))}
 
