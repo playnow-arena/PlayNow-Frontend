@@ -178,7 +178,12 @@ const handleVerifyOtp = async (e) => {
     }
 
     setUserData(data);
-    setStep(data.isNewUser ? 3 : 4);
+    if (data.name && data.name.startsWith('Player_')) {
+  setStep(3);
+} else {
+  login(data);
+  navigate('/');
+}
   } catch (err) {
     console.error('Verify OTP Error:', err);
     setError('Backend not connected. Please check server.');
