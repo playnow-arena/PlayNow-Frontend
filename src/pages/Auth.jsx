@@ -31,6 +31,7 @@ const Auth = () => {
   // Form state
   const [phone, setPhone]         = useState('');
   const [name, setName]           = useState('');
+  const [username, setUsername] = useState('');
   const [avatar, setAvatar]       = useState(null);
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(0);
@@ -236,13 +237,16 @@ const handleVerifyOtp = async (e) => {
   setError('');
 
   try {
-    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/profile', {
+    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/profile-by-phone', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${userData.token}`,
-      },
-      body: JSON.stringify({ name: name.trim() }),
+     headers: {
+  'Content-Type': 'application/json',
+},
+body: JSON.stringify({
+  phone,
+  name: name.trim(),
+  username: username.trim(),
+}),
     });
 
     const data = await res.json();
@@ -485,8 +489,28 @@ const handleVerifyOtp = async (e) => {
               />
             </div>
 
+            <div className="space-y-2">
+  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
+    Username
+  </label>
+
+  <input
+    type="text"
+    required
+    value={username}
+    onChange={(e) => setUsername(e.target.value)}
+    placeholder="@enkay"
+    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14]"
+  />
+</div>
+
+
             <button
-              disabled={loading || !name.trim()}
+              disabled={
+  loading ||
+  !name.trim() ||
+  !username.trim()
+}
               type="submit"
               className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 shadow-lg hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
             >
