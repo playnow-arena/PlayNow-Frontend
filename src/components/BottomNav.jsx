@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MapPin, Users, User } from 'lucide-react';
+import { Home, MapPin, Trophy, Users, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import clsx from 'clsx';
 
@@ -19,6 +19,7 @@ const BottomNav = () => {
     { name: 'Home', path: '/', icon: Home },
     { name: 'Venues', path: '/venues', icon: MapPin },
     { name: 'Host', path: '/host-match', icon: Users },
+    { name: 'Open', path: '/feed', icon: Trophy },
     { name: 'Profile', path: user?.role === 'owner' ? '/owner' : '/dashboard', icon: User },
   ];
 
@@ -63,4 +64,3 @@ const BottomNav = () => {
 };
 
 export default BottomNav;
-

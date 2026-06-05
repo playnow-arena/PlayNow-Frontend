@@ -33,10 +33,8 @@ const Navbar = () => {
             
             <div className="hidden md:flex items-center gap-6">
               <Link to="/venues" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Venues</Link>
-              <Link to="/properties" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Properties</Link>
               <Link to="/host-match" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Host Match</Link>
-              <Link to="/feed" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Feed</Link>
-              <Link to="/partner/register" className="bg-gray-800/50 text-gray-400 hover:text-[#39FF14] px-3 py-1 rounded-lg border border-gray-700 text-xs font-bold transition">Partner with Us</Link>
+              <Link to="/feed" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Open Matches</Link>
               
               <div className="w-px h-6 bg-gray-700"></div>
 
@@ -83,4 +81,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
