@@ -2,14 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Upload,
   CheckCircle2,
   Phone,
   Lock,
   RefreshCw,
   Loader2,
   ChevronRight,
-  Camera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,7 +30,6 @@ const Auth = () => {
   const [phone, setPhone]         = useState('');
   const [name, setName]           = useState('');
   const [username, setUsername] = useState('');
-  const [avatar, setAvatar]       = useState(null);
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(0);
 
@@ -267,15 +264,6 @@ body: JSON.stringify({
   }
 };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setAvatar(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
   // ── Step 4: Complete — save to context and navigate ───────────────────────
   const handleComplete = () => {
     login(userData);
@@ -459,22 +447,6 @@ body: JSON.stringify({
             onSubmit={handleSetupProfile}
             className="space-y-8"
           >
-            <div className="flex flex-col items-center">
-              <div className="relative group">
-                <label className="w-28 h-28 rounded-full bg-black/40 border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer hover:border-[#39FF14] transition-all overflow-hidden shadow-2xl">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  {avatar ? (
-                    <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <Camera size={32} className="text-gray-600 group-hover:text-[#39FF14] transition-colors" />
-                  )}
-                </label>
-                <div className="absolute bottom-1 right-1 bg-[#39FF14] text-black p-1.5 rounded-full shadow-lg">
-                  <Upload size={14} />
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
                 What should we call you?
