@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, ShieldCheck, CreditCard, Wallet, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedSlots, venue } = location.state || { selectedSlots: [], venue: null };
+  const { selectedSlots = [], venue = null } = location.state || {};
   
   const [paymentType, setPaymentType] = useState('full'); // full or advance
   const [paymentStep, setPaymentStep] = useState(1); // 1: summary, 2: processing, 3: success
@@ -25,8 +27,8 @@ const Booking = () => {
 
     const lock = async () => {
       try {
-        const token = localStorage.getItem('token');
-        await fetch('/api/slots/lock', {
+        const token = localStorage.getItem('playnow_token');
+        await fetch(`${API_BASE_URL}/api/slots/lock`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -49,8 +51,8 @@ const Booking = () => {
       const unlock = async () => {
         // Only unlock if booking not confirmed
         if (paymentStep !== 3) {
-          const token = localStorage.getItem('token');
-          await fetch('/api/slots/unlock', {
+          const token = localStorage.getItem('playnow_token');
+          await fetch(`${API_BASE_URL}/api/slots/unlock`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -71,8 +73,8 @@ const Booking = () => {
     setPaymentStep(2);
     
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/bookings', {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(`${API_BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,6 +105,16 @@ const Booking = () => {
   const handleBackToHome = () => {
     navigate('/dashboard');
   };
+
+  if (!selectedSlots.length || !venue) {
+    return (
+      <div className="min-h-screen pt-20 px-4 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-gray-800 border-t-[#39FF14] rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-bold">Loading booking...</h2>
+        <p className="text-gray-400 mt-2">Taking you back to venues.</p>
+      </div>
+    );
+  }
 
   if (paymentStep === 2) {
     return (

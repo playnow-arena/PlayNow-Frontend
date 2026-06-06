@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, CheckCircle, Clock, Info } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -53,7 +53,7 @@ const VenueDetail = () => {
         const slotsData = await slotsRes.json();
         
         setVenue(venueData);
-        setAvailableSlots(slotsData);
+        setAvailableSlots(Array.isArray(slotsData) ? slotsData : []);
       } catch (error) {
         console.error('Error fetching venue details:', error);
       } finally {
@@ -149,7 +149,7 @@ const VenueDetail = () => {
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest mb-6 flex items-center">
                 <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> About Venue
               </h2>
-              <p className="text-gray-400 leading-relaxed font-medium text-sm md:text-lg">{venue.about || "Experience world-class sporting facilities designed for high-performance athletes and casual enthusiasts alike. Our venue features professional-grade surfaces and top-tier amenities to ensure you have the best play session."}</p>
+              <p className="text-gray-400 leading-relaxed font-medium text-sm md:text-lg">{venue.description || venue.about || "Experience world-class sporting facilities designed for high-performance athletes and casual enthusiasts alike. Our venue features professional-grade surfaces and top-tier amenities to ensure you have the best play session."}</p>
             </section>
 
             {/* Amenities Section */}
