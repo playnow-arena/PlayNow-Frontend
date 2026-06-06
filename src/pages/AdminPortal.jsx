@@ -21,6 +21,25 @@ const toList = (value) => value
   .map((item) => item.trim())
   .filter(Boolean);
 
+const readResponseBody = async (res) => {
+  const text = await res.text();
+
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
+
+const getVenueErrorMessage = (body, fallback) => {
+  if (body?.message) return body.message;
+  if (body?.error) return body.error;
+  if (typeof body === 'string') return body;
+  return fallback;
+};
+
 const AdminPortal = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -108,18 +127,28 @@ const AdminPortal = () => {
     }
 
     try {
-      const res = await fetch(editingVenueId ? `/api/venues/${editingVenueId}` : '/api/venues', {
-        method: editingVenueId ? 'PUT' : 'POST',
+      const venueUrl = editingVenueId ? `/api/venues/${editingVenueId}` : '/api/venues';
+      const venueMethod = editingVenueId ? 'PUT' : 'POST';
+      const res = await fetch(venueUrl, {
+        method: venueMethod,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await readResponseBody(res);
+
+      console.log('[ADMIN VENUE SAVE]', {
+        method: venueMethod,
+        url: venueUrl,
+        status: res.status,
+        body: data,
+        usesPlayNowToken: Boolean(token),
+      });
 
       if (!res.ok) {
-        setVenueError(data.message || 'Failed to save venue');
+        setVenueError(getVenueErrorMessage(data, 'Failed to save venue'));
         return;
       }
 
@@ -127,7 +156,7 @@ const AdminPortal = () => {
       fetchVenues();
     } catch (error) {
       console.error('Venue save error:', error);
-      setVenueError('Unable to save venue');
+      setVenueError(`Unable to save venue: ${error.message}`);
     }
   };
 
@@ -156,14 +185,23 @@ const AdminPortal = () => {
     }
 
     try {
-      const res = await fetch(`/api/venues/${venue._id}`, {
+      const venueUrl = `/api/venues/${venue._id}`;
+      const res = await fetch(venueUrl, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
+      const data = await readResponseBody(res);
+
+      console.log('[ADMIN VENUE DELETE]', {
+        method: 'DELETE',
+        url: venueUrl,
+        status: res.status,
+        body: data,
+        usesPlayNowToken: Boolean(token),
+      });
 
       if (!res.ok) {
-        setVenueError(data.message || 'Failed to delete venue');
+        setVenueError(getVenueErrorMessage(data, 'Failed to delete venue'));
         return;
       }
 
@@ -173,7 +211,7 @@ const AdminPortal = () => {
       fetchVenues();
     } catch (error) {
       console.error('Venue delete error:', error);
-      setVenueError('Unable to delete venue');
+      setVenueError(`Unable to delete venue: ${error.message}`);
     }
   };
 
