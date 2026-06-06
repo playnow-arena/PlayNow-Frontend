@@ -4,6 +4,8 @@ import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users
 import { motion } from 'framer-motion';
 import { sportsList, mockHostedMatches } from '../data/mockData';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const Home = () => {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +13,7 @@ const Home = () => {
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const res = await fetch('/api/venues');
+        const res = await fetch(`${API_BASE_URL}/api/venues`);
         const data = await res.json();
         setVenues(Array.isArray(data) ? data.slice(0, 3) : []); // Get top 3 for home
       } catch (error) {

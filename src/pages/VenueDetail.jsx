@@ -4,6 +4,8 @@ import { MapPin, Star, CheckCircle, Clock, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const VenueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,8 +46,8 @@ const VenueDetail = () => {
     const fetchVenue = async () => {
       try {
         const [venueRes, slotsRes] = await Promise.all([
-          fetch(`/api/venues/${id}`),
-          fetch(`/api/slots/venue/${id}`)
+          fetch(`${API_BASE_URL}/api/venues/${id}`),
+          fetch(`${API_BASE_URL}/api/slots/venue/${id}`)
         ]);
         const venueData = await venueRes.json();
         const slotsData = await slotsRes.json();

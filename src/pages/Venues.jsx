@@ -4,6 +4,8 @@ import { MapPin, Filter, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { sportsList } from '../data/mockData';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const Venues = () => {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const Venues = () => {
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const res = await fetch('/api/venues');
+        const res = await fetch(`${API_BASE_URL}/api/venues`);
         const data = await res.json();
         setVenues(Array.isArray(data) ? data : []);
       } catch (error) {
