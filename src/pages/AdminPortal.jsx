@@ -16,6 +16,9 @@ const emptyVenueForm = {
   isActive: true,
 };
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+const apiUrl = (path) => `${API_BASE_URL}${path}`;
+
 const toList = (value) => value
   .split(',')
   .map((item) => item.trim())
@@ -67,7 +70,7 @@ const AdminPortal = () => {
 
     try {
       const token = localStorage.getItem('playnow_token');
-      const res = await fetch('/api/venues', {
+      const res = await fetch(apiUrl('/api/venues'), {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
@@ -127,7 +130,7 @@ const AdminPortal = () => {
     }
 
     try {
-      const venueUrl = editingVenueId ? `/api/venues/${editingVenueId}` : '/api/venues';
+      const venueUrl = editingVenueId ? apiUrl(`/api/venues/${editingVenueId}`) : apiUrl('/api/venues');
       const venueMethod = editingVenueId ? 'PUT' : 'POST';
       const res = await fetch(venueUrl, {
         method: venueMethod,
@@ -185,7 +188,7 @@ const AdminPortal = () => {
     }
 
     try {
-      const venueUrl = `/api/venues/${venue._id}`;
+      const venueUrl = apiUrl(`/api/venues/${venue._id}`);
       const res = await fetch(venueUrl, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
