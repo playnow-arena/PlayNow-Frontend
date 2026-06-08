@@ -1,19 +1,72 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { LogOut, Calendar, MapPin, XCircle, CreditCard, ChevronRight, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
+const formatSlotDate = (slot) => {
+  if (!slot?.date) return 'Date unavailable';
+
+  return new Date(slot.date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatSlotTimes = (slots = []) => {
+  if (!slots.length) return 'Time unavailable';
+
+  return slots
+    .map((slot) => [slot.startTime, slot.endTime].filter(Boolean).join(' - '))
+    .filter(Boolean)
+    .join(', ');
+};
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   
   const [activeTab, setActiveTab] = useState('bookings');
   const [cancelModal, setCancelModal] = useState(null);
-  
-  const [bookings, setBookings] = useState([
-    { id: 'BK-10293', venue: 'Smash Arena', date: 'Today', slots: '06:00 PM', status: 'Confirmed', paid: 400, total: 400 },
-    { id: 'BK-00122', venue: 'Kickoff Turf', date: 'Tomorrow', slots: '08:00 PM, 09:00 PM', status: 'Advance Paid', paid: 200, total: 2400 },
-  ]);
+
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [bookingsError, setBookingsError] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchBookings = async () => {
+      setBookingsLoading(true);
+      setBookingsError('');
+
+      try {
+        const token = localStorage.getItem('playnow_token');
+        const res = await fetch(`${API_BASE_URL}/api/bookings/my`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setBookingsError(data.message || 'Failed to load bookings');
+          setBookings([]);
+          return;
+        }
+
+        setBookings(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Bookings fetch error:', error);
+        setBookingsError('Unable to load bookings');
+        setBookings([]);
+      } finally {
+        setBookingsLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [user]);
 
   if (!user) {
     return <Navigate to="/login" />;
@@ -26,15 +79,12 @@ const Dashboard = () => {
   const calculateRefund = (booking) => {
     // Mock logic based on cancellation rules: 
     // Today = within 4 hours (10% fee), Tomorrow = before 4 hours (100% refund)
-    if (booking.date === 'Today') {
-      return (booking.paid * 0.9).toFixed(0);
-    }
-    return booking.paid;
+    return booking.paidAmount || 0;
   };
 
   const confirmCancel = () => {
     if (cancelModal) {
-      setBookings(bookings.filter(b => b.id !== cancelModal.id));
+      setBookings(bookings.filter(b => b._id !== cancelModal._id));
       setCancelModal(null);
       // Mock processing alert
       alert(`Refund of ₹${calculateRefund(cancelModal)} is being processed to your original payment method.`);
@@ -110,7 +160,15 @@ const Dashboard = () => {
                 </h2>
                 
                 <div className="space-y-4">
-                  {bookings.length === 0 ? (
+                  {bookingsLoading ? (
+                    <div className="bg-[#151b2b] p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                      Loading bookings...
+                    </div>
+                  ) : bookingsError ? (
+                    <div className="bg-red-500/10 p-8 rounded-2xl border border-red-500/30 text-center text-red-400">
+                      {bookingsError}
+                    </div>
+                  ) : bookings.length === 0 ? (
                     <div className="bg-[#151b2b] p-8 rounded-2xl border border-gray-800 text-center">
                       <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Calendar size={32} className="text-gray-500" />
@@ -128,28 +186,34 @@ const Dashboard = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        key={booking.id} 
+                        key={booking._id} 
                         className="bg-[#151b2b] p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                       >
                         <div>
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400">{booking.id}</span>
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${booking.status === 'Confirmed' ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                              {booking.status}
+                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400">#{(booking._id || '').slice(-8).toUpperCase()}</span>
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${booking.bookingStatus === 'confirmed' ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                              {booking.bookingStatus || 'unknown'}
+                            </span>
+                            <span className="px-2 py-1 rounded text-xs font-bold bg-gray-800 text-gray-300">
+                              {booking.paymentStatus || 'payment unknown'}
                             </span>
                           </div>
-                          <h3 className="text-xl font-bold mb-1">{booking.venue}</h3>
+                          <h3 className="text-xl font-bold mb-1">{booking.venueId?.name || 'Venue unavailable'}</h3>
+                          <p className="text-gray-500 text-sm flex items-center mb-1">
+                            <MapPin size={14} className="mr-2" /> {booking.venueId?.location || 'Location unavailable'}
+                          </p>
                           <p className="text-gray-400 text-sm flex items-center mb-1">
-                            <Calendar size={14} className="mr-2" /> {booking.date} | {booking.slots}
+                            <Calendar size={14} className="mr-2" /> {formatSlotDate(booking.slotIds?.[0])} | {formatSlotTimes(booking.slotIds)}
                           </p>
                           <p className="text-gray-400 text-sm flex items-center">
-                            <CreditCard size={14} className="mr-2" /> Paid ₹{booking.paid} of ₹{booking.total}
+                            <CreditCard size={14} className="mr-2" /> Paid ₹{booking.paidAmount || 0} of ₹{booking.totalAmount || 0}
                           </p>
                         </div>
                         
                         <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto">
                           <button 
-                            onClick={() => handleDirections(booking.venue)}
+                            onClick={() => handleDirections(`${booking.venueId?.name || ''} ${booking.venueId?.location || ''}`)}
                             className="flex-1 md:flex-none bg-[#39FF14]/10 hover:bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center flex items-center justify-center gap-2"
                           >
                             <MapPin size={14} /> Directions
@@ -276,7 +340,7 @@ const Dashboard = () => {
                 </div>
                 <h3 className="text-2xl font-bold mb-2">Cancel Booking?</h3>
                 <p className="text-gray-400 text-sm">
-                  {cancelModal.venue} • {cancelModal.date} | {cancelModal.slots}
+                  {cancelModal.venueId?.name || 'Venue unavailable'} | {formatSlotDate(cancelModal.slotIds?.[0])} | {formatSlotTimes(cancelModal.slotIds)}
                 </p>
               </div>
               
@@ -286,20 +350,13 @@ const Dashboard = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Amount Paid</span>
-                    <span className="font-medium">₹{cancelModal.paid}</span>
+                    <span className="font-medium">₹{cancelModal.paidAmount || 0}</span>
                   </div>
                   
-                  {cancelModal.date === 'Today' ? (
-                    <div className="flex justify-between text-sm text-yellow-500">
-                      <span>Within 4 hours (10% fee)</span>
-                      <span>-₹{(cancelModal.paid * 0.1).toFixed(0)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-sm text-green-500">
-                      <span>Before 4 hours (Free)</span>
-                      <span>-₹0</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm text-green-500">
+                    <span>MVP cancellation preview</span>
+                    <span>-₹0</span>
+                  </div>
                   
                   <div className="flex justify-between text-lg font-bold border-t border-gray-800 pt-3">
                     <span className="text-white">Total Refund</span>
