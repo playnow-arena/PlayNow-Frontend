@@ -17,6 +17,12 @@ const formatTime = (time) => {
   return `${displayHour}:${minute} ${period}`;
 };
 
+const formatSlotRange = (slot) => {
+  if (!slot) return '';
+
+  return [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - ');
+};
+
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -160,7 +166,7 @@ const Booking = () => {
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Slots</span>
-              <span className="font-medium text-right">{selectedSlots.map(s => formatTime(s.startTime)).join(', ')}</span>
+              <span className="font-medium text-right">{selectedSlots.map(formatSlotRange).join(', ')}</span>
             </div>
             <div className="flex justify-between border-t border-gray-800 pt-2 mt-2">
               <span className="text-gray-400">Amount Paid</span>
@@ -204,7 +210,7 @@ const Booking = () => {
           <div className="flex justify-between items-start">
             <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Selected Slots</span>
             <span className="font-black text-[#39FF14] text-right text-sm max-w-[180px] sm:max-w-none">
-              {selectedSlots.map(s => formatTime(s.startTime)).join(', ')}
+              {selectedSlots.map(formatSlotRange).join(', ')}
             </span>
           </div>
           <div className="flex justify-between items-center">

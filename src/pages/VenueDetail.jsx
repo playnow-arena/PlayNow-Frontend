@@ -18,6 +18,12 @@ const formatTime = (time) => {
   return `${displayHour}:${minute} ${period}`;
 };
 
+const formatSlotRange = (slot) => {
+  if (!slot) return '';
+
+  return [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - ');
+};
+
 const VenueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -270,7 +276,7 @@ const VenueDetail = () => {
                             : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                         }`}
                       >
-                        <span className="uppercase tracking-tighter">{formatTime(slot.startTime)}</span>
+                        <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
                         {isLocked && <span className="text-[8px] uppercase font-black animate-pulse mt-1">Locked</span>}
                         {isBooked && <span className="text-[8px] uppercase font-black mt-1">Sold Out</span>}
                       </button>
@@ -379,7 +385,7 @@ const VenueDetail = () => {
                           : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                       }`}
                     >
-                      <span className="uppercase tracking-tighter">{formatTime(slot.startTime)}</span>
+                      <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
                     </button>
                   );
                 })}
