@@ -6,6 +6,17 @@ import { useSocket } from '../context/SocketContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+};
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -259,7 +270,7 @@ const VenueDetail = () => {
                             : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                         }`}
                       >
-                        <span className="uppercase tracking-tighter">{slot.startTime}</span>
+                        <span className="uppercase tracking-tighter">{formatTime(slot.startTime)}</span>
                         {isLocked && <span className="text-[8px] uppercase font-black animate-pulse mt-1">Locked</span>}
                         {isBooked && <span className="text-[8px] uppercase font-black mt-1">Sold Out</span>}
                       </button>
@@ -368,7 +379,7 @@ const VenueDetail = () => {
                           : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                       }`}
                     >
-                      <span className="uppercase tracking-tighter">{slot.startTime}</span>
+                      <span className="uppercase tracking-tighter">{formatTime(slot.startTime)}</span>
                     </button>
                   );
                 })}

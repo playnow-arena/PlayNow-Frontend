@@ -5,6 +5,18 @@ import { motion } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+};
+
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -148,7 +160,7 @@ const Booking = () => {
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Slots</span>
-              <span className="font-medium text-right">{selectedSlots.map(s => s.startTime).join(', ')}</span>
+              <span className="font-medium text-right">{selectedSlots.map(s => formatTime(s.startTime)).join(', ')}</span>
             </div>
             <div className="flex justify-between border-t border-gray-800 pt-2 mt-2">
               <span className="text-gray-400">Amount Paid</span>
@@ -192,7 +204,7 @@ const Booking = () => {
           <div className="flex justify-between items-start">
             <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Selected Slots</span>
             <span className="font-black text-[#39FF14] text-right text-sm max-w-[180px] sm:max-w-none">
-              {selectedSlots.map(s => s.startTime).join(', ')}
+              {selectedSlots.map(s => formatTime(s.startTime)).join(', ')}
             </span>
           </div>
           <div className="flex justify-between items-center">

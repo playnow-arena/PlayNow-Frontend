@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Navbar from './components/Navbar';
@@ -39,6 +39,7 @@ function App() {
             <Route path="/owner" element={<ProtectedRoute requiredRole="owner"><OwnerDashboard /></ProtectedRoute>} />
             <Route path="/partner/login" element={<OwnerAuth />} />
             <Route path="/partner/register" element={<PartnerRegister />} />
+            <Route path="/admin" element={<Navigate to="/super-admin-portal-2026" replace />} />
             <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
             <Route path="/host-match" element={<HostMatch />} />
             <Route path="/feed" element={<Feed />} />
