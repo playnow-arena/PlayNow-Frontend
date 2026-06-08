@@ -16,6 +16,14 @@ const emptyVenueForm = {
   isActive: true,
 };
 
+const emptySlotForm = {
+  venueId: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  price: '',
+};
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const apiUrl = (path) => `${API_BASE_URL}${path}`;
 
@@ -63,6 +71,9 @@ const AdminPortal = () => {
   const [editingVenueId, setEditingVenueId] = useState(null);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [venueError, setVenueError] = useState('');
+  const [slotForm, setSlotForm] = useState(emptySlotForm);
+  const [slotMessage, setSlotMessage] = useState('');
+  const [slotLoading, setSlotLoading] = useState(false);
 
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -102,6 +113,58 @@ const AdminPortal = () => {
 
   const handleVenueChange = (field, value) => {
     setVenueForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSlotChange = (field, value) => {
+    setSlotForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSlotSubmit = async (e) => {
+    e.preventDefault();
+    setSlotMessage('');
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setSlotMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    setSlotLoading(true);
+
+    try {
+      const payload = {
+        venueId: slotForm.venueId,
+        date: slotForm.date,
+        slotsData: [{
+          startTime: slotForm.startTime,
+          endTime: slotForm.endTime,
+          price: Number(slotForm.price),
+        }],
+      };
+
+      const res = await fetch(apiUrl('/api/slots'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setSlotMessage(getVenueErrorMessage(data, 'Failed to create slot'));
+        return;
+      }
+
+      setSlotForm(emptySlotForm);
+      setSlotMessage('Slot created successfully.');
+    } catch (error) {
+      console.error('Slot create error:', error);
+      setSlotMessage(`Unable to create slot: ${error.message}`);
+    } finally {
+      setSlotLoading(false);
+    }
   };
 
   const handleVenueSubmit = async (e) => {
@@ -598,6 +661,109 @@ const AdminPortal = () => {
                   </div>
                 )}
               </div>
+
+              <form
+                onSubmit={handleSlotSubmit}
+                className="bg-[#151b2b] border border-gray-800 rounded-3xl p-4 md:p-6 space-y-4"
+              >
+                <div>
+                  <h3 className="text-xl font-bold">Create Slots</h3>
+                  <p className="text-sm text-gray-500">
+                    Add playable slots for an existing venue.
+                  </p>
+                </div>
+
+                {slotMessage && (
+                  <div className={`rounded-xl px-4 py-3 text-sm border ${slotMessage.toLowerCase().includes('success') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                    {slotMessage}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Venue
+                    </label>
+                    <select
+                      required
+                      value={slotForm.venueId}
+                      onChange={(e) => handleSlotChange('venueId', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Select venue</option>
+                      {venues.map((venue) => (
+                        <option key={venue._id} value={venue._id}>
+                          {venue.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Date
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={slotForm.date}
+                      onChange={(e) => handleSlotChange('date', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Start Time
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={slotForm.startTime}
+                      onChange={(e) => handleSlotChange('startTime', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      End Time
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={slotForm.endTime}
+                      onChange={(e) => handleSlotChange('endTime', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Price
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={slotForm.price}
+                      onChange={(e) => handleSlotChange('price', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      disabled={slotLoading || venues.length === 0}
+                      className="w-full bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {slotLoading ? 'Creating Slot...' : 'Create Slot'}
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           )}
 
