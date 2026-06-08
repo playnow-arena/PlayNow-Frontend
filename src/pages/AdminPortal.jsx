@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Users, Building2, CheckCircle2, XCircle, AlertTriangle, BarChart3, Search, Mail, ExternalLink, RefreshCw, Menu, X } from 'lucide-react';
+import { Shield, Users, Building2, XCircle, AlertTriangle, BarChart3, Search, Mail, RefreshCw, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -61,11 +61,7 @@ const AdminPortal = () => {
     navigate('/login');
   };
 
-  const [activeSection, setActiveSection] = useState('requests');
-  const [requests, setRequests] = useState([
-    { id: '1', name: 'Pranav Ram', venue: 'Elite Badminton Club', email: 'pranav@example.com', phone: '+91 90032 12345', status: 'pending', submittedAt: '2024-05-09' },
-    { id: '2', name: 'Arjun K', venue: 'Power Turf', email: 'arjun@example.com', phone: '+91 98840 54321', status: 'pending', submittedAt: '2024-05-08' },
-  ]);
+  const [activeSection, setActiveSection] = useState('venues');
   const [venues, setVenues] = useState([]);
   const [venueForm, setVenueForm] = useState(emptyVenueForm);
   const [editingVenueId, setEditingVenueId] = useState(null);
@@ -281,25 +277,11 @@ const AdminPortal = () => {
     }
   };
 
-  const approveOwner = (id) => {
-    const ownerId = `OWN-${Math.floor(1000 + Math.random() * 9000)}`;
-    const tempPass = `playnow@${Math.floor(100 + Math.random() * 899)}`;
-    
-    alert(`OWNER APPROVED!\n\nGenerated Credentials:\nOwner ID: ${ownerId}\nTemp Password: ${tempPass}\n\nEmail these to the owner.`);
-    setRequests(requests.filter(req => req.id !== id));
-  };
-
-  const rejectOwner = (id) => {
-    if(window.confirm('Are you sure you want to reject this request?')) {
-      setRequests(requests.filter(req => req.id !== id));
-    }
-  };
-
   const navItems = [
-    { id: 'requests', label: 'Owner Requests', icon: Mail },
-    { id: 'users', label: 'Manage Users', icon: Users },
+    { id: 'owner-requests', label: 'Owner Requests', icon: Mail, comingSoon: true },
+    { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, comingSoon: true },
   ];
 
   return (
@@ -343,9 +325,9 @@ const AdminPortal = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${activeSection === item.id ? 'bg-[#39FF14] text-black' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
             >
               <item.icon size={18} /> {item.label}
-              {item.id === 'requests' && requests.length > 0 && (
-                <span className={`ml-auto w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${activeSection === 'requests' ? 'bg-black text-[#39FF14]' : 'bg-red-500 text-white'}`}>
-                  {requests.length}
+              {item.comingSoon && (
+                <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] uppercase ${activeSection === item.id ? 'bg-black text-[#39FF14]' : 'bg-gray-800 text-gray-500'}`}>
+                  Soon
                 </span>
               )}
             </button>
@@ -382,7 +364,7 @@ const AdminPortal = () => {
           <header className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-10">
             <div>
               <h2 className="text-2xl md:text-3xl font-extrabold capitalize">{activeSection.replace('-', ' ')}</h2>
-              <p className="text-gray-500 text-sm md:text-base">System Administrator Control Center</p>
+              <p className="text-gray-500 text-sm md:text-base">MVP Admin: Manage venues and slots</p>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
               <div className="relative flex-1 md:flex-none">
@@ -398,7 +380,7 @@ const AdminPortal = () => {
             </div>
           </header>
 
-          {activeSection === 'requests' && (
+          {false && activeSection === 'requests' && (
             <div className="space-y-6">
               {requests.length === 0 ? (
                 <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-12 text-center">
@@ -770,8 +752,8 @@ const AdminPortal = () => {
           {activeSection !== 'requests' && activeSection !== 'venues' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold">Section Under Maintenance</h3>
-              <p className="text-gray-500 mt-2 text-sm">The management systems for {activeSection} are currently being updated.</p>
+              <h3 className="text-xl font-bold">Coming Soon</h3>
+              <p className="text-gray-500 mt-2 text-sm">This admin section is not part of the MVP. Use Manage Venues for venues and slots.</p>
             </div>
           )}
         </div>
