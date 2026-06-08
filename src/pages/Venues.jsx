@@ -6,6 +6,8 @@ import { sportsList } from '../data/mockData';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
+
 const Venues = () => {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,8 @@ const Venues = () => {
           </div>
         ) : filteredVenues.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-[#151b2b] rounded-[2rem] border border-dashed border-white/10">
-            <p className="text-gray-500 font-bold uppercase tracking-widest text-sm">No venues found matching your criteria</p>
+            <p className="text-gray-300 font-bold uppercase tracking-widest text-sm">No venues found</p>
+            <p className="text-gray-500 text-sm mt-2">Try a different sport or search area.</p>
             <button onClick={() => {setFilterSport('All'); setSearchQuery('');}} className="mt-4 text-[#39FF14] font-black uppercase text-xs hover:underline">Clear filters</button>
           </div>
         ) : filteredVenues.map((venue, index) => (
@@ -94,7 +97,17 @@ const Venues = () => {
             className="bg-[#151b2b] rounded-[2rem] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-all group shadow-2xl"
           >
             <div className="h-52 md:h-56 relative overflow-hidden">
-              <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
+                <span className="text-[#39FF14] text-xs font-black uppercase tracking-[0.3em]">PlayNow Venue</span>
+              </div>
+              {getVenueImage(venue) && (
+                <img
+                  src={getVenueImage(venue)}
+                  alt={venue.name}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              )}
               <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black flex items-center border border-white/10 shadow-lg">
                 ⭐ {venue.rating || 5} <span className="text-gray-500 ml-1 font-bold">({venue.reviewsCount || 0})</span>
               </div>

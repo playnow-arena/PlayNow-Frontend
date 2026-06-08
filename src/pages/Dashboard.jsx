@@ -173,8 +173,8 @@ const Dashboard = () => {
                       <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Calendar size={32} className="text-gray-500" />
                       </div>
-                      <h3 className="text-lg font-bold mb-2">No upcoming bookings</h3>
-                      <p className="text-gray-400 mb-6">You don't have any matches scheduled right now.</p>
+                      <h3 className="text-lg font-bold mb-2">No bookings yet</h3>
+                      <p className="text-gray-400 mb-6">Book a venue slot and your confirmation will appear here.</p>
                       <Link to="/venues" className="bg-[#39FF14] text-black px-6 py-2 rounded-xl font-bold hover:bg-[#32E612] transition inline-block">
                         Find a Venue
                       </Link>

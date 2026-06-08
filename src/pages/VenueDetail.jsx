@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -82,14 +83,26 @@ const VenueDetail = () => {
   if (loading) return <div className="pt-24 text-center">Loading venue details...</div>;
   if (!venue) return <div className="pt-24 text-center">Venue not found.</div>;
 
+  const venueImage = getVenueImage(venue);
+
   return (
     <div className="pb-32 md:pb-24">
       {/* Hero Image & Overlay */}
       <div className="w-full h-[35vh] sm:h-[45vh] md:h-[60vh] relative overflow-hidden">
-        <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
+          <span className="text-[#39FF14] text-xs md:text-sm font-black uppercase tracking-[0.35em]">PlayNow Venue</span>
+        </div>
+        {venueImage && (
+          <img
+            src={venueImage}
+            alt={venue.name}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            className="relative z-10 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 z-20 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/40 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 w-full p-4 md:p-12 max-w-7xl mx-auto">
+        <div className="absolute bottom-0 left-0 z-30 w-full p-4 md:p-12 max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -218,7 +231,12 @@ const VenueDetail = () => {
               <div className="mb-8 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Select Timing</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {availableSlots.map((slot, i) => {
+                  {availableSlots.length === 0 ? (
+                    <div className="col-span-2 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                      <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available</p>
+                      <p className="mt-2 text-xs text-gray-500">Please check back later or try another venue.</p>
+                    </div>
+                  ) : availableSlots.map((slot, i) => {
                     const isSelected = selectedSlots.find(s => s._id === slot._id);
                     const isLocked = slot.status === 'locked';
                     const isBooked = slot.status === 'booked';
@@ -322,7 +340,12 @@ const VenueDetail = () => {
             <h3 className="text-lg font-black uppercase tracking-widest mb-1">Select Slots</h3>
             <p className="text-gray-500 text-[10px] font-bold uppercase mb-6 tracking-widest">Available Today</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-               {availableSlots.map((slot, i) => {
+               {availableSlots.length === 0 ? (
+                  <div className="col-span-2 sm:col-span-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                    <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available</p>
+                    <p className="mt-2 text-xs text-gray-500">Please check back later or try another venue.</p>
+                  </div>
+               ) : availableSlots.map((slot, i) => {
                   const isSelected = selectedSlots.find(s => s._id === slot._id);
                   const isLocked = slot.status === 'locked';
                   const isBooked = slot.status === 'booked';
