@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { sportsList, mockHostedMatches } from '../data/mockData';
+import VenueCard from '../components/VenueCard';
+import QuotesSlider from '../components/QuotesSlider';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -12,12 +14,22 @@ const Home = () => {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const phrases = ["book courts.", "host matches.", "find players.", "play now."];
+  const [currentPhrase, setCurrentPhrase] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPhrase((prev) => (prev + 1) % phrases.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchVenues = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/venues`);
         const data = await res.json();
-        setVenues(Array.isArray(data) ? data.slice(0, 3) : []); // Get top 3 for home
+        setVenues(Array.isArray(data) ? data.slice(0, 3) : []);
       } catch (error) {
         console.error('Error fetching venues:', error);
       } finally {
@@ -30,65 +42,89 @@ const Home = () => {
   return (
     <div className="pb-24 md:pb-10">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-12 px-4 md:pt-32 md:pb-24 overflow-hidden">
-        <div className="absolute inset-0 z-0 bg-gradient-energetic opacity-80" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#39FF14] rounded-full blur-[150px] opacity-10" />
-        
-        <div className="max-w-7xl mx-auto relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8 md:mb-12"
-          >
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4 leading-[1.1]">
-              Book Courts. <br className="hidden sm:block" />
-              <span className="text-gradient">Host Matches.</span><br />
-              Play Now.
-            </h1>
-            <p className="text-sm md:text-xl text-gray-400 mb-0 max-w-2xl mx-auto px-4">
-              Join the elite sports community. Verified players, premium venues, and hassle-free bookings.
-            </p>
-          </motion.div>
+      <section className="relative pt-24 pb-16 px-4 md:pt-40 md:pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[85vh]">
+        <div className="absolute inset-0 z-0 bg-gradient-energetic opacity-90" />
+        <motion.div
+          animate={{ scale: [1, 1.05, 1], opacity: [0.1, 0.15, 0.1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[900px] md:h-[900px] bg-[#39FF14] rounded-full blur-[120px] md:blur-[180px] pointer-events-none"
+        />
 
-          {/* Search Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-4xl mx-auto glass-mobile p-3 md:p-4 rounded-3xl md:rounded-2xl border border-white/10 shadow-2xl"
+        <div className="max-w-7xl mx-auto relative z-10 w-full">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
+            }}
+            className="text-center mb-10 md:mb-16 flex flex-col items-center"
           >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              <div className="flex items-center bg-black/40 rounded-2xl px-4 py-3 border border-white/5 focus-within:border-[#39FF14] transition-all">
-                <Search size={18} className="text-[#39FF14] mr-3 shrink-0" />
-                <input type="text" placeholder="Search sport..." className="bg-transparent w-full focus:outline-none text-sm text-white placeholder-gray-500" />
+            <motion.h1
+              variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
+              className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter mb-6 leading-[1.05] drop-shadow-2xl"
+            >
+              Book Courts. <br className="hidden sm:block" />
+              <span className="text-[#39FF14]">Host Matches.</span><br />
+              Play Now.
+            </motion.h1>
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } } }}
+              className="text-base sm:text-lg md:text-2xl text-gray-300 font-medium max-w-3xl mx-auto px-4 leading-relaxed mb-10"
+            >
+              Join the elite sports community. Verified players, premium venues, and hassle-free bookings.
+            </motion.p>
+
+            <motion.div
+              variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } } }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0"
+            >
+              <Link to="/venues" className="w-full sm:w-auto bg-[#39FF14] text-black font-black text-lg md:text-xl rounded-full py-4 px-10 hover:bg-[#32E612] transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(57,255,20,0.5)] btn-touch flex items-center justify-center">
+                Find a Court
+              </Link>
+              <Link to="/host-match" className="w-full sm:w-auto bg-white/10 text-white font-bold text-lg md:text-xl rounded-full py-4 px-10 hover:bg-white/20 border border-white/20 backdrop-blur-md transition-all transform hover:scale-105 btn-touch flex items-center justify-center">
+                Host a Match
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1, delay: 0.8 }}
+              className="mt-12 md:mt-16 h-16 md:h-20 flex items-center justify-center w-full gap-3"
+            >
+              <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+                The advanced Way to
+              </span>
+              <div className="relative h-16 md:h-20 w-[200px] sm:w-[250px] md:w-[350px] flex items-center justify-start overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.h2
+                    key={currentPhrase}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="text-3xl sm:text-4xl md:text-5xl font-black text-[#39FF14] absolute tracking-tighter whitespace-nowrap"
+                  >
+                    {phrases[currentPhrase]}
+                  </motion.h2>
+                </AnimatePresence>
               </div>
-              <div className="flex items-center bg-black/40 rounded-2xl px-4 py-3 border border-white/5 focus-within:border-[#39FF14] transition-all">
-                <MapPin size={18} className="text-[#39FF14] mr-3 shrink-0" />
-                <input type="text" placeholder="Location" className="bg-transparent w-full focus:outline-none text-sm text-white placeholder-gray-500" />
-              </div>
-              <div className="flex items-center bg-black/40 rounded-2xl px-4 py-3 border border-white/5 focus-within:border-[#39FF14] transition-all">
-                <Calendar size={18} className="text-[#39FF14] mr-3 shrink-0" />
-                <input type="text" placeholder="Date" className="bg-transparent w-full focus:outline-none text-sm text-white placeholder-gray-500" />
-              </div>
-              <button className="bg-[#39FF14] text-black font-black rounded-2xl py-3.5 px-6 hover:bg-[#32E612] transition-all btn-touch flex items-center justify-center shadow-[0_0_20px_rgba(57,255,20,0.3)]">
-                FIND VENUES
-              </button>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
-        
-        {/* Popular Sports - Horizontal Scroll on Mobile */}
+
+        {/* Popular Sports */}
         <section>
           <div className="flex justify-between items-end mb-6">
             <h2 className="text-2xl md:text-3xl font-black uppercase">Popular Sports</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pb-4 md:pb-0">
             {sportsList.map((sport, index) => (
-              <motion.div 
+              <motion.div
                 key={sport.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -121,48 +157,7 @@ const Home = () => {
                 <p className="text-gray-500 text-sm mt-2">New venues will appear here once they are added.</p>
               </div>
             ) : venues.map((venue, index) => (
-              <motion.div 
-                key={venue._id || index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-[#151b2b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#39FF14]/30 transition-all group cursor-pointer shadow-xl"
-              >
-                <div className="h-48 md:h-52 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
-                    <span className="text-[#39FF14] text-xs font-black uppercase tracking-[0.3em]">PlayNow Venue</span>
-                  </div>
-                  {getVenueImage(venue) && (
-                    <img
-                      src={getVenueImage(venue)}
-                      alt={venue.name}
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  )}
-                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black flex items-center border border-white/10">
-                    ⭐ {venue.rating || 5}
-                  </div>
-                  <div className="absolute bottom-3 left-3 bg-[#39FF14] text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    {venue.sportTypes?.[0] || 'Sport'}
-                  </div>
-                </div>
-                <div className="p-5 md:p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg md:text-xl font-black leading-tight truncate pr-2">{venue.name}</h3>
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-[#39FF14] font-black text-lg">₹{venue.pricePerHour}</span>
-                      <span className="text-[10px] text-gray-500 block font-bold uppercase tracking-tighter">/ hour</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-xs md:text-sm flex items-center mb-5 font-medium">
-                    <MapPin size={14} className="mr-1 text-gray-600" /> {venue.location}
-                  </p>
-                  <Link to={`/venues/${venue._id}`} className="block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white py-3 rounded-2xl transition-all font-black text-sm uppercase tracking-widest btn-touch">
-                    Book Slot
-                  </Link>
-                </div>
-              </motion.div>
+              <VenueCard key={venue._id || index} venue={venue} index={index} showAmenities={false} delayMultiplier={0.1} isCompact={true} />
             ))}
           </div>
         </section>
@@ -177,7 +172,7 @@ const Home = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {mockHostedMatches.map((match, index) => (
-              <motion.div 
+              <motion.div
                 key={match.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -206,7 +201,7 @@ const Home = () => {
                       <Clock size={14} className="mr-2 text-gray-500" /> {match.date}, {match.time}
                     </p>
                   </div>
-                  
+
                   <div className="mt-4 pt-4 border-t border-gray-800 flex items-center justify-between">
                     <div>
                       <div className="flex -space-x-2 mb-1">
@@ -226,10 +221,18 @@ const Home = () => {
           </div>
         </section>
 
-        {/* How It Works */}
+      </div>
+
+      {/* Quotes Slider — full width, outside padded container */}
+      <div className="mt-12 md:mt-20">
+        <QuotesSlider />
+      </div>
+
+      {/* How It Works */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-20 pb-12">
         <section className="bg-gradient-energetic rounded-3xl p-8 md:p-12 border border-[#39FF14]/20 relative overflow-hidden">
           <div className="absolute right-0 bottom-0 opacity-5 w-64 h-64">
-             <Trophy size={256} />
+            <Trophy size={256} />
           </div>
           <h2 className="text-3xl font-bold mb-10 text-center relative z-10">How Play Now Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
@@ -237,14 +240,14 @@ const Home = () => {
               <div className="w-16 h-16 mx-auto bg-[#39FF14]/20 rounded-2xl flex items-center justify-center mb-6">
                 <Search size={32} className="text-[#39FF14]" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Find & Book</h3>
+              <h3 className="text-xl font-bold mb-3">Find &amp; Book</h3>
               <p className="text-gray-400">Discover premium venues around you and book your slot instantly.</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 mx-auto bg-[#39FF14]/20 rounded-2xl flex items-center justify-center mb-6">
                 <Users size={32} className="text-[#39FF14]" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Host & Join</h3>
+              <h3 className="text-xl font-bold mb-3">Host &amp; Join</h3>
               <p className="text-gray-400">Short on players? Host a match and let strangers join and split the cost.</p>
             </div>
             <div className="text-center">
@@ -256,7 +259,6 @@ const Home = () => {
             </div>
           </div>
         </section>
-
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Filter, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { sportsList } from '../data/mockData';
+import VenueCard from '../components/VenueCard';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -89,6 +90,9 @@ const Venues = () => {
             <button onClick={() => {setFilterSport('All'); setSearchQuery('');}} className="mt-4 text-[#39FF14] font-black uppercase text-xs hover:underline">Clear filters</button>
           </div>
         ) : filteredVenues.map((venue, index) => (
+
+          <VenueCard key={venue._id || index} venue={venue} index={index} showAmenities={true} delayMultiplier={0.05} isCompact={false} />
+
           <motion.div 
             key={venue._id || index}
             initial={{ opacity: 0, y: 20 }}
@@ -150,6 +154,7 @@ const Venues = () => {
               </Link>
             </div>
           </motion.div>
+         main
         ))}
       </div>
     </div>
