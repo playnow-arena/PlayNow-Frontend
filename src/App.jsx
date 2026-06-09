@@ -32,7 +32,7 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <Router>
-        <div className="min-h-screen pb-24 md:pb-0 bg-[#0a0f1c] text-white">
+        <div className="min-h-screen w-full overflow-x-hidden pb-24 md:pb-0 bg-[#0a0f1c] text-white">
           <Navbar />
           <Routes>
             <Route path="/" element={<Home />} />

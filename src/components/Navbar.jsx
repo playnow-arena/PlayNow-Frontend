@@ -19,11 +19,12 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-8">
-              <Link to="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-energetic flex items-center justify-center border border-[#39FF14] group-hover:shadow-[0_0_15px_rgba(57,255,20,0.4)] transition-all">
-                  <span className="text-[#39FF14] font-bold italic">PN</span>
-                </div>
-                <span className="text-xl font-extrabold tracking-tight text-white">PLAY NOW</span>
+              <Link to="/" className="flex items-center group py-1">
+                <img 
+                  src="/logo.png" 
+                  alt="PlayNow" 
+                  className="h-11 w-auto object-contain transition-all duration-300 group-hover:brightness-110" 
+                />
               </Link>
               <div className="hidden md:flex items-center text-sm text-gray-400 cursor-pointer hover:text-white transition">
                 <MapPin size={16} className="mr-1 text-[#39FF14]" />
@@ -60,11 +61,12 @@ const Navbar = () => {
 
       {/* Mobile Header (Minimal) */}
       <nav className="fixed top-0 left-0 right-0 w-full z-50 bg-[#0a0f1c]/80 backdrop-blur-lg border-b border-white/5 md:hidden px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-gradient-energetic flex items-center justify-center border border-[#39FF14]/50">
-            <span className="text-[#39FF14] font-bold italic text-sm">PN</span>
-          </div>
-          <span className="text-base font-black tracking-tighter text-white">PLAY NOW</span>
+        <Link to="/" className="flex items-center py-1">
+          <img 
+            src="/logo.png" 
+            alt="PlayNow" 
+            className="h-9 w-auto object-contain" 
+          />
         </Link>
         <div className="flex items-center gap-4">
           <button className="text-gray-400 hover:text-white transition p-1">

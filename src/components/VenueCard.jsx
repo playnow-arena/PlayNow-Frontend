@@ -3,13 +3,17 @@ import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const MotionLink = motion(Link);
+
 const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05, isCompact = false }) => {
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: isCompact ? 0.5 : 0.4, delay: index * delayMultiplier }}
-      className={`bg-[#151b2b] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-all group cursor-pointer shadow-xl ${isCompact ? 'rounded-3xl' : 'rounded-[2rem] shadow-2xl'}`}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: isCompact ? 0.6 : 0.5, delay: index * delayMultiplier, ease: "easeOut" }}
+      whileHover={{ y: -6, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+      className={`w-full bg-[#151b2b] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-colors group cursor-pointer shadow-xl ${isCompact ? 'rounded-3xl' : 'rounded-[2rem] shadow-2xl'}`}
     >
       <div className={`relative overflow-hidden ${isCompact ? 'h-48 md:h-52' : 'h-52 md:h-56'}`}>
         <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -32,7 +36,7 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
         </div>
       </div>
       
-      <div className={isCompact ? 'p-5 md:p-6' : 'p-6 md:p-8'}>
+      <div className={isCompact ? 'p-4 sm:p-5 md:p-6' : 'p-4 sm:p-6 md:p-8'}>
         <div className="flex justify-between items-start mb-3 md:mb-4">
           <h3 className={`${isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'} font-black leading-tight truncate pr-2 md:pr-4`}>{venue.name}</h3>
           <div className="text-right flex-shrink-0">
@@ -60,9 +64,15 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
           </div>
         )}
 
-        <Link to={`/venues/${venue._id}`} className={`block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white rounded-2xl transition-all font-black text-sm uppercase btn-touch ${isCompact ? 'py-3 tracking-widest' : 'py-4 tracking-[0.2em] shadow-xl'}`}>
+        <MotionLink 
+          to={`/venues/${venue._id}`} 
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+          className={`block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white rounded-2xl transition-all font-black text-sm uppercase btn-touch ${isCompact ? 'py-3 tracking-widest' : 'py-4 tracking-[0.2em] shadow-xl'}`}
+        >
           {isCompact ? 'Book Slot' : 'VIEW & BOOK'}
-        </Link>
+        </MotionLink>
       </div>
     </motion.div>
   );

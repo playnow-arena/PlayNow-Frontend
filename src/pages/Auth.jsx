@@ -291,12 +291,12 @@ body: JSON.stringify({
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <motion.div
+          <motion.img
             whileHover={{ scale: 1.05 }}
-            className="w-16 h-16 mx-auto bg-black rounded-2xl flex items-center justify-center border-2 border-[#39FF14] mb-6 shadow-[0_0_20px_rgba(57,255,20,0.3)]"
-          >
-            <span className="text-[#39FF14] font-black italic text-2xl tracking-tighter">PN</span>
-          </motion.div>
+            src="/logo.png"
+            alt="PlayNow Logo"
+            className="w-24 h-24 mx-auto object-contain rounded-2xl border border-[#39FF14]/30 mb-6 shadow-[0_0_25px_rgba(57,255,20,0.25)]"
+          />
           <h2 className="text-3xl font-black text-white tracking-tight">
             {step === 1 && 'Get Started'}
             {step === 2 && 'Verify OTP'}
