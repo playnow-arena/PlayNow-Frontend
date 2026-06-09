@@ -36,7 +36,7 @@ const Venues = () => {
   });
 
   return (
-    <div className="pt-20 md:pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
+    <div className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-7xl mx-auto min-h-screen">
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-12">
         <motion.div
