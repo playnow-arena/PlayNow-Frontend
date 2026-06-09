@@ -21,27 +21,29 @@ const PrivacyPolicy = () => {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">2. Data We Collect</h2>
+            <h2 className="text-xl font-bold text-white">2. Data Collection</h2>
             <p>
-              We may collect, use, store and transfer different kinds of personal data about you which we have grouped together as follows:
+              We collect information that helps us deliver and improve our venue booking and matchmaking platform:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-gray-400">
-              <li><strong>Identity Data:</strong> includes first name, last name, username or similar identifier.</li>
-              <li><strong>Contact Data:</strong> includes email address and telephone numbers.</li>
-              <li><strong>Technical Data:</strong> includes internet protocol (IP) address, your login data, browser type and version.</li>
+              <li><strong>Identity Info:</strong> First name, last name, username, or similar identifier.</li>
+              <li><strong>Contact Info:</strong> Email address, phone number, and account credentials.</li>
+              <li><strong>Technical Data:</strong> IP address, login sessions, browser details, and device characteristics.</li>
             </ul>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">3. How We Use Your Data</h2>
+            <h2 className="text-xl font-bold text-white">3. Privacy Statement</h2>
             <p>
-              We will only use your personal data when the law allows us to. Most commonly, we will use your personal data in the following circumstances:
+              Your data is stored securely and is only used to facilitate match hosting, coordinate bookings with venue owners, and communicate updates about your profile. We do not sell or lease your personal data to third-party advertisers or marketers.
             </p>
-            <ul className="list-disc pl-5 space-y-1 text-gray-400">
-              <li>Where we need to perform the contract we are about to enter into or have entered into with you (e.g. booking a venue).</li>
-              <li>Where it is necessary for our legitimate interests and your interests and fundamental rights do not override those interests.</li>
-              <li>Where we need to comply with a legal or regulatory obligation.</li>
-            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-white">4. Contact Information</h2>
+            <p>
+              If you have any questions or feedback regarding our privacy guidelines, please reach out to us at <span className="text-[#39FF14]">support@playnow.in</span>.
+            </p>
           </section>
 
           <p className="pt-8 text-sm italic text-gray-500">

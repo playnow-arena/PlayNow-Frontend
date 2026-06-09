@@ -14,30 +14,30 @@ const TermsAndConditions = () => {
           </p>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">1. Agreement to Terms</h2>
+            <h2 className="text-xl font-bold text-white">1. User Responsibilities</h2>
             <p>
-              By accessing or using PlayNow, you agree to be bound by these Terms and Conditions and our Privacy Policy. If you do not agree with any part of these terms, you may not access the service.
+              Users are responsible for providing accurate and updated account information. You agree to behave respectfully to other sports players and venue staff while participating in hosted matches and bookings.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">2. Use License</h2>
+            <h2 className="text-xl font-bold text-white">2. Booking Rules</h2>
             <p>
-              Permission is granted to temporarily use the materials (information or software) on PlayNow's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title.
+              All bookings are subject to venue availability and scheduling rules. Confirmations are only final once payments are successfully verified. Cancellations are subject to the specific venue's cancellation and refund guidelines.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">3. User Accounts</h2>
+            <h2 className="text-xl font-bold text-white">3. Platform Usage</h2>
             <p>
-              When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.
+              PlayNow grants you a personal, non-exclusive, non-transferable license to access our platform for sports match organizing and venue discovery. Any unauthorized scripting, scraping, or misuse is strictly prohibited.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">4. Bookings and Payments</h2>
+            <h2 className="text-xl font-bold text-white">4. Disclaimer</h2>
             <p>
-              All venue bookings made through the platform are subject to availability. Payments must be completed successfully before a booking is confirmed. Cancellations and refunds are subject to the specific venue's policy.
+              PlayNow is not responsible for injuries, cancellations, scheduling conflicts, or disputes arising between players and venue owners during offline games. All sports activities are participated in at the user's own risk.
             </p>
           </section>
 

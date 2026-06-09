@@ -29,7 +29,7 @@ const ContactUs = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium">Email</p>
-                <p className="text-white font-bold">support@playnow.in</p>
+                <p className="text-white font-bold">playnowarena@gmail.com</p>
               </div>
             </div>
 
@@ -39,7 +39,7 @@ const ContactUs = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium">Phone</p>
-                <p className="text-white font-bold">+91 98765 43210</p>
+                <p className="text-white font-bold">+91 93637 56533</p>
               </div>
             </div>
 
@@ -49,7 +49,7 @@ const ContactUs = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium">Instagram</p>
-                <p className="text-white font-bold">@playnow.app</p>
+                <p className="text-white font-bold">@playnowarena</p>
               </div>
             </div>
           </div>
@@ -79,43 +79,37 @@ const ContactUs = () => {
           
           <h3 className="text-2xl font-bold mb-6 text-white relative z-10">Send us a message</h3>
           
-          <form className="space-y-5 relative z-10" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5 relative z-10" onSubmit={(e) => { e.preventDefault(); alert('Message sent successfully! (Demo mode)'); }}>
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Name</label>
               <input 
                 type="text" 
+                required
                 className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors"
-                placeholder="John Doe"
+                placeholder="your name"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
               <input 
                 type="email" 
+                required
                 className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors"
-                placeholder="john@example.com"
+                placeholder="yours email"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Subject</label>
-              <select className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors appearance-none">
-                <option>General Support</option>
-                <option>Venue Listing</option>
-                <option>Partnership</option>
-                <option>Bug Report</option>
-              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Message</label>
               <textarea 
                 rows="4" 
+                required
                 className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors resize-none"
                 placeholder="How can we help you?"
               ></textarea>
             </div>
             <button 
-              type="button"
-              className="w-full bg-[#39FF14] text-black font-bold py-4 rounded-xl hover:bg-[#32E612] transition-colors shadow-[0_0_15px_rgba(57,255,20,0.3)]"
+              type="submit"
+              className="w-full bg-[#39FF14] text-black font-bold py-4 rounded-xl hover:bg-[#32E612] transition-colors shadow-[0_0_15px_rgba(57,255,20,0.3)] cursor-pointer"
             >
               Send Message
             </button>
