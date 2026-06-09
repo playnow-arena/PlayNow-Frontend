@@ -1,8 +1,50 @@
+import React, { useEffect, useState } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Settings, Bell, Calendar, Edit, MapPin, DollarSign, PlusCircle, Volume2, Power } from 'lucide-react';
+import { Settings, Bell, Calendar, Clock, MapPin, DollarSign, PlusCircle, Volume2, Power } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+};
+
+const formatSlotDate = (slot) => {
+  if (!slot?.date) return 'Date unavailable';
+
+  return new Date(slot.date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatSlotTimes = (slots = []) => {
+  if (!slots.length) return 'Time unavailable';
+
+  return slots
+    .map((slot) => [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - '))
+    .filter(Boolean)
+    .join(', ');
+};
+
+const formatCurrency = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
+
+const canCollectBalance = (booking) => (
+  Number(booking.remainingAmount || 0) > 0 &&
+  booking.bookingStatus !== 'cancelled' &&
+  booking.paymentStatus !== 'completed'
+);
 
 const OwnerDashboard = () => {
   const { user, logout } = useAuth();
@@ -13,17 +55,20 @@ const OwnerDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [collectionMethods, setCollectionMethods] = useState({});
+  const [collectionLoadingId, setCollectionLoadingId] = useState('');
+  const [collectionMessage, setCollectionMessage] = useState('');
 
   // Fetch real data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('playnow_token');
         const [bookingsRes, venuesRes] = await Promise.all([
-          fetch('/api/bookings/owner', {
+          fetch(`${API_BASE_URL}/api/bookings/owner`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch('/api/venues/my', {
+          fetch(`${API_BASE_URL}/api/venues/my`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
@@ -83,8 +128,8 @@ const OwnerDashboard = () => {
     if (!window.confirm('Are you sure? This will block ALL remaining slots for today!')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/slots/emergency-close', {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(`${API_BASE_URL}/api/slots/emergency-close`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,6 +143,55 @@ const OwnerDashboard = () => {
       }
     } catch (error) {
       console.error('Emergency close failed:', error);
+    }
+  };
+
+  const handleCollectionMethodChange = (bookingId, method) => {
+    setCollectionMethods((current) => ({ ...current, [bookingId]: method }));
+  };
+
+  const simulateBooking = () => {
+    setNotificationData({
+      venueName: venues[0]?.name || 'Your Venue',
+      slots: [{ startTime: 'New booking' }],
+      totalAmount: 0,
+    });
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 5000);
+  };
+
+  const handleCollectBalance = async (booking) => {
+    const bookingId = booking._id || booking.id;
+    const method = collectionMethods[bookingId] || 'cash';
+    setCollectionMessage('');
+    setCollectionLoadingId(bookingId);
+
+    try {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/collect-balance`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ method }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCollectionMessage(data.message || 'Unable to collect balance');
+        return;
+      }
+
+      setBookings((currentBookings) => currentBookings.map((item) => (
+        (item._id || item.id) === bookingId ? data : item
+      )));
+      setCollectionMessage('Balance marked as collected.');
+    } catch (error) {
+      console.error('Collect balance error:', error);
+      setCollectionMessage('Unable to collect balance. Please try again.');
+    } finally {
+      setCollectionLoadingId('');
     }
   };
 
@@ -174,30 +268,57 @@ const OwnerDashboard = () => {
             </div>
           </div>
 
+          {collectionMessage && (
+            <div className={`mx-6 md:mx-8 mt-4 rounded-xl px-4 py-3 text-sm border ${collectionMessage.toLowerCase().includes('collected') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+              {collectionMessage}
+            </div>
+          )}
+
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-black/40 text-gray-500 text-xs font-black uppercase tracking-[0.2em] border-b border-white/5">
                   <th className="p-6">Booking ID</th>
+                  <th className="p-6">Venue</th>
                   <th className="p-6">Player</th>
-                  <th className="p-6">Slot Time</th>
+                  <th className="p-6">Slot</th>
+                  <th className="p-6">Payment</th>
                   <th className="p-6">Status</th>
-                  <th className="p-6">Paid</th>
                   <th className="p-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="p-12 text-center text-gray-600 font-bold uppercase tracking-widest text-sm italic">No matches scheduled for today yet.</td>
+                    <td colSpan="7" className="p-12 text-center text-gray-600 font-bold uppercase tracking-widest text-sm italic">No matches scheduled for today yet.</td>
                   </tr>
                 ) : (
-                  bookings.map((b) => (
-                    <tr key={b._id || b.id} className="border-b border-white/5 hover:bg-white/5 transition group">
-                      <td className="p-6 font-mono text-sm text-gray-500 group-hover:text-[#39FF14]">{(b._id || b.id).slice(-8).toUpperCase()}</td>
-                      <td className="p-6 font-black text-white">{b.userId?.name || b.user || 'Guest'}</td>
-                      <td className="p-6 font-bold text-gray-300">{b.slotIds?.[0]?.startTime || b.slots || '--'}</td>
+                  bookings.map((b) => {
+                    const bookingId = b._id || b.id;
+                    const shouldShowCollect = canCollectBalance(b);
+
+                    return (
+                    <tr key={bookingId} className="border-b border-white/5 hover:bg-white/5 transition group align-top">
+                      <td className="p-6 font-mono text-sm text-gray-500 group-hover:text-[#39FF14]">{bookingId.slice(-8).toUpperCase()}</td>
+                      <td className="p-6">
+                        <p className="font-black text-white">{b.venueId?.name || 'Venue unavailable'}</p>
+                        <p className="text-xs text-gray-500 mt-1">{b.venueId?.location || 'Location unavailable'}</p>
+                      </td>
+                      <td className="p-6">
+                        <p className="font-black text-white">{b.userId?.name || b.user || 'Guest'}</p>
+                        {b.userId?.phone && <p className="text-xs text-gray-500 mt-1">{b.userId.phone}</p>}
+                      </td>
+                      <td className="p-6">
+                        <p className="font-bold text-gray-300">{formatSlotDate(b.slotIds?.[0])}</p>
+                        <p className="text-xs text-gray-500 mt-1">{formatSlotTimes(b.slotIds)}</p>
+                      </td>
+                      <td className="p-6 text-sm">
+                        <p className="text-gray-400">Total: <span className="font-bold text-white">{formatCurrency(b.totalAmount)}</span></p>
+                        <p className="text-gray-400">Paid: <span className="font-bold text-[#39FF14]">{formatCurrency(b.paidAmount)}</span></p>
+                        <p className="text-gray-400">Remaining: <span className="font-bold text-yellow-400">{formatCurrency(b.remainingAmount)}</span></p>
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-gray-500">{b.paymentStatus || 'payment unknown'}</p>
+                      </td>
                       <td className="p-6">
                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
                           b.bookingStatus === 'completed' || b.status === 'Completed' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
@@ -208,12 +329,33 @@ const OwnerDashboard = () => {
                           {b.bookingStatus || b.status}
                         </span>
                       </td>
-                      <td className="p-6 font-black text-white">₹{b.paidAmount || b.paid || 0}</td>
                       <td className="p-6 text-right">
-                        <button className="text-gray-500 hover:text-white transition btn-touch"><Edit size={20} /></button>
+                        {shouldShowCollect ? (
+                          <div className="flex flex-col gap-2 items-end">
+                            <select
+                              value={collectionMethods[bookingId] || 'cash'}
+                              onChange={(e) => handleCollectionMethodChange(bookingId, e.target.value)}
+                              className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#39FF14]"
+                            >
+                              <option value="cash">Cash</option>
+                              <option value="upi">UPI</option>
+                              <option value="card">Card</option>
+                            </select>
+                            <button
+                              onClick={() => handleCollectBalance(b)}
+                              disabled={collectionLoadingId === bookingId}
+                              className="bg-[#39FF14] text-black font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {collectionLoadingId === bookingId ? 'Collecting...' : 'Mark Balance Collected'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-widest">No balance due</span>
+                        )}
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -224,12 +366,18 @@ const OwnerDashboard = () => {
              {bookings.length === 0 ? (
                 <div className="p-12 text-center text-gray-600 font-bold uppercase tracking-widest text-xs">No bookings for today.</div>
              ) : (
-                bookings.map((b) => (
-                  <div key={b._id || b.id} className="p-6 space-y-4">
+                bookings.map((b) => {
+                  const bookingId = b._id || b.id;
+                  const shouldShowCollect = canCollectBalance(b);
+
+                  return (
+                  <div key={bookingId} className="p-6 space-y-4">
                      <div className="flex justify-between items-start">
                         <div>
-                           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">ID: {(b._id || b.id).slice(-8).toUpperCase()}</p>
+                           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">ID: {bookingId.slice(-8).toUpperCase()}</p>
                            <h3 className="font-black text-lg text-white">{b.userId?.name || b.user || 'Guest'}</h3>
+                           {b.userId?.phone && <p className="text-xs text-gray-500 mt-1">{b.userId.phone}</p>}
+                           <p className="text-xs text-gray-400 mt-2">{b.venueId?.name || 'Venue unavailable'}</p>
                         </div>
                         <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
                           b.bookingStatus === 'confirmed' || b.status === 'Paid' ? 'bg-[#39FF14]/10 text-[#39FF14]' : 'bg-gray-800 text-gray-500'
@@ -240,15 +388,53 @@ const OwnerDashboard = () => {
                      <div className="flex justify-between items-end">
                         <div className="flex items-center text-sm font-bold text-gray-400">
                            <Clock size={14} className="mr-2 text-[#39FF14]" />
-                           {b.slotIds?.[0]?.startTime || b.slots || '--'}
+                           {formatSlotDate(b.slotIds?.[0])} | {formatSlotTimes(b.slotIds)}
                         </div>
                         <div className="text-right">
                            <p className="text-[10px] font-black text-gray-600 uppercase mb-0.5">Amount Paid</p>
                            <p className="text-xl font-black text-[#39FF14]">₹{b.paidAmount || b.paid || 0}</p>
                         </div>
                      </div>
+                     <div className="grid grid-cols-3 gap-3 bg-[#0a0f1c] border border-gray-800 rounded-2xl p-4">
+                        <div>
+                           <p className="text-[10px] font-black text-gray-600 uppercase mb-1">Total</p>
+                           <p className="text-sm font-black text-white">{formatCurrency(b.totalAmount)}</p>
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-gray-600 uppercase mb-1">Paid</p>
+                           <p className="text-sm font-black text-[#39FF14]">{formatCurrency(b.paidAmount)}</p>
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-gray-600 uppercase mb-1">Remaining</p>
+                           <p className="text-sm font-black text-yellow-400">{formatCurrency(b.remainingAmount)}</p>
+                        </div>
+                     </div>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                       Payment: {b.paymentStatus || 'payment unknown'}
+                     </p>
+                     {shouldShowCollect && (
+                       <div className="flex flex-col gap-3">
+                         <select
+                           value={collectionMethods[bookingId] || 'cash'}
+                           onChange={(e) => handleCollectionMethodChange(bookingId, e.target.value)}
+                           className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-[#39FF14]"
+                         >
+                           <option value="cash">Cash</option>
+                           <option value="upi">UPI</option>
+                           <option value="card">Card</option>
+                         </select>
+                         <button
+                           onClick={() => handleCollectBalance(b)}
+                           disabled={collectionLoadingId === bookingId}
+                           className="w-full bg-[#39FF14] text-black font-bold px-4 py-3 rounded-xl text-sm hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                           {collectionLoadingId === bookingId ? 'Collecting...' : 'Mark Balance Collected'}
+                         </button>
+                       </div>
+                     )}
                   </div>
-                ))
+                  );
+                })
              )}
           </div>
         </div>
