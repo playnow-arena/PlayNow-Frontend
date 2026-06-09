@@ -31,6 +31,20 @@ const getUpcomingDateKeys = (days) => {
 
 const isPastDateKey = (dateKey) => dateKey && dateKey < getDateKey(new Date());
 
+const isPastSlotForToday = (slot) => {
+  const dateKey = getDateKey(slot?.date);
+  if (!dateKey || dateKey !== getDateKey(new Date()) || !slot?.endTime) return false;
+
+  const [hours, minutes = '0'] = slot.endTime.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return false;
+
+  const slotEnd = new Date();
+  slotEnd.setHours(hours, minutes, 0, 0);
+  return slotEnd <= new Date();
+};
+
+const isBookableSlot = (slot) => slot?.status === 'available' && !isPastSlotForToday(slot);
+
 const formatDateLabel = (dateKey) => {
   if (!dateKey) return '';
 
@@ -135,7 +149,10 @@ const VenueDetail = () => {
           if (dateCompare !== 0) return dateCompare;
           return String(a.startTime || '').localeCompare(String(b.startTime || ''));
         });
-        const futureDateKeys = [...new Set(uniqueSlots.map((slot) => getDateKey(slot.date)).filter((dateKey) => dateKey && !isPastDateKey(dateKey)))].sort();
+        const futureDateKeys = [...new Set(uniqueSlots
+          .filter((slot) => !isPastSlotForToday(slot))
+          .map((slot) => getDateKey(slot.date))
+          .filter((dateKey) => dateKey && !isPastDateKey(dateKey)))].sort();
         
         setVenue(venueData);
         setAvailableSlots(uniqueSlots);
@@ -175,7 +192,7 @@ const VenueDetail = () => {
   const venueImage = getVenueImage(venue);
   const slotsByDate = availableSlots.reduce((groups, slot) => {
     const dateKey = getDateKey(slot.date);
-    if (!dateKey || isPastDateKey(dateKey)) return groups;
+    if (!dateKey || isPastDateKey(dateKey) || isPastSlotForToday(slot)) return groups;
 
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(slot);
@@ -183,9 +200,11 @@ const VenueDetail = () => {
   }, {});
   const dateOptions = Object.keys(slotsByDate).sort().map((dateKey) => ({
     dateKey,
-    slots: slotsByDate[dateKey].sort((a, b) => String(a.startTime || '').localeCompare(String(b.startTime || '')))
+    slots: slotsByDate[dateKey].sort((a, b) => String(a.startTime || '').localeCompare(String(b.startTime || ''))),
+    availableCount: slotsByDate[dateKey].filter(isBookableSlot).length
   }));
   const selectedDateSlots = selectedDateKey ? slotsByDate[selectedDateKey] || [] : [];
+  const selectedDateAvailableSlots = selectedDateSlots.filter(isBookableSlot);
   const selectedDateLabel = formatDateLabel(selectedDateKey);
   const selectDate = (dateKey) => {
     if (dateKey !== selectedDateKey) {
@@ -195,7 +214,7 @@ const VenueDetail = () => {
   };
   const renderDateSelector = () => (
     <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
-      {dateOptions.map(({ dateKey, slots }) => {
+      {dateOptions.map(({ dateKey, availableCount }) => {
         const isActive = selectedDateKey === dateKey;
 
         return (
@@ -211,7 +230,7 @@ const VenueDetail = () => {
           >
             <span className="block text-xs font-black uppercase tracking-widest">{formatDateLabel(dateKey)}</span>
             <span className={`block text-[10px] font-bold uppercase mt-1 ${isActive ? 'text-black/60' : 'text-gray-600'}`}>
-              {slots.length} slots
+              {availableCount} available
             </span>
           </button>
         );
@@ -366,12 +385,12 @@ const VenueDetail = () => {
                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Select Timing</h4>
                 {dateOptions.length > 0 && renderDateSelector()}
                 <div className="grid grid-cols-2 gap-3">
-                  {dateOptions.length === 0 || selectedDateSlots.length === 0 ? (
+                  {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
                     <div className="col-span-2 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
-                      <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available</p>
-                      <p className="mt-2 text-xs text-gray-500">Please check back later or try another venue.</p>
+                      <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
+                      <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
                     </div>
-                  ) : selectedDateSlots.map((slot, i) => {
+                  ) : selectedDateAvailableSlots.map((slot, i) => {
                     const isSelected = selectedSlots.find(s => s._id === slot._id);
                     const isLocked = slot.status === 'locked';
                     const isBooked = slot.status === 'booked';
@@ -384,7 +403,7 @@ const VenueDetail = () => {
                         disabled={isBooked || isBlocked || !venue.isActive}
                         className={`py-4 rounded-2xl text-sm font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
                           isSelected 
-                            ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_20px_rgba(57,255,20,0.4)]' 
+                            ? 'bg-[#39FF14] text-black border-white ring-4 ring-[#39FF14]/35 shadow-[0_0_30px_rgba(57,255,20,0.65)] scale-[1.03]' 
                             : isLocked
                             ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/50 cursor-not-allowed opacity-80'
                             : isBooked
@@ -478,12 +497,12 @@ const VenueDetail = () => {
             </p>
             {dateOptions.length > 0 && renderDateSelector()}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-               {dateOptions.length === 0 || selectedDateSlots.length === 0 ? (
+               {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
                   <div className="col-span-2 sm:col-span-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
-                    <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available</p>
-                    <p className="mt-2 text-xs text-gray-500">Please check back later or try another venue.</p>
+                    <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
+                    <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
                   </div>
-               ) : selectedDateSlots.map((slot, i) => {
+               ) : selectedDateAvailableSlots.map((slot, i) => {
                   const isSelected = selectedSlots.find(s => s._id === slot._id);
                   const isLocked = slot.status === 'locked';
                   const isBooked = slot.status === 'booked';
@@ -496,7 +515,7 @@ const VenueDetail = () => {
                       disabled={isBooked || isBlocked || !venue.isActive}
                       className={`py-4 rounded-2xl text-xs font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
                         isSelected 
-                          ? 'bg-[#39FF14] text-black border-[#39FF14]' 
+                          ? 'bg-[#39FF14] text-black border-white ring-4 ring-[#39FF14]/35 shadow-[0_0_24px_rgba(57,255,20,0.55)] scale-[1.03]' 
                           : isLocked
                           ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/50 cursor-not-allowed opacity-80'
                           : isBooked
