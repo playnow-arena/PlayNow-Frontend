@@ -46,6 +46,7 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [bookingsError, setBookingsError] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -94,14 +95,37 @@ const Dashboard = () => {
     return booking.paidAmount || 0;
   };
 
-  const confirmCancel = () => {
-    if (cancelModal) {
-      setBookings(bookings.filter(b => b._id !== cancelModal._id));
+  const confirmCancel = async () => {
+    if (!cancelModal || cancelLoading) return;
+
+    setCancelLoading(true);
+
+    try {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(`${API_BASE_URL}/api/bookings/${cancelModal._id}/cancel`, {
+        method: 'PUT',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || 'Unable to cancel booking');
+        return;
+      }
+
+      setBookings((currentBookings) => currentBookings.map((booking) => (
+        booking._id === cancelModal._id ? data.booking : booking
+      )));
       setCancelModal(null);
-      // Mock processing alert
-      alert(`Refund of ₹${calculateRefund(cancelModal)} is being processed to your original payment method.`);
+      alert(`Refund of Rs ${data.booking?.refundAmount ?? calculateRefund(cancelModal)} is being processed to your original payment method.`);
+    } catch (error) {
+      console.error('Cancel booking error:', error);
+      alert('Unable to cancel booking. Please try again.');
+    } finally {
+      setCancelLoading(false);
     }
   };
+
 
   const handleDirections = (venue) => {
     window.open(`https://maps.google.com/?q=${encodeURIComponent(venue)}`, '_blank');
@@ -385,9 +409,10 @@ const Dashboard = () => {
                   </button>
                   <button 
                     onClick={confirmCancel}
-                    className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                    disabled={cancelLoading}
+                    className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Confirm Cancel
+                    {cancelLoading ? 'Cancelling...' : 'Confirm Cancel'}
                   </button>
                 </div>
               </div>
