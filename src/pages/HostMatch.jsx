@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, MapPin, Calendar, Clock, DollarSign, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, DollarSign, CheckCircle2, ArrowRight, Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { generateMatchId, createMatchLink } from '../utils/matchLink';
 
 const HostMatch = () => {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ const HostMatch = () => {
     totalPlayers: 4,
     totalAmount: 1200,
   });
+  const [matchLink, setMatchLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const pricePerPlayer = formData.totalPlayers > 0 ? (formData.totalAmount / formData.totalPlayers).toFixed(0) : 0;
 
@@ -41,6 +44,9 @@ const handleNext = async (e) => {
     }
 
     console.log('Match created:', data);
+    
+    const matchId = generateMatchId();
+    setMatchLink(`playnow.app${createMatchLink(matchId)}`);
 
     setStep(4);
   } catch (err) {
@@ -68,7 +74,20 @@ const handleNext = async (e) => {
           <div className="bg-[#0a0f1c] rounded-xl p-4 mb-8 text-left border border-gray-800">
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Share Link</span>
-              <span className="text-[#39FF14] underline cursor-pointer">playnow.com/m/8291</span>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(matchLink);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="text-[#39FF14] flex items-center gap-1 text-sm hover:underline cursor-pointer"
+              >
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="text-white font-medium break-all bg-gray-900/50 p-2 rounded-lg border border-gray-800">
+              {matchLink || 'Generating link...'}
             </div>
           </div>
           

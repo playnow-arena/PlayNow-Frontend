@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Filter, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { sportsList } from '../data/mockData';
+import VenueCard from '../components/VenueCard';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -86,57 +87,7 @@ const Venues = () => {
             <button onClick={() => {setFilterSport('All'); setSearchQuery('');}} className="mt-4 text-[#39FF14] font-black uppercase text-xs hover:underline">Clear filters</button>
           </div>
         ) : filteredVenues.map((venue, index) => (
-          <motion.div 
-            key={venue._id || index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.05 }}
-            className="bg-[#151b2b] rounded-[2rem] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-all group shadow-2xl"
-          >
-            <div className="h-52 md:h-56 relative overflow-hidden">
-              <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black flex items-center border border-white/10 shadow-lg">
-                ⭐ {venue.rating || 5} <span className="text-gray-500 ml-1 font-bold">({venue.reviewsCount || 0})</span>
-              </div>
-              <div className="absolute bottom-4 left-4 flex gap-2">
-                <span className="bg-[#39FF14] text-black px-4 py-1.5 rounded-full text-[10px] font-black uppercase shadow-[0_4px_10px_rgba(57,255,20,0.4)]">
-                  {venue.sportTypes?.[0] || 'Sport'}
-                </span>
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/80 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/30'}`}>
-                  {venue.isActive ? 'Open' : 'Closed'}
-                </span>
-              </div>
-            </div>
-            <div className="p-6 md:p-8">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl md:text-2xl font-black leading-tight truncate pr-4">{venue.name}</h3>
-                <div className="text-right flex-shrink-0">
-                  <span className="text-[#39FF14] font-black text-2xl">₹{venue.pricePerHour}</span>
-                  <span className="text-[10px] text-gray-500 block font-black uppercase tracking-tighter">/ hour</span>
-                </div>
-              </div>
-              <p className="text-gray-400 text-sm flex items-center mb-6 font-medium">
-                <MapPin size={16} className="mr-2 text-gray-600" /> {venue.location}
-              </p>
-              
-              <div className="flex flex-wrap gap-2 mb-8">
-                {(venue.amenities || []).slice(0, 3).map((amenity, i) => (
-                  <span key={i} className="text-[10px] bg-black/40 text-gray-400 px-3 py-1.5 rounded-lg border border-white/5 font-bold uppercase tracking-wider">
-                    {amenity}
-                  </span>
-                ))}
-                {(venue.amenities?.length || 0) > 3 && (
-                  <span className="text-[10px] bg-black/40 text-gray-400 px-3 py-1.5 rounded-lg border border-white/5 font-bold uppercase">
-                    +{venue.amenities.length - 3}
-                  </span>
-                )}
-              </div>
-
-              <Link to={`/venues/${venue._id}`} className="block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white py-4 rounded-2xl transition-all font-black text-sm uppercase tracking-[0.2em] shadow-xl btn-touch">
-                VIEW & BOOK
-              </Link>
-            </div>
-          </motion.div>
+          <VenueCard key={venue._id || index} venue={venue} index={index} showAmenities={true} delayMultiplier={0.05} isCompact={false} />
         ))}
       </div>
     </div>
