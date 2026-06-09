@@ -37,6 +37,39 @@ const formatSlotTimes = (slots = []) => {
     .join(', ');
 };
 
+const getSlotStartDateTime = (slot) => {
+  if (!slot?.date || !slot?.startTime) return null;
+
+  const slotDate = new Date(slot.date);
+  const [hours, minutes = '0'] = slot.startTime.split(':').map(Number);
+  if (Number.isNaN(slotDate.getTime()) || Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return null;
+  }
+
+  slotDate.setHours(hours, minutes, 0, 0);
+  return slotDate;
+};
+
+const getCancelState = (booking) => {
+  if (booking.bookingStatus === 'cancelled' || booking.paymentStatus === 'refunded') {
+    return { canCancel: false, label: 'Cancelled' };
+  }
+
+  if (booking.bookingStatus === 'completed') {
+    return { canCancel: false, label: 'Completed' };
+  }
+
+  const firstSlotStart = getSlotStartDateTime(booking.slotIds?.[0]);
+  if (firstSlotStart && firstSlotStart <= new Date()) {
+    return { canCancel: false, label: 'Match started' };
+  }
+
+  return {
+    canCancel: booking.bookingStatus === 'confirmed' && booking.paymentStatus !== 'refunded',
+    label: 'Match started'
+  };
+};
+
 const Dashboard = () => {
   const { user, logout } = useAuth();
   
@@ -216,7 +249,10 @@ const Dashboard = () => {
                       </Link>
                     </div>
                   ) : (
-                    bookings.map((booking) => (
+                    bookings.map((booking) => {
+                      const cancelState = getCancelState(booking);
+
+                      return (
                       <motion.div 
                         layout
                         initial={{ opacity: 0, y: 10 }}
@@ -254,15 +290,22 @@ const Dashboard = () => {
                           >
                             <MapPin size={14} /> Directions
                           </button>
-                          <button 
-                            onClick={() => handleCancelClick(booking)}
-                            className="flex-1 md:flex-none flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center"
-                          >
-                            <XCircle size={14} className="mr-1" /> Cancel
-                          </button>
+                          {cancelState.canCancel ? (
+                            <button 
+                              onClick={() => handleCancelClick(booking)}
+                              className="flex-1 md:flex-none flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center"
+                            >
+                              <XCircle size={14} className="mr-1" /> Cancel
+                            </button>
+                          ) : (
+                            <div className="flex-1 md:flex-none flex items-center justify-center text-gray-500 border border-gray-800 bg-[#0a0f1c] px-4 py-2 rounded-xl font-medium text-xs uppercase tracking-widest">
+                              {cancelState.label}
+                            </div>
+                          )}
                         </div>
                       </motion.div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </motion.section>
