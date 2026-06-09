@@ -5,6 +5,81 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+const UPCOMING_SLOT_DAYS = 30;
+const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
+
+const getDateKey = (dateValue) => {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getUpcomingDateKeys = (days) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + index);
+    return getDateKey(date);
+  });
+};
+
+const isPastDateKey = (dateKey) => dateKey && dateKey < getDateKey(new Date());
+
+const isPastSlotForToday = (slot) => {
+  const dateKey = getDateKey(slot?.date);
+  if (!dateKey || dateKey !== getDateKey(new Date()) || !slot?.endTime) return false;
+
+  const [hours, minutes = '0'] = slot.endTime.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return false;
+
+  const slotEnd = new Date();
+  slotEnd.setHours(hours, minutes, 0, 0);
+  return slotEnd <= new Date();
+};
+
+const isBookableSlot = (slot) => slot?.status === 'available' && !isPastSlotForToday(slot);
+
+const formatDateLabel = (dateKey) => {
+  if (!dateKey) return '';
+
+  const todayKey = getDateKey(new Date());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowKey = getDateKey(tomorrow);
+
+  if (dateKey === todayKey) return 'Today';
+  if (dateKey === tomorrowKey) return 'Tomorrow';
+
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+};
+
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+};
+
+const formatSlotRange = (slot) => {
+  if (!slot) return '';
+
+  return [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - ');
+};
 
 const VenueDetail = () => {
   const { id } = useParams();
@@ -12,6 +87,7 @@ const VenueDetail = () => {
   const socket = useSocket();
   const [venue, setVenue] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedDateKey, setSelectedDateKey] = useState('');
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,15 +121,46 @@ const VenueDetail = () => {
   useEffect(() => {
     const fetchVenue = async () => {
       try {
-        const [venueRes, slotsRes] = await Promise.all([
+        const dateKeys = getUpcomingDateKeys(UPCOMING_SLOT_DAYS);
+        const slotRequests = dateKeys.map(async (dateKey) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/slots/venue/${id}?date=${dateKey}`);
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];
+          } catch (error) {
+            console.error(`Error fetching slots for ${dateKey}:`, error);
+            return [];
+          }
+        });
+
+        const [venueRes, slotsByDate] = await Promise.all([
           fetch(`${API_BASE_URL}/api/venues/${id}`),
-          fetch(`${API_BASE_URL}/api/slots/venue/${id}`)
+          Promise.all(slotRequests)
         ]);
         const venueData = await venueRes.json();
-        const slotsData = await slotsRes.json();
+        const slotsData = slotsByDate.flat();
+        const uniqueSlots = Array.from(new Map(
+          slotsData.map((slot, index) => [
+            slot._id || `${getDateKey(slot.date)}-${slot.startTime}-${index}`,
+            slot
+          ])
+        ).values()).sort((a, b) => {
+          const dateCompare = getDateKey(a.date).localeCompare(getDateKey(b.date));
+          if (dateCompare !== 0) return dateCompare;
+          return String(a.startTime || '').localeCompare(String(b.startTime || ''));
+        });
+        const futureDateKeys = [...new Set(uniqueSlots
+          .filter((slot) => !isPastSlotForToday(slot))
+          .map((slot) => getDateKey(slot.date))
+          .filter((dateKey) => dateKey && !isPastDateKey(dateKey)))].sort();
         
         setVenue(venueData);
-        setAvailableSlots(Array.isArray(slotsData) ? slotsData : []);
+        setAvailableSlots(uniqueSlots);
+        setSelectedDateKey((currentDateKey) => (
+          currentDateKey && futureDateKeys.includes(currentDateKey)
+            ? currentDateKey
+            : futureDateKeys[0] || ''
+        ));
       } catch (error) {
         console.error('Error fetching venue details:', error);
       } finally {
@@ -82,14 +189,73 @@ const VenueDetail = () => {
   if (loading) return <div className="pt-24 text-center">Loading venue details...</div>;
   if (!venue) return <div className="pt-24 text-center">Venue not found.</div>;
 
+  const venueImage = getVenueImage(venue);
+  const slotsByDate = availableSlots.reduce((groups, slot) => {
+    const dateKey = getDateKey(slot.date);
+    if (!dateKey || isPastDateKey(dateKey) || isPastSlotForToday(slot)) return groups;
+
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(slot);
+    return groups;
+  }, {});
+  const dateOptions = Object.keys(slotsByDate).sort().map((dateKey) => ({
+    dateKey,
+    slots: slotsByDate[dateKey].sort((a, b) => String(a.startTime || '').localeCompare(String(b.startTime || ''))),
+    availableCount: slotsByDate[dateKey].filter(isBookableSlot).length
+  }));
+  const selectedDateSlots = selectedDateKey ? slotsByDate[selectedDateKey] || [] : [];
+  const selectedDateAvailableSlots = selectedDateSlots.filter(isBookableSlot);
+  const selectedDateLabel = formatDateLabel(selectedDateKey);
+  const selectDate = (dateKey) => {
+    if (dateKey !== selectedDateKey) {
+      setSelectedSlots([]);
+      setSelectedDateKey(dateKey);
+    }
+  };
+  const renderDateSelector = () => (
+    <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
+      {dateOptions.map(({ dateKey, availableCount }) => {
+        const isActive = selectedDateKey === dateKey;
+
+        return (
+          <button
+            key={dateKey}
+            type="button"
+            onClick={() => selectDate(dateKey)}
+            className={`min-w-[118px] rounded-2xl border px-4 py-3 text-left transition ${
+              isActive
+                ? 'bg-[#39FF14] text-black border-[#39FF14]'
+                : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
+            }`}
+          >
+            <span className="block text-xs font-black uppercase tracking-widest">{formatDateLabel(dateKey)}</span>
+            <span className={`block text-[10px] font-bold uppercase mt-1 ${isActive ? 'text-black/60' : 'text-gray-600'}`}>
+              {availableCount} available
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="pb-32 md:pb-24">
       {/* Hero Image & Overlay */}
       <div className="w-full h-[35vh] sm:h-[45vh] md:h-[60vh] relative overflow-hidden">
-        <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
+          <span className="text-[#39FF14] text-xs md:text-sm font-black uppercase tracking-[0.35em]">PlayNow Venue</span>
+        </div>
+        {venueImage && (
+          <img
+            src={venueImage}
+            alt={venue.name}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            className="relative z-10 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 z-20 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/40 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 w-full p-4 md:p-12 max-w-7xl mx-auto">
+        <div className="absolute bottom-0 left-0 z-30 w-full p-4 md:p-12 max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,8 +383,14 @@ const VenueDetail = () => {
 
               <div className="mb-8 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Select Timing</h4>
+                {dateOptions.length > 0 && renderDateSelector()}
                 <div className="grid grid-cols-2 gap-3">
-                  {availableSlots.map((slot, i) => {
+                  {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
+                    <div className="col-span-2 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                      <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
+                      <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
+                    </div>
+                  ) : selectedDateAvailableSlots.map((slot, i) => {
                     const isSelected = selectedSlots.find(s => s._id === slot._id);
                     const isLocked = slot.status === 'locked';
                     const isBooked = slot.status === 'booked';
@@ -231,7 +403,7 @@ const VenueDetail = () => {
                         disabled={isBooked || isBlocked || !venue.isActive}
                         className={`py-4 rounded-2xl text-sm font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
                           isSelected 
-                            ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_20px_rgba(57,255,20,0.4)]' 
+                            ? 'bg-[#39FF14] text-black border-white ring-4 ring-[#39FF14]/35 shadow-[0_0_30px_rgba(57,255,20,0.65)] scale-[1.03]' 
                             : isLocked
                             ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/50 cursor-not-allowed opacity-80'
                             : isBooked
@@ -241,7 +413,7 @@ const VenueDetail = () => {
                             : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                         }`}
                       >
-                        <span className="uppercase tracking-tighter">{slot.startTime}</span>
+                        <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
                         {isLocked && <span className="text-[8px] uppercase font-black animate-pulse mt-1">Locked</span>}
                         {isBooked && <span className="text-[8px] uppercase font-black mt-1">Sold Out</span>}
                       </button>
@@ -320,9 +492,17 @@ const VenueDetail = () => {
       <div id="mobile-slot-anchor" className="lg:hidden px-4 mt-8 pb-32">
          <div className="bg-[#151b2b] p-6 rounded-[2rem] border border-white/5">
             <h3 className="text-lg font-black uppercase tracking-widest mb-1">Select Slots</h3>
-            <p className="text-gray-500 text-[10px] font-bold uppercase mb-6 tracking-widest">Available Today</p>
+            <p className="text-gray-500 text-[10px] font-bold uppercase mb-6 tracking-widest">
+              Available {selectedDateLabel || 'Slots'}
+            </p>
+            {dateOptions.length > 0 && renderDateSelector()}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-               {availableSlots.map((slot, i) => {
+               {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
+                  <div className="col-span-2 sm:col-span-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                    <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
+                    <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
+                  </div>
+               ) : selectedDateAvailableSlots.map((slot, i) => {
                   const isSelected = selectedSlots.find(s => s._id === slot._id);
                   const isLocked = slot.status === 'locked';
                   const isBooked = slot.status === 'booked';
@@ -335,7 +515,7 @@ const VenueDetail = () => {
                       disabled={isBooked || isBlocked || !venue.isActive}
                       className={`py-4 rounded-2xl text-xs font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
                         isSelected 
-                          ? 'bg-[#39FF14] text-black border-[#39FF14]' 
+                          ? 'bg-[#39FF14] text-black border-white ring-4 ring-[#39FF14]/35 shadow-[0_0_24px_rgba(57,255,20,0.55)] scale-[1.03]' 
                           : isLocked
                           ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/50 cursor-not-allowed opacity-80'
                           : isBooked
@@ -345,7 +525,7 @@ const VenueDetail = () => {
                           : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                       }`}
                     >
-                      <span className="uppercase tracking-tighter">{slot.startTime}</span>
+                      <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
                     </button>
                   );
                 })}

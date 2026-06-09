@@ -5,6 +5,45 @@ import { motion } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+};
+
+const formatSlotRange = (slot) => {
+  if (!slot) return '';
+
+  return [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - ');
+};
+
+const formatSlotDate = (slot) => {
+  if (!slot?.date) return 'Date unavailable';
+
+  return new Date(slot.date).toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
+const formatCurrency = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
+
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('playnow_user') || 'null');
+  } catch {
+    return null;
+  }
+};
+
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -14,9 +53,11 @@ const Booking = () => {
   const [paymentStep, setPaymentStep] = useState(1); // 1: summary, 2: processing, 3: success
   const [bookingDetails, setBookingDetails] = useState(null);
 
-  const totalAmount = (venue?.pricePerHour || 400) * selectedSlots.length;
+  const slotTotal = selectedSlots.reduce((sum, slot) => sum + Number(slot.price || venue?.pricePerHour || 400), 0);
+  const totalAmount = slotTotal || (venue?.pricePerHour || 400) * selectedSlots.length;
   const advanceAmount = 100 * selectedSlots.length; 
   const amountToPay = paymentType === 'full' ? totalAmount : advanceAmount;
+  const storedUser = getStoredUser();
 
   // Lock slots on mount
   useEffect(() => {
@@ -127,38 +168,94 @@ const Booking = () => {
   }
 
   if (paymentStep === 3) {
+    const bookingId = bookingDetails?._id || 'ERROR';
+    const paidOnline = bookingDetails?.paidAmount ?? amountToPay;
+    const finalTotal = bookingDetails?.totalAmount ?? totalAmount;
+    const balanceDue = bookingDetails?.remainingAmount ?? Math.max(finalTotal - paidOnline, 0);
+    const paymentStatus = bookingDetails?.paymentStatus || (balanceDue > 0 ? 'advance_paid' : 'completed');
+    const venueAddress = venue.address || venue.location || 'Address unavailable';
+    const playerName = bookingDetails?.userId?.name || storedUser?.name || storedUser?.username || '';
+    const playerPhone = bookingDetails?.userId?.phone || storedUser?.phone || '';
+
     return (
-      <div className="min-h-screen pt-20 px-4 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-20 pb-28 px-4 flex flex-col items-center justify-center">
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-[#151b2b] p-8 rounded-3xl border border-[#39FF14]/50 max-w-md w-full text-center relative overflow-hidden"
+          className="bg-[#151b2b] p-6 md:p-8 rounded-3xl border border-[#39FF14]/50 max-w-2xl w-full text-left relative overflow-hidden shadow-2xl"
         >
           <div className="absolute top-0 left-0 w-full h-2 bg-[#39FF14]"></div>
-          <div className="w-20 h-20 bg-[#39FF14]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={40} className="text-[#39FF14]" />
+          <div className="text-center border-b border-dashed border-gray-700 pb-6 mb-6">
+            <div className="w-20 h-20 bg-[#39FF14]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 size={40} className="text-[#39FF14]" />
+            </div>
+            <h2 className="text-3xl font-bold mb-2">Booking Confirmed!</h2>
+            <p className="text-gray-400">Show this booking at the venue. Pay remaining balance before play.</p>
           </div>
-          <h2 className="text-3xl font-bold mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-400 mb-6">Your slots at {venue.name} have been locked.</p>
-          
-          <div className="bg-[#0a0f1c] rounded-xl p-4 mb-8 text-left border border-gray-800">
+
+          <div className="bg-[#0a0f1c] rounded-2xl p-4 mb-5 text-left border border-gray-800">
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Booking ID</span>
-              <span className="font-bold">#{(bookingDetails?._id || 'ERROR').slice(-8).toUpperCase()}</span>
+              <span className="font-bold text-[#39FF14]">#{bookingId.slice(-8).toUpperCase()}</span>
             </div>
             <div className="flex justify-between mb-2">
-              <span className="text-gray-400">Slots</span>
-              <span className="font-medium text-right">{selectedSlots.map(s => s.startTime).join(', ')}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-800 pt-2 mt-2">
-              <span className="text-gray-400">Amount Paid</span>
-              <span className="font-bold text-[#39FF14]">₹{amountToPay}</span>
+              <span className="text-gray-400">Payment Status</span>
+              <span className="font-bold uppercase">{paymentStatus.replace('_', ' ')}</span>
             </div>
           </div>
-          
-          <div className="flex items-center justify-center text-sm text-gray-400 mb-8">
-            <ShieldCheck size={16} className="text-[#39FF14] mr-2" />
-            Confirmation sent via WhatsApp & Email
+
+          <div className="space-y-5 mb-6">
+            <div>
+              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Venue</p>
+              <h3 className="text-2xl font-black text-white">{venue.name}</h3>
+              <p className="text-sm text-gray-400 mt-1">{venueAddress}</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Date</p>
+                <p className="font-bold text-white">{formatSlotDate(selectedSlots[0])}</p>
+              </div>
+              <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Number of Slots</p>
+                <p className="font-bold text-white">{selectedSlots.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
+              <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Slot Time</p>
+              <p className="font-bold text-white leading-relaxed">{selectedSlots.map(formatSlotRange).join(', ')}</p>
+            </div>
+
+            {(playerName || playerPhone) && (
+              <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Player</p>
+                <p className="font-bold text-white">{playerName || 'Player'}</p>
+                {playerPhone && <p className="text-sm text-gray-400 mt-1">{playerPhone}</p>}
+              </div>
+            )}
+
+            <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800 space-y-3">
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-400">Total Amount</span>
+                <span className="font-black text-white">{formatCurrency(finalTotal)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-400">Paid Online</span>
+                <span className="font-black text-[#39FF14]">{formatCurrency(paidOnline)}</span>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-gray-800 pt-3">
+                <span className="text-gray-400">Balance to Pay at Venue</span>
+                <span className={`font-black ${balanceDue > 0 ? 'text-yellow-400' : 'text-[#39FF14]'}`}>
+                  {formatCurrency(balanceDue)}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#39FF14]/30 bg-[#39FF14]/10 p-4 text-sm text-gray-200 flex items-start gap-3">
+              <ShieldCheck size={18} className="text-[#39FF14] shrink-0 mt-0.5" />
+              <span>Show this booking at the venue. Pay remaining balance before play.</span>
+            </div>
           </div>
 
           <button onClick={handleBackToHome} className="w-full bg-[#39FF14] text-black font-bold py-4 rounded-xl hover:bg-[#32E612] transition shadow-[0_0_15px_rgba(57,255,20,0.3)]">
@@ -192,7 +289,7 @@ const Booking = () => {
           <div className="flex justify-between items-start">
             <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Selected Slots</span>
             <span className="font-black text-[#39FF14] text-right text-sm max-w-[180px] sm:max-w-none">
-              {selectedSlots.map(s => s.startTime).join(', ')}
+              {selectedSlots.map(formatSlotRange).join(', ')}
             </span>
           </div>
           <div className="flex justify-between items-center">

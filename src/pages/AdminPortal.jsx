@@ -24,6 +24,16 @@ const emptySlotForm = {
   price: '',
 };
 
+const emptyGenerateSlotsForm = {
+  venueId: '',
+  startDate: '',
+  openingTime: '06:00',
+  closingTime: '23:00',
+  slotDurationMinutes: '60',
+  price: '',
+  days: '30',
+};
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const apiUrl = (path) => `${API_BASE_URL}${path}`;
 
@@ -70,6 +80,10 @@ const AdminPortal = () => {
   const [slotForm, setSlotForm] = useState(emptySlotForm);
   const [slotMessage, setSlotMessage] = useState('');
   const [slotLoading, setSlotLoading] = useState(false);
+  const [generateSlotsForm, setGenerateSlotsForm] = useState(emptyGenerateSlotsForm);
+  const [generateSlotsMessage, setGenerateSlotsMessage] = useState('');
+  const [generateSlotsSummary, setGenerateSlotsSummary] = useState(null);
+  const [generateSlotsLoading, setGenerateSlotsLoading] = useState(false);
 
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -113,6 +127,10 @@ const AdminPortal = () => {
 
   const handleSlotChange = (field, value) => {
     setSlotForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleGenerateSlotsChange = (field, value) => {
+    setGenerateSlotsForm((current) => ({ ...current, [field]: value }));
   };
 
   const handleSlotSubmit = async (e) => {
@@ -160,6 +178,58 @@ const AdminPortal = () => {
       setSlotMessage(`Unable to create slot: ${error.message}`);
     } finally {
       setSlotLoading(false);
+    }
+  };
+
+  const handleGenerateSlotsSubmit = async (e) => {
+    e.preventDefault();
+    setGenerateSlotsMessage('');
+    setGenerateSlotsSummary(null);
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setGenerateSlotsMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    setGenerateSlotsLoading(true);
+
+    try {
+      const payload = {
+        venueId: generateSlotsForm.venueId,
+        startDate: generateSlotsForm.startDate,
+        days: Number(generateSlotsForm.days) || 30,
+        openingTime: generateSlotsForm.openingTime,
+        closingTime: generateSlotsForm.closingTime,
+        slotDurationMinutes: Number(generateSlotsForm.slotDurationMinutes) || 60,
+      };
+
+      if (generateSlotsForm.price) {
+        payload.price = Number(generateSlotsForm.price);
+      }
+
+      const res = await fetch(apiUrl('/api/slots/generate'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setGenerateSlotsMessage(getVenueErrorMessage(data, 'Failed to generate slots'));
+        return;
+      }
+
+      setGenerateSlotsSummary(data);
+      setGenerateSlotsMessage('Monthly slots generated successfully.');
+    } catch (error) {
+      console.error('Slot generation error:', error);
+      setGenerateSlotsMessage(`Unable to generate slots: ${error.message}`);
+    } finally {
+      setGenerateSlotsLoading(false);
     }
   };
 
@@ -744,6 +814,154 @@ const AdminPortal = () => {
                       {slotLoading ? 'Creating Slot...' : 'Create Slot'}
                     </button>
                   </div>
+                </div>
+              </form>
+
+              <form
+                onSubmit={handleGenerateSlotsSubmit}
+                className="bg-[#151b2b] border border-gray-800 rounded-3xl p-4 md:p-6 space-y-4"
+              >
+                <div>
+                  <h3 className="text-xl font-bold">Generate Monthly Slots</h3>
+                  <p className="text-sm text-gray-500">
+                    Generate hourly slots for the next 30 days.
+                  </p>
+                </div>
+
+                {generateSlotsMessage && (
+                  <div className={`rounded-xl px-4 py-3 text-sm border ${generateSlotsMessage.toLowerCase().includes('success') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                    {generateSlotsMessage}
+                  </div>
+                )}
+
+                {generateSlotsSummary && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest">Created</p>
+                      <p className="text-2xl font-black text-[#39FF14]">{generateSlotsSummary.createdSlots || 0}</p>
+                    </div>
+                    <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest">Existing</p>
+                      <p className="text-2xl font-black text-white">{generateSlotsSummary.existingSlots || 0}</p>
+                    </div>
+                    <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase font-bold tracking-widest">Requested</p>
+                      <p className="text-2xl font-black text-white">{generateSlotsSummary.requestedSlots || 0}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Venue
+                    </label>
+                    <select
+                      required
+                      value={generateSlotsForm.venueId}
+                      onChange={(e) => handleGenerateSlotsChange('venueId', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Select venue</option>
+                      {venues.map((venue) => (
+                        <option key={venue._id} value={venue._id}>
+                          {venue.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Start Date
+                    </label>
+                    <input
+                      required
+                      type="date"
+                      value={generateSlotsForm.startDate}
+                      onChange={(e) => handleGenerateSlotsChange('startDate', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Days
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={generateSlotsForm.days}
+                      onChange={(e) => handleGenerateSlotsChange('days', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Opening Time
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={generateSlotsForm.openingTime}
+                      onChange={(e) => handleGenerateSlotsChange('openingTime', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Closing Time
+                    </label>
+                    <input
+                      required
+                      type="time"
+                      value={generateSlotsForm.closingTime}
+                      onChange={(e) => handleGenerateSlotsChange('closingTime', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Slot Duration
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="15"
+                      step="15"
+                      value={generateSlotsForm.slotDurationMinutes}
+                      onChange={(e) => handleGenerateSlotsChange('slotDurationMinutes', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Price Optional
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={generateSlotsForm.price}
+                      onChange={(e) => handleGenerateSlotsChange('price', e.target.value)}
+                      placeholder="Venue price"
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={generateSlotsLoading || venues.length === 0}
+                    className="w-full sm:w-auto bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {generateSlotsLoading ? 'Generating Slots...' : 'Generate Monthly Slots'}
+                  </button>
                 </div>
               </form>
             </div>

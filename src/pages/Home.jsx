@@ -8,6 +8,8 @@ import QuotesSlider from '../components/QuotesSlider';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
+
 const Home = () => {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +152,10 @@ const Home = () => {
             {loading ? (
               <div className="col-span-full py-12 text-center text-gray-500">Loading featured venues...</div>
             ) : venues.length === 0 ? (
-              <div className="col-span-full py-12 text-center text-gray-500">No venues available yet.</div>
+              <div className="col-span-full py-12 text-center bg-[#151b2b] rounded-3xl border border-dashed border-white/10">
+                <p className="text-gray-300 font-bold">No venues found</p>
+                <p className="text-gray-500 text-sm mt-2">New venues will appear here once they are added.</p>
+              </div>
             ) : venues.map((venue, index) => (
               <VenueCard key={venue._id || index} venue={venue} index={index} showAmenities={false} delayMultiplier={0.1} isCompact={true} />
             ))}
