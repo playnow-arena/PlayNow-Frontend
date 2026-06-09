@@ -19,17 +19,16 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-8">
-              <Link to="/" className="flex items-center group py-1">
+              <Link to="/" className="flex items-center gap-3 group py-1">
                 <img 
                   src="/logo.png" 
                   alt="PlayNow" 
-                  className="h-11 w-auto object-contain transition-all duration-300 group-hover:brightness-110" 
+                  className="h-9 w-9 object-cover rounded-xl transition-all duration-300 group-hover:brightness-110 border border-white/10" 
                 />
+                <span className="text-xl font-black tracking-tighter text-white group-hover:text-[#39FF14] transition-colors">
+                  Play<span className="text-[#39FF14] group-hover:text-white transition-colors">Now</span>
+                </span>
               </Link>
-              <div className="hidden md:flex items-center text-sm text-gray-400 cursor-pointer hover:text-white transition">
-                <MapPin size={16} className="mr-1 text-[#39FF14]" />
-                City Center, Downtown
-              </div>
             </div>
             
             <div className="hidden md:flex items-center gap-6">
@@ -61,21 +60,20 @@ const Navbar = () => {
 
       {/* Mobile Header (Minimal) */}
       <nav className="fixed top-0 left-0 right-0 w-full z-50 bg-[#0a0f1c]/80 backdrop-blur-lg border-b border-white/5 md:hidden px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center py-1">
+        <Link to="/" className="flex items-center gap-2 py-1">
           <img 
             src="/logo.png" 
             alt="PlayNow" 
-            className="h-9 w-auto object-contain" 
+            className="h-8 w-8 object-cover rounded-lg border border-white/10" 
           />
+          <span className="text-lg font-black tracking-tighter text-white">
+            Play<span className="text-[#39FF14]">Now</span>
+          </span>
         </Link>
         <div className="flex items-center gap-4">
           <button className="text-gray-400 hover:text-white transition p-1">
             <Search size={20} />
           </button>
-          <div className="text-xs text-gray-400 flex items-center bg-gray-800/50 px-2 py-1 rounded-full border border-gray-700">
-            <MapPin size={12} className="mr-1 text-[#39FF14]" />
-            Downtown
-          </div>
         </div>
       </nav>
     </>

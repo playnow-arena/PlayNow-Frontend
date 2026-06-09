@@ -290,20 +290,25 @@ body: JSON.stringify({
       >
 
         {/* Logo */}
-        <div className="text-center mb-10">
-          <motion.img
-            whileHover={{ scale: 1.05 }}
-            src="/logo.png"
-            alt="PlayNow Logo"
-            className="w-24 h-24 mx-auto object-contain rounded-2xl border border-[#39FF14]/30 mb-6 shadow-[0_0_25px_rgba(57,255,20,0.25)]"
-          />
-          <h2 className="text-3xl font-black text-white tracking-tight">
+        <div className="flex flex-col items-center mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <motion.img
+              whileHover={{ scale: 1.05 }}
+              src="/logo.png"
+              alt="PlayNow Logo"
+              className="w-14 h-14 object-cover rounded-2xl border border-[#39FF14]/30 shadow-[0_0_25px_rgba(57,255,20,0.25)]"
+            />
+            <span className="text-3xl font-black tracking-tighter text-white">
+              Play<span className="text-[#39FF14]">Now</span>
+            </span>
+          </div>
+          <h2 className="text-3xl font-black text-white tracking-tight text-center">
             {step === 1 && 'Get Started'}
             {step === 2 && 'Verify OTP'}
             {step === 3 && 'Setup Profile'}
             {step === 4 && 'All Set!'}
           </h2>
-          <p className="text-gray-400 text-sm mt-2 font-medium">
+          <p className="text-gray-400 text-sm mt-2 font-medium text-center">
             {step === 1 && 'Experience sports like never before.'}
             {step === 2 && `Code sent to +91 ${phone} via SMS`}
             {step === 3 && 'How should we call you?'}
