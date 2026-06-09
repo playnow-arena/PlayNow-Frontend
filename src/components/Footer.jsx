@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Youtube } from 'lucide-react';
+import { Globe, ExternalLink } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -15,10 +15,10 @@ const Footer = () => {
             </h2>
             <div className="flex space-x-5">
               <a href="#" className="text-gray-400 hover:text-[#39FF14] transition-colors transform hover:scale-110" aria-label="Instagram">
-                <Instagram size={24} />
+                <Globe size={24} />
               </a>
               <a href="#" className="text-gray-400 hover:text-[#39FF14] transition-colors transform hover:scale-110" aria-label="YouTube">
-                <Youtube size={26} />
+                <ExternalLink size={26} />
               </a>
             </div>
           </div>

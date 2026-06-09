@@ -20,6 +20,11 @@ import PartnerRegister from './pages/PartnerRegister';
 import AdminPortal from './pages/AdminPortal';
 import Cancellation from './pages/Cancellation';
 import Properties from './pages/Properties';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import MatchDetails from './pages/MatchDetails';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -45,6 +50,11 @@ function App() {
             <Route path="/feed" element={<Feed />} />
             <Route path="/cancellation" element={<Cancellation />} />
             <Route path="/properties" element={<Properties />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/match/:id" element={<MatchDetails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />

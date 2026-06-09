@@ -74,3 +74,17 @@
   @apply bg-[#151b2b]/80 backdrop-blur-xl border border-white/5;
 }
 
+/* Custom scrollbar for booking panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(57, 255, 20, 0.3);
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(57, 255, 20, 0.6);
+}

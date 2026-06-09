@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, Instagram, Briefcase, Handshake } from 'lucide-react';
+import { Mail, Phone, Globe, Briefcase, Handshake } from 'lucide-react';
 
 const ContactUs = () => {
   return (
@@ -45,7 +45,7 @@ const ContactUs = () => {
 
             <div className="flex items-center space-x-4 bg-[#151b2b] p-4 rounded-2xl border border-white/5">
               <div className="w-12 h-12 bg-[#39FF14]/10 rounded-xl flex items-center justify-center">
-                <Instagram className="text-[#39FF14]" size={24} />
+                <Globe className="text-[#39FF14]" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500 font-medium">Instagram</p>
