@@ -656,7 +656,40 @@ const AdminPortal = () => {
     { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, comingSoon: true },
+    { id: 'notification-metrics', label: 'Notifications', icon: Shield }
   ];
+
+  // Notification metrics state
+  const [metrics, setMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState('');
+
+  const fetchMetrics = async () => {
+    setMetricsLoading(true);
+    setMetricsError('');
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(apiUrl('/api/notifications/admin-metrics'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setMetrics(await res.json());
+      } else {
+        setMetricsError('Failed to load notification metrics');
+      }
+    } catch {
+      setMetricsError('Network error loading metrics');
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'notification-metrics') {
+      fetchMetrics();
+    }
+  }, [activeSection]);
 
   const visibleAdminBookings = bookingFilters.paymentStatus
     ? adminBookings.filter((booking) => booking.paymentStatus === bookingFilters.paymentStatus)
@@ -1533,7 +1566,79 @@ const AdminPortal = () => {
             </div>
           )}
 
-          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && (
+          {activeSection === 'notification-metrics' && (
+            <div className="space-y-6">
+              {metricsError && (
+                <div className="bg-red-500/10 border border-red-500/40 text-red-400 p-4 rounded-2xl">
+                  {metricsError}
+                </div>
+              )}
+
+              {metricsLoading ? (
+                <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-12 text-center">
+                  <div className="w-10 h-10 border-4 border-[#39FF14]/20 border-t-[#39FF14] rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-gray-500 text-sm">Loading platform metrics...</p>
+                </div>
+              ) : metrics ? (
+                <div className="space-y-6">
+                  {/* Grid summary */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h4 className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Dispatched</h4>
+                      <p className="text-3xl font-black text-[#39FF14] mt-2">{metrics.totalSent}</p>
+                    </div>
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h4 className="text-xs text-gray-500 font-bold uppercase tracking-wider">Read Alerts</h4>
+                      <p className="text-3xl font-black text-white mt-2">{metrics.readCount}</p>
+                    </div>
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h4 className="text-xs text-gray-500 font-bold uppercase tracking-wider">Unread Alerts</h4>
+                      <p className="text-3xl font-black text-white mt-2">{metrics.unreadCount}</p>
+                    </div>
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h4 className="text-xs text-gray-500 font-bold uppercase tracking-wider">Read Rate</h4>
+                      <p className="text-3xl font-black text-white mt-2">{metrics.readRate.toFixed(1)}%</p>
+                    </div>
+                  </div>
+
+                  {/* Split analytics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* By Type */}
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-white mb-4 border-b border-gray-800 pb-2">Distribution By Category</h3>
+                      <div className="space-y-3">
+                        {Object.entries(metrics.typeDistribution || {}).map(([type, count]) => (
+                          <div key={type} className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
+                            <span className="text-xs font-bold uppercase tracking-wide text-gray-400">{type}</span>
+                            <span className="text-xs font-black text-[#39FF14]">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Daily activity */}
+                    <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-white mb-4 border-b border-gray-800 pb-2">Daily Dispatch Activity</h3>
+                      <div className="space-y-3">
+                        {(metrics.dailyActivity || []).map((day) => (
+                          <div key={day._id} className="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5">
+                            <span className="text-xs font-bold text-gray-400">{day._id}</span>
+                            <span className="text-xs font-black text-[#39FF14]">{day.count} sent</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-12">
+                  No metrics data currently loaded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && activeSection !== 'notification-metrics' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold">Coming Soon</h3>

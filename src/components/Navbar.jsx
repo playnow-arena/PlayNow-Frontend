@@ -1,20 +1,180 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Bell, UserCircle, Search } from 'lucide-react';
+import { useSocket } from '../context/SocketContext';
+import { MapPin, Bell, UserCircle, Search, Trash2, Check, CheckSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
   const { user } = useAuth();
+  const socket = useSocket();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isAuthPage = location.pathname === '/login';
   const isAdminPage = location.pathname === '/super-admin-portal-2026';
+
+  // Notification States
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch unread count & initial notifications
+  const fetchUnreadCount = async () => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/notifications/unread-count', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.count);
+      }
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  };
+
+  const fetchNotifications = async (pageNum = 1, append = false) => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/notifications?page=${pageNum}&limit=10`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setNotifications(prev => [...prev, ...data.notifications]);
+        } else {
+          setNotifications(data.notifications);
+        }
+        setHasMore(data.page < data.pages);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      fetchNotifications(1, false);
+      setPage(1);
+    }
+  }, [user]);
+
+  // Real-time notification socket handler
+  useEffect(() => {
+    if (socket) {
+      const handleNewNotification = (notification) => {
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      };
+      socket.on('new_notification', handleNewNotification);
+      return () => {
+        socket.off('new_notification', handleNewNotification);
+      };
+    }
+  }, [socket]);
+
+  const handleMarkRead = async (id) => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setNotifications(prev =>
+          prev.map(n => (n._id === id ? { ...n, isRead: true } : n))
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/notifications/read-all', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation(); // Avoid triggering card navigation / mark read
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const deleted = notifications.find(n => n._id === id);
+        setNotifications(prev => prev.filter(n => n._id !== id));
+        if (deleted && !deleted.isRead) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    fetchNotifications(nextPage, true);
+    setPage(nextPage);
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.isRead) {
+      handleMarkRead(notification._id);
+    }
+    setShowDropdown(false);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
 
   if (isAuthPage || isAdminPage) return null;
 
   return (
     <>
-      {/* Desktop Navbar */}
+      {/* Desktop & Mobile Combined Notification Dropdown Menu Helper */}
       <nav className="fixed top-0 w-full z-50 bg-[#0a0f1c]/80 backdrop-blur-md border-b border-gray-800 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -39,8 +199,101 @@ const Navbar = () => {
               <div className="w-px h-6 bg-gray-700"></div>
 
               {user ? (
-                <div className="flex items-center gap-4">
-                  <Bell size={20} className="text-gray-300 hover:text-white cursor-pointer transition" />
+                <div className="flex items-center gap-4 relative" ref={dropdownRef}>
+                  {/* Notification Bell */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowDropdown(!showDropdown)} 
+                      className="text-gray-300 hover:text-white cursor-pointer transition p-1 relative"
+                    >
+                      <Bell size={20} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-[#39FF14] text-black text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Dropdown Card */}
+                    <AnimatePresence>
+                      {showDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute right-0 mt-3 w-80 bg-[#0a0f1c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden"
+                        >
+                          <div className="p-4 border-b border-white/5 flex justify-between items-center bg-black/40">
+                            <span className="text-sm font-black uppercase tracking-wider text-white">Notifications</span>
+                            {unreadCount > 0 && (
+                              <button 
+                                onClick={handleMarkAllRead}
+                                className="text-xs text-[#39FF14] hover:underline font-bold flex items-center gap-1"
+                              >
+                                <CheckSquare size={12} /> Mark all read
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="max-h-80 overflow-y-auto divide-y divide-white/5">
+                            {notifications.length === 0 ? (
+                              <div className="p-8 text-center text-gray-500">
+                                <Bell size={28} className="mx-auto mb-2 text-gray-700" />
+                                <p className="text-xs font-bold uppercase tracking-wide">All caught up!</p>
+                              </div>
+                            ) : (
+                              notifications.map((n) => (
+                                <div
+                                  key={n._id}
+                                  onClick={() => handleNotificationClick(n)}
+                                  className={`p-4 transition cursor-pointer relative group ${n.isRead ? 'bg-transparent hover:bg-white/5' : 'bg-[#39FF14]/5 hover:bg-[#39FF14]/10'}`}
+                                >
+                                  {!n.isRead && (
+                                    <span className="absolute left-2 top-4 w-1.5 h-1.5 bg-[#39FF14] rounded-full" />
+                                  )}
+                                  <div className="pl-2 pr-6">
+                                    <h4 className="text-xs font-black text-white uppercase tracking-wider">{n.title}</h4>
+                                    <p className="text-xs text-gray-400 mt-1 font-medium leading-relaxed">{n.message}</p>
+                                    <span className="text-[9px] text-gray-600 font-bold block mt-2 uppercase">
+                                      {new Date(n.createdAt).toLocaleDateString('en-IN', {
+                                        hour: '2-digit', minute: '2-digit'
+                                      })}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Delete option */}
+                                  <button
+                                    onClick={(e) => handleDelete(n._id, e)}
+                                    className="absolute right-3 top-3 p-1 rounded bg-black/20 text-gray-500 hover:text-red-400 hover:bg-black/50 opacity-0 group-hover:opacity-100 transition"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          {hasMore && (
+                            <button
+                              onClick={handleLoadMore}
+                              disabled={loading}
+                              className="w-full text-center py-2.5 bg-black/20 hover:bg-black/40 text-xs font-bold text-gray-400 hover:text-[#39FF14] transition border-t border-white/5"
+                            >
+                              {loading ? 'Loading...' : 'LOAD MORE'}
+                            </button>
+                          )}
+                          <Link
+                            to="/notifications"
+                            onClick={() => setShowDropdown(false)}
+                            className="block w-full text-center py-2.5 bg-black/40 hover:bg-[#39FF14] hover:text-black text-[10px] font-black uppercase tracking-widest transition border-t border-white/5 text-[#39FF14]"
+                          >
+                            View All Notifications
+                          </Link>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
                   <Link to={user.role === 'owner' ? '/owner' : '/dashboard'} className="flex items-center gap-2 hover:opacity-80 transition">
                     <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-gray-600">
                       {user.avatar ? <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <UserCircle size={32} className="text-gray-400" />}
@@ -70,7 +323,72 @@ const Navbar = () => {
             Play<span className="text-[#39FF14]">Now</span>
           </span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 relative" ref={dropdownRef}>
+          {user && (
+            <div className="relative">
+              <button 
+                onClick={() => setShowDropdown(!showDropdown)} 
+                className="text-gray-400 hover:text-white transition p-2 relative"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 bg-[#39FF14] text-black text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-72 bg-[#0a0f1c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden"
+                  >
+                    <div className="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
+                      <span className="text-xs font-black uppercase tracking-wider text-white">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={handleMarkAllRead}
+                          className="text-[10px] text-[#39FF14] hover:underline font-bold"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500">
+                          <p className="text-[10px] font-bold uppercase tracking-wide">No new updates</p>
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n._id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`p-3 transition cursor-pointer relative ${n.isRead ? 'bg-transparent' : 'bg-[#39FF14]/5'}`}
+                          >
+                            <div className="pr-4">
+                              <h4 className="text-[10px] font-black text-white uppercase tracking-wider">{n.title}</h4>
+                              <p className="text-[10px] text-gray-400 mt-1 leading-normal">{n.message}</p>
+                            </div>
+                            <button
+                              onClick={(e) => handleDelete(n._id, e)}
+                              className="absolute right-2 top-2 p-1 rounded text-gray-600 hover:text-red-400"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
           <button className="text-gray-400 hover:text-white transition p-1">
             <Search size={20} />
           </button>

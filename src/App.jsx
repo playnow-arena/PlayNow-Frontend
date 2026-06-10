@@ -26,6 +26,7 @@ import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import MatchDetails from './pages/MatchDetails';
+import NotificationCenter from './pages/NotificationCenter';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
               <Route path="/venues/:id" element={<VenueDetail />} />
               <Route path="/book/:id" element={<Booking />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
               <Route path="/owner" element={<ProtectedRoute requiredRole="owner"><OwnerDashboard /></ProtectedRoute>} />
               <Route path="/partner/login" element={<OwnerAuth />} />
               <Route path="/partner/register" element={<PartnerRegister />} />

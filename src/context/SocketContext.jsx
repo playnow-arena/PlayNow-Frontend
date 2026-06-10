@@ -33,7 +33,12 @@ export const SocketProvider = ({ children }) => {
 
       // If user is logged in, join their private owner room
       if (user && (user.role === 'owner' || user.roles?.includes('owner'))) {
-        newSocket.emit('join_owner_room', user.playNowId || user.playNowId);
+        newSocket.emit('join_owner_room', user.playNowId);
+      }
+
+      // If user is logged in, join their private user room for notifications
+      if (user) {
+        newSocket.emit('join_user_room', user.id || user._id);
       }
 
       return () => clearInterval(healthInterval);
