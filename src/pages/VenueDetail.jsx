@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Star, CheckCircle, Clock, Info } from 'lucide-react';
+import { MapPin, Star, CheckCircle, Clock, Info, Pencil, Trash2, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const UPCOMING_SLOT_DAYS = 30;
@@ -81,15 +82,150 @@ const formatSlotRange = (slot) => {
   return [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - ');
 };
 
+// ── Reusable star-rating widget ─────────────────────────
+const StarRating = ({ value, onChange, size = 24, readonly = false }) => (
+  <div className="flex gap-1">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        type="button"
+        onClick={() => !readonly && onChange && onChange(star)}
+        className={`transition-transform ${readonly ? 'cursor-default' : 'hover:scale-110 cursor-pointer'}`}
+      >
+        <Star
+          size={size}
+          className={star <= value ? 'text-[#39FF14]' : 'text-gray-600'}
+          fill={star <= value ? 'currentColor' : 'none'}
+        />
+      </button>
+    ))}
+  </div>
+);
+
 const VenueDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const socket = useSocket();
+  const { user } = useAuth();
   const [venue, setVenue] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedDateKey, setSelectedDateKey] = useState('');
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Review state ──────────────────────────────────────
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [editingReview, setEditingReview] = useState(null);
+  const [editForm, setEditForm] = useState({ rating: 5, comment: '' });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const userReview = reviews.find(
+    (r) => r.userId?._id === user?.id || r.userId?._id === user?._id
+  );
+
+  const fetchReviews = useCallback(async () => {
+    setReviewsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/${id}`);
+      const data = await res.json();
+      setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+    } catch (err) {
+      console.error('Failed to fetch reviews:', err);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [id]);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setReviewError('');
+    setReviewSuccess('');
+    const token = localStorage.getItem('playnow_token');
+    if (!token) { setReviewError('Please log in to submit a review.'); return; }
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rating: reviewForm.rating, comment: reviewForm.comment })
+      });
+      const data = await res.json();
+      if (!res.ok) { setReviewError(data.message || 'Failed to submit review.'); return; }
+      setReviewForm({ rating: 5, comment: '' });
+      setReviewSuccess('Review submitted successfully!');
+      await fetchReviews();
+      const vRes = await fetch(`${API_BASE_URL}/api/venues/${id}`);
+      if (vRes.ok) setVenue(await vRes.json());
+      setTimeout(() => setReviewSuccess(''), 4000);
+    } catch {
+      setReviewError('Network error. Please try again.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (review) => {
+    setEditingReview(review._id);
+    setEditForm({ rating: review.rating, comment: review.comment || '' });
+    setReviewError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReview(null);
+    setEditForm({ rating: 5, comment: '' });
+    setReviewError('');
+  };
+
+  const handleUpdateReview = async (reviewId) => {
+    setReviewError('');
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/review/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rating: editForm.rating, comment: editForm.comment })
+      });
+      const data = await res.json();
+      if (!res.ok) { setReviewError(data.message || 'Failed to update review.'); return; }
+      setEditingReview(null);
+      await fetchReviews();
+      const vRes = await fetch(`${API_BASE_URL}/api/venues/${id}`);
+      if (vRes.ok) setVenue(await vRes.json());
+    } catch {
+      setReviewError('Network error. Please try again.');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    setDeletingId(reviewId);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reviews/review/${reviewId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) { const d = await res.json(); setReviewError(d.message || 'Delete failed.'); return; }
+      await fetchReviews();
+      const vRes = await fetch(`${API_BASE_URL}/api/venues/${id}`);
+      if (vRes.ok) setVenue(await vRes.json());
+    } catch {
+      setReviewError('Network error. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Join venue room for real-time updates
   useEffect(() => {
@@ -169,6 +305,10 @@ const VenueDetail = () => {
     };
     fetchVenue();
   }, [id]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const toggleSlot = (slot) => {
     if (slot.status !== 'available') return;
@@ -335,34 +475,177 @@ const VenueDetail = () => {
 
             {/* Reviews Section */}
             <section className="bg-[#151b2b] p-6 md:p-10 rounded-[2rem] border border-white/5">
+              {/* Header */}
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
                 <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest flex items-center">
                   <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Player Reviews
                 </h2>
                 <div className="flex items-center bg-black/40 px-5 py-3 rounded-2xl border border-white/5 shadow-inner">
                   <Star size={20} className="text-[#39FF14] mr-2" fill="currentColor" />
-                  <span className="font-black text-xl">{venue.rating || 5}</span>
-                  <span className="text-gray-500 ml-2 font-bold text-xs uppercase tracking-tighter">({venue.reviewsCount || 0} reviews)</span>
+                  <span className="font-black text-xl">{venue.rating ?? 5}</span>
+                  <span className="text-gray-500 ml-2 font-bold text-xs uppercase tracking-tighter">({venue.reviewsCount ?? 0} reviews)</span>
                 </div>
               </div>
-              
-              <div className="space-y-6">
-                {[1].map((_, i) => (
-                  <div key={i} className="bg-black/20 p-6 rounded-2xl border border-white/5">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="font-black text-sm uppercase tracking-wider">Arjun P.</div>
-                        <div className="text-[10px] text-gray-500 font-bold uppercase mt-1">Verified Player</div>
-                      </div>
-                      <div className="flex text-[#39FF14] gap-0.5">
-                        <Star size={12} fill="currentColor" /><Star size={12} fill="currentColor" /><Star size={12} fill="currentColor" /><Star size={12} fill="currentColor" /><Star size={12} fill="currentColor" />
-                      </div>
-                    </div>
-                    <p className="text-gray-400 text-sm font-medium leading-relaxed italic">"Great turf, well maintained and lighting is perfect for night matches. The staff is very cooperative. Highly recommended for weekend games!"</p>
+
+              {/* Submit form — shown only when logged in and has no existing review */}
+              {user && !userReview && (
+                <form onSubmit={handleSubmitReview} className="mb-8 bg-black/30 rounded-2xl border border-white/10 p-5 md:p-6 space-y-4">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-gray-300">Write a Review</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500 font-bold uppercase">Your Rating</span>
+                    <StarRating value={reviewForm.rating} onChange={(v) => setReviewForm((f) => ({ ...f, rating: v }))} size={22} />
                   </div>
-                ))}
-              </div>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm((f) => ({ ...f, comment: e.target.value }))}
+                    placeholder="Share your experience (optional, max 500 chars)…"
+                    maxLength={500}
+                    rows={3}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#39FF14]/50 transition"
+                  />
+                  {reviewError && <p className="text-red-400 text-xs font-bold">{reviewError}</p>}
+                  {reviewSuccess && <p className="text-[#39FF14] text-xs font-bold">{reviewSuccess}</p>}
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="flex items-center gap-2 bg-[#39FF14] text-black font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Send size={14} />
+                    {reviewSubmitting ? 'Submitting…' : 'Submit Review'}
+                  </button>
+                </form>
+              )}
+
+              {/* Login prompt */}
+              {!user && (
+                <div className="mb-8 bg-black/20 border border-white/10 rounded-2xl px-6 py-4 text-center">
+                  <p className="text-gray-400 text-sm font-medium">
+                    <button onClick={() => navigate('/login')} className="text-[#39FF14] font-black hover:underline">Log in</button>{' '}
+                    to write a review for this venue.
+                  </p>
+                </div>
+              )}
+
+              {/* Review list */}
+              {reviewsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2].map((s) => (
+                    <div key={s} className="bg-black/20 rounded-2xl border border-white/5 p-6 animate-pulse">
+                      <div className="h-3 w-32 bg-white/10 rounded mb-3" />
+                      <div className="h-3 w-full bg-white/5 rounded mb-2" />
+                      <div className="h-3 w-3/4 bg-white/5 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : (Array.isArray(reviews) && reviews.length === 0) ? (
+                <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl">
+                  <Star size={36} className="text-gray-700 mx-auto mb-3" />
+                  <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">No reviews yet</p>
+                  <p className="text-gray-600 text-xs mt-1">Be the first to review this venue!</p>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {(Array.isArray(reviews) ? reviews : []).map((review) => {
+                    const isOwn = review.userId?._id === user?.id || review.userId?._id === user?._id;
+                    const isAdmin = user?.role === 'admin';
+                    const isEditing = editingReview === review._id;
+                    const reviewDate = new Date(review.createdAt).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric'
+                    });
+
+                    return (
+                      <motion.div
+                        key={review._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-black/20 p-5 md:p-6 rounded-2xl border border-white/5"
+                      >
+                        {/* Review header */}
+                        <div className="flex justify-between items-start mb-3 gap-2">
+                          <div>
+                            <div className="font-black text-sm uppercase tracking-wider">
+                              {review.userId?.name || 'Anonymous'}
+                            </div>
+                            <div className="text-[10px] text-gray-500 font-bold uppercase mt-0.5 flex items-center gap-2 flex-wrap">
+                              <CheckCircle size={10} className="text-[#39FF14]" />
+                              {review.verifiedVisit ? 'Verified Visit' : 'Verified Player'}
+                              <span className="text-gray-700">·</span>
+                              {reviewDate}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {!isEditing && <StarRating value={review.rating} readonly size={13} />}
+                            {(isOwn || isAdmin) && !isEditing && (
+                              <div className="flex gap-1 ml-1">
+                                {isOwn && (
+                                  <button
+                                    onClick={() => handleStartEdit(review)}
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"
+                                    title="Edit review"
+                                  >
+                                    <Pencil size={12} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteReview(review._id)}
+                                  disabled={deletingId === review._id}
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition disabled:opacity-50"
+                                  title="Delete review"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Edit mode */}
+                        {isEditing ? (
+                          <div className="space-y-3 mt-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-500 font-bold uppercase">Rating</span>
+                              <StarRating
+                                value={editForm.rating}
+                                onChange={(v) => setEditForm((f) => ({ ...f, rating: v }))}
+                                size={20}
+                              />
+                            </div>
+                            <textarea
+                              value={editForm.comment}
+                              onChange={(e) => setEditForm((f) => ({ ...f, comment: e.target.value }))}
+                              maxLength={500}
+                              rows={3}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#39FF14]/50 transition"
+                            />
+                            {reviewError && <p className="text-red-400 text-xs font-bold">{reviewError}</p>}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleUpdateReview(review._id)}
+                                disabled={editSubmitting}
+                                className="flex items-center gap-1 bg-[#39FF14] text-black font-black text-xs uppercase tracking-wider px-4 py-2 rounded-lg hover:bg-[#32E612] transition disabled:opacity-60"
+                              >
+                                <Send size={12} />{editSubmitting ? 'Saving…' : 'Save Changes'}
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="flex items-center gap-1 bg-white/10 text-gray-300 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-lg hover:bg-white/20 transition"
+                              >
+                                <X size={12} /> Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          review.comment && (
+                            <p className="text-gray-400 text-sm font-medium leading-relaxed italic mt-2">"{review.comment}"</p>
+                          )
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
+
 
           </div>
 
