@@ -4,6 +4,21 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+const normalizeUser = (userData) => {
+  if (!userData) return null;
+
+  const baseUser = userData.user && typeof userData.user === 'object'
+    ? userData.user
+    : userData;
+
+  return {
+    ...baseUser,
+    id: baseUser._id || baseUser.id || userData._id || userData.id,
+    role: baseUser.role || userData.role,
+    isVerified: baseUser.isVerified ?? userData.isVerified ?? true,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,7 +28,10 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('playnow_user');
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        const normalizedUser = normalizeUser(parsedUser);
+        setUser(normalizedUser);
+        localStorage.setItem('playnow_user', JSON.stringify(normalizedUser));
       } catch (e) {
         console.error('Failed to parse saved user');
         localStorage.removeItem('playnow_user');
@@ -23,14 +41,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (userData) => {
-    const fullUserData = {
-      ...userData,
-      id: userData._id,
-      isVerified: true,
-    };
-    console.log('Login called with userData:', userData);
-    console.log('Extracted role (userData.role):', userData.role);
-    console.log('Extracted role (userData.user?.role):', userData.user?.role);
+    const fullUserData = normalizeUser(userData);
     setUser(fullUserData);
     localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
     if (userData.token) {

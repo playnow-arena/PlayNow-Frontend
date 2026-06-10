@@ -46,7 +46,7 @@ function App() {
               <Route path="/owner" element={<ProtectedRoute requiredRole="owner"><OwnerDashboard /></ProtectedRoute>} />
               <Route path="/partner/login" element={<OwnerAuth />} />
               <Route path="/partner/register" element={<PartnerRegister />} />
-              <Route path="/admin" element={<Navigate to="/super-admin-portal-2026" replace />} />
+              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
               <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
               <Route path="/host-match" element={<HostMatch />} />
               <Route path="/feed" element={<Feed />} />
