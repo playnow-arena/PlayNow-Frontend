@@ -3,9 +3,13 @@ import { Building2, User, Mail, Phone, MapPin, Camera, CheckCircle2, ArrowRight 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const PartnerRegister = () => {
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [formData, setFormData] = useState({
     ownerName: '',
     venueName: '',
@@ -16,11 +20,39 @@ const PartnerRegister = () => {
     proof: null
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API call
-    console.log('Registering Owner:', formData);
-    setIsSubmitted(true);
+    setSubmitError('');
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/owner-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerName: formData.ownerName,
+          phone: formData.phone,
+          email: formData.email,
+          venueName: formData.venueName,
+          address: formData.address,
+          numberOfCourts: formData.courts,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(data.message || 'Unable to submit request. Please try again.');
+        return;
+      }
+
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Owner request submit failed:', error);
+      setSubmitError('Unable to submit request. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -165,11 +197,18 @@ const PartnerRegister = () => {
             </div>
           </motion.div>
 
+          {submitError && (
+            <div className="bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl px-5 py-4 text-sm font-bold">
+              {submitError}
+            </div>
+          )}
+
           <button 
             type="submit"
-            className="w-full bg-[#39FF14] text-black font-black py-5 md:py-6 rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-[#32E612] transition-all shadow-xl uppercase tracking-[0.3em] text-sm btn-touch"
+            disabled={isSubmitting}
+            className="w-full bg-[#39FF14] text-black font-black py-5 md:py-6 rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-[#32E612] transition-all shadow-xl uppercase tracking-[0.3em] text-sm btn-touch disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Submit Request <ArrowRight size={20} />
+            {isSubmitting ? 'Submitting...' : 'Submit Request'} {!isSubmitting && <ArrowRight size={20} />}
           </button>
         </form>
 

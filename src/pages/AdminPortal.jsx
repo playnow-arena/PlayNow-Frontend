@@ -61,6 +61,16 @@ const getVenueErrorMessage = (body, fallback) => {
   return fallback;
 };
 
+const formatRequestDate = (date) => {
+  if (!date) return 'Date unavailable';
+
+  return new Date(date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 const AdminPortal = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -84,6 +94,10 @@ const AdminPortal = () => {
   const [generateSlotsMessage, setGenerateSlotsMessage] = useState('');
   const [generateSlotsSummary, setGenerateSlotsSummary] = useState(null);
   const [generateSlotsLoading, setGenerateSlotsLoading] = useState(false);
+  const [ownerRequests, setOwnerRequests] = useState([]);
+  const [ownerRequestsLoading, setOwnerRequestsLoading] = useState(false);
+  const [ownerRequestMessage, setOwnerRequestMessage] = useState('');
+  const [ownerRequestActionId, setOwnerRequestActionId] = useState('');
 
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -110,9 +124,43 @@ const AdminPortal = () => {
     }
   };
 
+  const fetchOwnerRequests = async () => {
+    setOwnerRequestsLoading(true);
+    setOwnerRequestMessage('');
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setOwnerRequestMessage('Admin token not found. Please login again.');
+      setOwnerRequestsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(apiUrl('/api/owner-requests?status=pending'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setOwnerRequestMessage(getVenueErrorMessage(data, 'Failed to load owner requests'));
+        return;
+      }
+
+      setOwnerRequests(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Owner request fetch error:', error);
+      setOwnerRequestMessage(`Unable to load owner requests: ${error.message}`);
+    } finally {
+      setOwnerRequestsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeSection === 'venues') {
       fetchVenues();
+    }
+    if (activeSection === 'owner-requests') {
+      fetchOwnerRequests();
     }
   }, [activeSection]);
 
@@ -347,8 +395,78 @@ const AdminPortal = () => {
     }
   };
 
+  const handleApproveOwnerRequest = async (requestId) => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setOwnerRequestMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    setOwnerRequestActionId(requestId);
+    setOwnerRequestMessage('');
+
+    try {
+      const res = await fetch(apiUrl(`/api/owner-requests/${requestId}/approve`), {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setOwnerRequestMessage(getVenueErrorMessage(data, 'Failed to approve request'));
+        return;
+      }
+
+      setOwnerRequests((current) => current.filter((request) => request._id !== requestId));
+      setOwnerRequestMessage('Owner request approved. Venue and owner access created.');
+    } catch (error) {
+      console.error('Owner request approve error:', error);
+      setOwnerRequestMessage(`Unable to approve request: ${error.message}`);
+    } finally {
+      setOwnerRequestActionId('');
+    }
+  };
+
+  const handleRejectOwnerRequest = async (requestId) => {
+    const reason = window.prompt('Reason for rejection?') || '';
+    const token = localStorage.getItem('playnow_token');
+
+    if (!token) {
+      setOwnerRequestMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    setOwnerRequestActionId(requestId);
+    setOwnerRequestMessage('');
+
+    try {
+      const res = await fetch(apiUrl(`/api/owner-requests/${requestId}/reject`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setOwnerRequestMessage(getVenueErrorMessage(data, 'Failed to reject request'));
+        return;
+      }
+
+      setOwnerRequests((current) => current.filter((request) => request._id !== requestId));
+      setOwnerRequestMessage('Owner request rejected.');
+    } catch (error) {
+      console.error('Owner request reject error:', error);
+      setOwnerRequestMessage(`Unable to reject request: ${error.message}`);
+    } finally {
+      setOwnerRequestActionId('');
+    }
+  };
+
   const navItems = [
-    { id: 'owner-requests', label: 'Owner Requests', icon: Mail, comingSoon: true },
+    { id: 'owner-requests', label: 'Owner Requests', icon: Mail },
     { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, comingSoon: true },
@@ -442,7 +560,10 @@ const AdminPortal = () => {
                 <input type="text" placeholder="Search..." className="w-full md:w-auto bg-[#151b2b] border border-gray-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-[#39FF14]" />
               </div>
               <button
-                onClick={() => activeSection === 'venues' && fetchVenues()}
+                onClick={() => {
+                  if (activeSection === 'venues') fetchVenues();
+                  if (activeSection === 'owner-requests') fetchOwnerRequests();
+                }}
                 className="bg-[#151b2b] border border-gray-800 p-2 rounded-xl text-gray-400 hover:text-white transition"
               >
                 <RefreshCw size={18} />
@@ -450,54 +571,67 @@ const AdminPortal = () => {
             </div>
           </header>
 
-          {false && activeSection === 'requests' && (
+          {activeSection === 'owner-requests' && (
             <div className="space-y-6">
-              {requests.length === 0 ? (
+              {ownerRequestMessage && (
+                <div className={`rounded-xl px-4 py-3 text-sm border ${ownerRequestMessage.toLowerCase().includes('failed') || ownerRequestMessage.toLowerCase().includes('unable') || ownerRequestMessage.toLowerCase().includes('not found') ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]'}`}>
+                  {ownerRequestMessage}
+                </div>
+              )}
+
+              {ownerRequestsLoading ? (
                 <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-12 text-center">
-                  <CheckCircle2 size={48} className="text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-400">All requests processed!</h3>
+                  <div className="w-10 h-10 border-4 border-[#39FF14]/20 border-t-[#39FF14] rounded-full animate-spin mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-400">Loading owner requests...</h3>
+                </div>
+              ) : ownerRequests.length === 0 ? (
+                <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-12 text-center">
+                  <Mail size={48} className="text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-400">No pending owner requests</h3>
+                  <p className="text-sm text-gray-500 mt-2">New partner submissions will appear here.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {requests.map(req => (
+                  {ownerRequests.map((request) => (
                     <motion.div 
                       layout
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      key={req.id} 
-                      className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                      key={request._id} 
+                      className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4 md:p-6 flex flex-col xl:flex-row xl:items-start justify-between gap-5"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-start gap-4 min-w-0">
                         <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-800 rounded-xl flex items-center justify-center shrink-0">
                           <Building2 size={20} className="md:text-[#39FF14]" />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-bold text-base md:text-lg truncate">{req.venue}</h4>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-xs text-gray-500 mt-1">
-                            <span>Owner: {req.name}</span>
-                            <span className="hidden md:inline">•</span>
-                            <span>{req.email}</span>
-                            <span className="hidden md:inline">•</span>
-                            <span>{req.phone}</span>
+                          <h4 className="font-bold text-base md:text-lg text-white">{request.venueName}</h4>
+                          <p className="text-sm text-gray-400 mt-1">{request.address}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-xs text-gray-500 mt-4">
+                            <span><strong className="text-gray-300">Owner:</strong> {request.ownerName}</span>
+                            <span><strong className="text-gray-300">Phone:</strong> {request.phone}</span>
+                            <span><strong className="text-gray-300">Email:</strong> {request.email || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Sports:</strong> {(request.sportTypes || []).join(', ') || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Price:</strong> {request.pricePerHour ? `Rs ${request.pricePerHour}/hr` : 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Created:</strong> {formatRequestDate(request.createdAt || request.submittedAt)}</span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 md:gap-3 ml-14 lg:ml-0">
-                        <button className="p-2 md:p-3 bg-gray-800 text-gray-400 rounded-xl hover:text-white transition">
-                          <ExternalLink size={16} />
+                      <div className="flex items-center gap-2 md:gap-3 xl:ml-0">
+                        <button 
+                          onClick={() => handleRejectOwnerRequest(request._id)}
+                          disabled={ownerRequestActionId === request._id}
+                          className="px-3 md:px-4 py-2 bg-red-500/10 text-red-500 rounded-xl text-xs md:text-sm font-bold hover:bg-red-500 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {ownerRequestActionId === request._id ? 'Working...' : 'Reject'}
                         </button>
                         <button 
-                          onClick={() => rejectOwner(req.id)}
-                          className="px-3 md:px-4 py-2 bg-red-500/10 text-red-500 rounded-xl text-xs md:text-sm font-bold hover:bg-red-500 hover:text-white transition"
+                          onClick={() => handleApproveOwnerRequest(request._id)}
+                          disabled={ownerRequestActionId === request._id}
+                          className="px-3 md:px-4 py-2 bg-[#39FF14] text-black rounded-xl text-xs md:text-sm font-bold hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Reject
-                        </button>
-                        <button 
-                          onClick={() => approveOwner(req.id)}
-                          className="px-3 md:px-4 py-2 bg-[#39FF14] text-black rounded-xl text-xs md:text-sm font-bold hover:bg-[#32E612] transition"
-                        >
-                          Approve
+                          {ownerRequestActionId === request._id ? 'Working...' : 'Approve'}
                         </button>
                       </div>
                     </motion.div>
@@ -967,7 +1101,7 @@ const AdminPortal = () => {
             </div>
           )}
 
-          {activeSection !== 'requests' && activeSection !== 'venues' && (
+          {activeSection !== 'owner-requests' && activeSection !== 'venues' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold">Coming Soon</h3>
