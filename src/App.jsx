@@ -9,6 +9,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Home from './pages/Home';
 import Auth from './pages/Auth';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Venues from './pages/Venues';
 import VenueDetail from './pages/VenueDetail';
 import Booking from './pages/Booking';
@@ -40,6 +42,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/venues" element={<Venues />} />
               <Route path="/venues/:id" element={<VenueDetail />} />
               <Route path="/book/:id" element={<Booking />} />

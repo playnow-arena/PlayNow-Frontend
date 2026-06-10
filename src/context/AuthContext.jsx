@@ -15,6 +15,7 @@ const normalizeUser = (userData) => {
     ...baseUser,
     id: baseUser._id || baseUser.id || userData._id || userData.id,
     role: baseUser.role || userData.role,
+    email: baseUser.email || userData.email,
     isVerified: baseUser.isVerified ?? userData.isVerified ?? true,
   };
 };

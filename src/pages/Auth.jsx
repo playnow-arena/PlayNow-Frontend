@@ -1,302 +1,146 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  CheckCircle2,
-  Phone,
+  Mail,
   Lock,
-  RefreshCw,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
   Loader2,
-  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 const Auth = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Auth Steps:
-  //   1 → Phone Input
-  //   2 → OTP Verification
-  //   3 → Profile Setup (new users)
-  //   4 → Success
-  const [step, setStep]       = useState(1);
+  const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
-  // Form state
-  const [phone, setPhone]         = useState('');
-  const [name, setName]           = useState('');
-  const [username, setUsername] = useState('');
-  const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
-  const [resendTimer, setResendTimer] = useState(0);
+  // Login state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Firebase state
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const recaptchaVerifierRef = useRef(null);
+  // Register state
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  const otpRefs = [
-    useRef(null), useRef(null), useRef(null),
-    useRef(null), useRef(null), useRef(null),
-  ];
+  // ── Login Handler ──
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  // Resend countdown
-  useEffect(() => {
-    let t;
-    if (resendTimer > 0) t = setInterval(() => setResendTimer(p => p - 1), 1000);
-    return () => clearInterval(t);
-  }, [resendTimer]);
+    if (!loginEmail.trim() || !loginPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-  // Auto-focus first OTP box
-  useEffect(() => {
-    if (step === 2) setTimeout(() => otpRefs[0].current?.focus(), 150);
-  }, [step]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      clearRecaptcha();
-    };
-  }, []);
-
-  // ── Setup invisible reCAPTCHA ──────────────────────────────────────────────
-  const setupRecaptcha = () => {
+    setLoading(true);
     try {
-      // 1. If it already exists, don't recreate it
-      if (recaptchaVerifierRef.current) {
-        return recaptchaVerifierRef.current;
-      }
-      
-      // 2. Ensure container is clear
-      const container = document.getElementById('recaptcha-container');
-      if (container) container.innerHTML = '';
-
-      console.log("Initializing new Recaptcha...");
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: (response) => {
-          console.log("Recaptcha check passed");
-        },
-        'expired-callback': () => {
-          console.warn("Recaptcha expired");
-          setError('reCAPTCHA expired. Please try again.');
-          clearRecaptcha();
-        },
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword }),
       });
 
-      recaptchaVerifierRef.current = verifier;
-      return verifier;
-    } catch (err) {
-      console.error("Recaptcha initialization failed:", err);
-      setError("Security check failed to load. Please refresh the page.");
-      return null;
-    }
-  };
+      const data = await res.json();
 
-  const clearRecaptcha = () => {
-    try {
-      if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
+      if (!res.ok) {
+        setError(data.message || 'Login failed. Please check your credentials.');
+        return;
       }
-      const container = document.getElementById('recaptcha-container');
-      if (container) container.innerHTML = '';
-    } catch (e) {
-      console.warn("Error during recaptcha cleanup:", e);
-      recaptchaVerifierRef.current = null;
-    }
-  };
 
-// ── Step 1: Send OTP via Backend Mock OTP ─────────────────────────────────
-const handleSendOtp = async (e) => {
-  e?.preventDefault();
-  setError('');
+      login(data);
 
-  if (phone.length !== 10) {
-    setError('Please enter a valid 10-digit mobile number');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || 'Failed to send OTP');
-      return;
-    }
-
-    console.log('DEV OTP:', data.devOtp);
-    setStep(2);
-    setResendTimer(60);
-  } catch (err) {
-    console.error('Send OTP Error:', err);
-    setError('Backend not connected. Please check server.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// ── Step 2: Verify OTP via Backend ─────────────────────────────────────────
-const handleVerifyOtp = async (e) => {
-  e.preventDefault();
-  setError('');
-
-  const otp = otpValues.join('');
-
-  if (otp.length !== 6) {
-    setError('Please enter all 6 digits');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || 'OTP verification failed');
-      return;
-    }
-
-    console.log('Full User Data Received:', data);
-    console.log('User Role (possible locations):', data.role, data.user?.role);
-    setUserData(data);
-    if (data.name && data.name.startsWith('Player_')) {
-      setStep(3);
-    } else {
-      // Determine role from possible fields
       const role = data.role || data.user?.role;
-      login(data);
-      if (role) {
-        if (role === 'admin') {
-          navigate('/admin');
-        } else if (role === 'owner') {
-          navigate('/owner');
-        } else {
-          navigate('/');
-        }
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'owner') {
+        navigate('/owner');
       } else {
-        // Role not yet available – stay on this page (could show a loading indicator)
-        console.warn('Role not found in response; staying on auth page until resolved.');
+        navigate('/');
       }
-    }
-  } catch (err) {
-    console.error('Verify OTP Error:', err);
-    setError('Backend not connected. Please check server.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // ── Resend OTP ─────────────────────────────────────────────────────────────
-  const handleResendOtp = () => {
-    if (resendTimer > 0) return;
-    setOtpValues(['', '', '', '', '', '']);
-    clearRecaptcha();
-    handleSendOtp();
-  };
-
-  // ── OTP input helpers ──────────────────────────────────────────────────────
-  const handleOtpChange = (index, value) => {
-    if (/[^0-9]/.test(value)) return;
-    const next = [...otpValues];
-    next[index] = value;
-    setOtpValues(next);
-    if (value && index < 5) otpRefs[index + 1].current?.focus();
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
-      otpRefs[index - 1].current?.focus();
+    } catch (err) {
+      console.error('Login Error:', err);
+      setError('Unable to connect to server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleOtpPaste = (e) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) {
-      setOtpValues(pasted.split(''));
-      otpRefs[5].current?.focus();
-    }
-  };
+  // ── Register Handler ──
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  // ── Step 3: Profile Setup ──────────────────────────────────────────────────
- const handleSetupProfile = async (e) => {
-  e.preventDefault();
-
-  if (!name.trim()) {
-    setError('Please enter your name');
-    return;
-  }
-
-  setLoading(true);
-  setError('');
-
-  try {
-    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/auth/profile-by-phone', {
-      method: 'PUT',
-     headers: {
-  'Content-Type': 'application/json',
-},
-body: JSON.stringify({
-  phone,
-  name: name.trim(),
-  username: username.trim(),
-}),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || 'Profile update failed');
+    if (!regName.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword) {
+      setError('Please fill in all fields');
       return;
     }
 
-      // Determine role from possible fields
-      const roleSetup = data.role || data.user?.role;
-      login(data);
-      if (roleSetup) {
-        if (roleSetup === 'admin') {
-          navigate('/admin');
-        } else if (roleSetup === 'owner') {
-          navigate('/owner');
-        } else {
-          navigate('/');
-        }
-      } else {
-        console.warn('Role not found after profile setup; staying on page.');
-      }
-  } catch (err) {
-    console.error('Profile update error:', err);
-    setError('Unable to save profile. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+    if (regPhone.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
 
-  // ── Step 4: Complete — save to context and navigate ───────────────────────
-  const handleComplete = () => {
-    login(userData);
-    navigate('/');
+    if (regPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: regName.trim(),
+          email: regEmail.trim(),
+          phone: regPhone,
+          password: regPassword,
+          confirmPassword: regConfirmPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || 'Registration failed. Please try again.');
+        return;
+      }
+
+      login(data);
+      navigate('/');
+    } catch (err) {
+      console.error('Register Error:', err);
+      setError('Unable to connect to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setError('');
+  };
+
+  // ── Render ──
   return (
     <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center p-4 relative overflow-hidden font-outfit">
 
@@ -306,9 +150,6 @@ body: JSON.stringify({
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#1a2b3c] rounded-full blur-[120px] opacity-[0.10]" />
       </div>
 
-      {/* Invisible reCAPTCHA mount point — DO NOT remove */}
-      <div id="recaptcha-container" />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -316,7 +157,7 @@ body: JSON.stringify({
       >
 
         {/* Logo */}
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-3 mb-4">
             <motion.img
               whileHover={{ scale: 1.05 }}
@@ -328,18 +169,23 @@ body: JSON.stringify({
               Play<span className="text-[#39FF14]">Now</span>
             </span>
           </div>
-          <h2 className="text-3xl font-black text-white tracking-tight text-center">
-            {step === 1 && 'Get Started'}
-            {step === 2 && 'Verify OTP'}
-            {step === 3 && 'Setup Profile'}
-            {step === 4 && 'All Set!'}
-          </h2>
-          <p className="text-gray-400 text-sm mt-2 font-medium text-center">
-            {step === 1 && 'Experience sports like never before.'}
-            {step === 2 && `Code sent to +91 ${phone} via SMS`}
-            {step === 3 && 'How should we call you?'}
-            {step === 4 && 'Welcome to the elite club.'}
-          </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex bg-black/40 rounded-2xl p-1 mb-6 border border-white/5">
+          {['login', 'register'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => switchTab(tab)}
+              className={`flex-1 py-3 rounded-xl text-sm font-black uppercase tracking-wider transition-all duration-300 ${
+                activeTab === tab
+                  ? 'bg-[#39FF14] text-black shadow-[0_0_20px_rgba(57,255,20,0.3)]'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {tab === 'login' ? 'Login' : 'Register'}
+            </button>
+          ))}
         </div>
 
         {/* Error */}
@@ -357,212 +203,240 @@ body: JSON.stringify({
           )}
         </AnimatePresence>
 
-        {/* ── STEP 1: Phone Input ──────────────────────────────────────────── */}
-        {step === 1 && (
-          <motion.form
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            onSubmit={handleSendOtp}
-            className="space-y-6"
-          >
-            <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
-                <Phone size={20} />
-              </div>
-              <div className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-400 font-bold select-none">
-                +91
-              </div>
-              <input
-                id="phone-input"
-                type="tel"
-                required
-                maxLength={10}
-                value={phone}
-                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                placeholder="Mobile Number"
-                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-24 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
-              />
-            </div>
-
-            <button
-              id="send-otp-btn"
-              disabled={loading || phone.length !== 10}
-              type="submit"
-              className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center group"
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          {/* ── LOGIN TAB ── */}
+          {activeTab === 'login' && (
+            <motion.form
+              key="login"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+              onSubmit={handleLogin}
+              className="space-y-5"
             >
-              {loading ? (
-                <Loader2 className="animate-spin" size={24} />
-              ) : (
-                <>
-                  <span>CONTINUE</span>
-                  <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-
-            <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest font-bold">
-              By continuing, you agree to our{' '}
-              <span className="text-white">Terms</span> &amp;{' '}
-              <span className="text-white">Privacy</span>
-            </p>
-          </motion.form>
-        )}
-
-        {/* ── STEP 2: OTP Verification ─────────────────────────────────────── */}
-        {step === 2 && (
-          <motion.form
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            onSubmit={handleVerifyOtp}
-            className="space-y-8"
-          >
-            {/* 6-digit OTP boxes */}
-            <div className="flex justify-between gap-1 sm:gap-2" onPaste={handleOtpPaste}>
-              {otpValues.map((digit, i) => (
+              {/* Email */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Mail size={20} />
+                </div>
                 <input
-                  key={i}
-                  ref={otpRefs[i]}
-                  id={`otp-digit-${i}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
+                  type="email"
                   required
-                  value={digit}
-                  onChange={e => handleOtpChange(i, e.target.value)}
-                  onKeyDown={e => handleOtpKeyDown(i, e)}
-                  className="w-10 h-12 sm:w-12 sm:h-14 bg-black/40 border border-white/10 rounded-xl text-center text-lg sm:text-xl font-black text-[#39FF14] focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all shadow-inner"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="Email Address"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
-              ))}
-            </div>
+              </div>
 
-            {/* Resend */}
-            <div className="text-center">
+              {/* Password */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Lock size={20} />
+                </div>
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                >
+                  {showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* Forgot Password */}
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-bold text-gray-400 hover:text-[#39FF14] transition-colors"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+
+              {/* Submit */}
               <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={resendTimer > 0}
-                className="text-sm font-bold text-gray-400 hover:text-[#39FF14] disabled:text-gray-600 transition-colors flex items-center justify-center mx-auto"
+                disabled={loading || !loginEmail.trim() || !loginPassword}
+                type="submit"
+                className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
               >
-                {resendTimer > 0 ? (
-                  `Resend in ${resendTimer}s`
+                {loading ? (
+                  <Loader2 className="animate-spin" size={24} />
                 ) : (
-                  <><RefreshCw size={14} className="mr-2" /> Resend Code</>
+                  'LOGIN'
                 )}
               </button>
-            </div>
 
-            <button
-              id="verify-otp-btn"
-              disabled={loading || otpValues.join('').length !== 6}
-              type="submit"
-              className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 shadow-lg hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
+              {/* Switch to Register */}
+              <p className="text-center text-sm text-gray-400 font-medium">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchTab('register')}
+                  className="text-[#39FF14] font-bold hover:underline"
+                >
+                  Register
+                </button>
+              </p>
+            </motion.form>
+          )}
+
+          {/* ── REGISTER TAB ── */}
+          {activeTab === 'register' && (
+            <motion.form
+              key="register"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              onSubmit={handleRegister}
+              className="space-y-4"
             >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : 'VERIFY & PROCEED'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setStep(1); setOtpValues(['', '', '', '', '', '']); clearRecaptcha(); }}
-              className="w-full text-xs text-gray-500 font-bold uppercase tracking-widest hover:text-white transition-colors"
-            >
-              ← Change Number
-            </button>
-          </motion.form>
-        )}
-
-        {/* ── STEP 3: Profile Setup ────────────────────────────────────────── */}
-        {step === 3 && (
-          <motion.form
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            onSubmit={handleSetupProfile}
-            className="space-y-8"
-          >
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                What should we call you?
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Your Full Name"
-                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] transition-all"
-              />
-            </div>
-
-            <div className="space-y-2">
-  <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-    Username
-  </label>
-
-  <input
-    type="text"
-    required
-    value={username}
-    onChange={(e) => setUsername(e.target.value)}
-    placeholder="@enkay"
-    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14]"
-  />
-</div>
-
-
-            <button
-              disabled={
-  loading ||
-  !name.trim() ||
-  !username.trim()
-}
-              type="submit"
-              className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 shadow-lg hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
-            >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : 'CREATE ACCOUNT'}
-            </button>
-          </motion.form>
-        )}
-
-        {/* ── STEP 4: Success ──────────────────────────────────────────────── */}
-        {step === 4 && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-center py-6"
-          >
-            <div className="relative inline-block mb-10">
-              <div className="w-24 h-24 bg-[#39FF14]/20 rounded-full flex items-center justify-center mx-auto border-2 border-[#39FF14] shadow-[0_0_40px_rgba(57,255,20,0.3)]">
-                <CheckCircle2 size={48} className="text-[#39FF14]" />
+              {/* Full Name */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <User size={20} />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  placeholder="Full Name"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
               </div>
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 bg-[#39FF14] rounded-full blur-xl"
-              />
-            </div>
 
-            <h3 className="text-3xl font-black mb-3 text-white">
-              Welcome, {userData?.name?.split(' ')[0]}!
-            </h3>
-            <p className="text-gray-400 mb-8 font-medium">Your squad is waiting for you.</p>
+              {/* Email */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Mail size={20} />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="Email Address"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+              </div>
 
-            <div className="bg-black/40 border border-white/5 rounded-[1.5rem] py-6 px-8 mb-10">
-              <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] mb-2">Player ID</p>
-              <span className="text-2xl font-black text-[#39FF14] tracking-[0.3em] font-mono">
-                {userData?.playNowId || 'PN-XXXX'}
-              </span>
-            </div>
+              {/* Phone */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Phone size={20} />
+                </div>
+                <div className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-400 font-bold select-none">
+                  +91
+                </div>
+                <input
+                  type="tel"
+                  required
+                  maxLength={10}
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Mobile Number"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-24 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+              </div>
 
-            <button
-              onClick={handleComplete}
-              className="w-full bg-white text-black font-black rounded-2xl py-5 shadow-xl hover:bg-[#39FF14] hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all transform hover:-translate-y-1 active:scale-95"
+              {/* Password */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Lock size={20} />
+                </div>
+                <input
+                  type={showRegPassword ? 'text' : 'password'}
+                  required
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="Password (min 6 chars)"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                >
+                  {showRegPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <Lock size={20} />
+                </div>
+                <input
+                  type={showRegConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  placeholder="Confirm Password"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-12 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                >
+                  {showRegConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button
+                disabled={loading || !regName.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword}
+                type="submit"
+                className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin" size={24} />
+                ) : (
+                  'CREATE ACCOUNT'
+                )}
+              </button>
+
+              {/* Switch to Login */}
+              <p className="text-center text-sm text-gray-400 font-medium">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchTab('login')}
+                  className="text-[#39FF14] font-bold hover:underline"
+                >
+                  Login
+                </button>
+              </p>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        {/* Venue Partner Link */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500 font-medium">
+            Are you a venue partner?{' '}
+            <Link
+              to="/partner/login"
+              className="text-[#39FF14] font-bold hover:underline"
             >
-              ENTER ARENA
-            </button>
-          </motion.div>
-        )}
+              Login here
+            </Link>
+          </p>
+        </div>
 
         {/* Footer */}
-        <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
+        <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-center text-[10px] text-gray-600 font-bold uppercase tracking-widest">
           <Lock size={12} className="mr-1.5 text-gray-700" />
           Secured by PlayNow
         </div>
