@@ -1,17 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, Calendar, Clock, DollarSign, MapPin, RefreshCw, Settings, Users } from 'lucide-react';
+import { MapPin, RefreshCw } from 'lucide-react';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
-
-const emptySummary = {
-  totalBookings: 0,
-  todayBookings: 0,
-  upcomingBookings: 0,
-  cancelledBookings: 0,
-  totalRevenue: 0,
-  todayRevenue: 0,
-};
 
 const todayInput = () => new Date().toISOString().slice(0, 10);
 
@@ -64,9 +55,12 @@ const OwnerDashboard = () => {
   const [activeTab, setActiveTab] = useState('venues');
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [summary, setSummary] = useState(emptySummary);
   const [loading, setLoading] = useState(true);
   const [pageMessage, setPageMessage] = useState('');
+  const [bookingFilters, setBookingFilters] = useState({
+    search: '',
+    status: '',
+  });
 
   const [collectionMethods, setCollectionMethods] = useState({});
   const [collectionLoadingId, setCollectionLoadingId] = useState('');
@@ -81,6 +75,7 @@ const OwnerDashboard = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotMessage, setSlotMessage] = useState('');
   const [slotUpdatingId, setSlotUpdatingId] = useState('');
+  const [selectedSlotIds, setSelectedSlotIds] = useState([]);
 
   const [generateForm, setGenerateForm] = useState({
     venueId: '',
@@ -122,24 +117,21 @@ const OwnerDashboard = () => {
 
     try {
       const headers = authHeaders();
-      const [venuesRes, bookingsRes, summaryRes] = await Promise.all([
+      const [venuesRes, bookingsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/venues/my`, { headers }),
         fetch(`${API_BASE_URL}/api/bookings/owner`, { headers }),
-        fetch(`${API_BASE_URL}/api/bookings/owner/summary`, { headers }),
       ]);
 
       const venuesData = await readBody(venuesRes);
       const bookingsData = await readBody(bookingsRes);
-      const summaryData = await readBody(summaryRes);
 
-      if (!venuesRes.ok || !bookingsRes.ok || !summaryRes.ok) {
-        setPageMessage(venuesData.message || bookingsData.message || summaryData.message || 'Unable to load owner dashboard');
+      if (!venuesRes.ok || !bookingsRes.ok) {
+        setPageMessage(venuesData.message || bookingsData.message || 'Unable to load owner dashboard');
         return;
       }
 
       setVenues(Array.isArray(venuesData) ? venuesData : []);
       setBookings(Array.isArray(bookingsData) ? bookingsData : []);
-      setSummary({ ...emptySummary, ...summaryData });
     } catch (error) {
       console.error('Owner dashboard load error:', error);
       setPageMessage('Unable to load dashboard. Please try again.');
@@ -169,6 +161,59 @@ const OwnerDashboard = () => {
     [bookings]
   );
 
+  const filteredBookings = useMemo(() => {
+    const search = bookingFilters.search.trim().toLowerCase();
+
+    return bookings.filter((booking) => {
+      const matchesStatus = !bookingFilters.status || booking.bookingStatus === bookingFilters.status;
+      const searchable = [
+        booking._id,
+        booking.userId?.name,
+        booking.userId?.phone,
+        booking.venueId?.name,
+        booking.venueId?.location,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return matchesStatus && (!search || searchable.includes(search));
+    });
+  }, [bookings, bookingFilters]);
+
+  const revenueSummary = useMemo(() => {
+    const today = todayInput();
+    const now = new Date();
+
+    return bookings.reduce((stats, booking) => {
+      const bookingCreatedToday = booking.createdAt && new Date(booking.createdAt).toISOString().slice(0, 10) === today;
+      const hasFutureSlot = (booking.slotIds || []).some((slot) => {
+        if (!slot?.date || !slot?.startTime) return false;
+        const slotDate = new Date(slot.date);
+        const [hours, minutes = '0'] = slot.startTime.split(':').map(Number);
+        if (Number.isNaN(slotDate.getTime()) || Number.isNaN(hours) || Number.isNaN(minutes)) return false;
+        slotDate.setHours(hours, minutes, 0, 0);
+        return slotDate > now;
+      });
+
+      stats.totalBookings += 1;
+      if (bookingCreatedToday) stats.todayBookings += 1;
+      if (booking.bookingStatus !== 'cancelled' && hasFutureSlot) stats.upcomingBookings += 1;
+      if (booking.bookingStatus === 'cancelled') stats.cancelledBookings += 1;
+
+      if (['confirmed', 'completed'].includes(booking.bookingStatus)) {
+        stats.totalRevenue += Number(booking.paidAmount || 0);
+        if (bookingCreatedToday) stats.todayRevenue += Number(booking.paidAmount || 0);
+      }
+
+      return stats;
+    }, {
+      totalBookings: 0,
+      todayBookings: 0,
+      upcomingBookings: 0,
+      cancelledBookings: 0,
+      totalRevenue: 0,
+      todayRevenue: 0,
+    });
+  }, [bookings]);
+
   const buildQuery = (filters) => {
     const params = new URLSearchParams();
     if (filters.venueId) params.set('venueId', filters.venueId);
@@ -194,6 +239,7 @@ const OwnerDashboard = () => {
       }
 
       setSlots(Array.isArray(data) ? data : []);
+      setSelectedSlotIds([]);
     } catch (error) {
       console.error('Manage slots load error:', error);
       setSlotMessage('Unable to load slots. Please try again.');
@@ -279,6 +325,62 @@ const OwnerDashboard = () => {
     } catch (error) {
       console.error('Slot update error:', error);
       setSlotMessage('Unable to update slot. Please try again.');
+    } finally {
+      setSlotUpdatingId('');
+    }
+  };
+
+  const toggleSlotSelection = (slot) => {
+    if (slot.status === 'booked' || slot.status === 'locked') {
+      setSlotMessage(`Cannot select a ${slot.status} slot.`);
+      return;
+    }
+
+    setSelectedSlotIds((current) => (
+      current.includes(slot._id)
+        ? current.filter((id) => id !== slot._id)
+        : [...current, slot._id]
+    ));
+  };
+
+  const handleBulkSlotStatusUpdate = async (status) => {
+    const selectedSlots = slots.filter((slot) => selectedSlotIds.includes(slot._id));
+    const editableSlots = selectedSlots.filter((slot) => !['booked', 'locked'].includes(slot.status));
+
+    if (!editableSlots.length) {
+      setSlotMessage('Select at least one available or blocked slot.');
+      return;
+    }
+
+    setSlotUpdatingId('bulk');
+    setSlotMessage('');
+
+    try {
+      const results = await Promise.all(editableSlots.map(async (slot) => {
+        const res = await fetch(`${API_BASE_URL}/api/slots/${slot._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(),
+          },
+          body: JSON.stringify({ status }),
+        });
+        const data = await readBody(res);
+        if (!res.ok) {
+          throw new Error(data.message || `Unable to update ${formatSlotRange(slot)}`);
+        }
+        return data;
+      }));
+
+      const updatedById = new Map(results.map((slot) => [slot._id, slot]));
+      setSlots((current) => current.map((slot) => (
+        updatedById.has(slot._id) ? { ...slot, status: updatedById.get(slot._id).status || status } : slot
+      )));
+      setSelectedSlotIds([]);
+      setSlotMessage(`${editableSlots.length} slot${editableSlots.length === 1 ? '' : 's'} ${status === 'blocked' ? 'blocked' : 'unblocked'}.`);
+    } catch (error) {
+      console.error('Bulk slot update error:', error);
+      setSlotMessage(error.message || 'Unable to update selected slots.');
     } finally {
       setSlotUpdatingId('');
     }
@@ -523,12 +625,12 @@ const OwnerDashboard = () => {
 
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
         {[
-          ['Total Bookings', summary.totalBookings],
-          ['Today', summary.todayBookings],
-          ['Upcoming', summary.upcomingBookings],
-          ['Cancelled', summary.cancelledBookings],
-          ['Total Revenue', formatCurrency(summary.totalRevenue)],
-          ['Today Revenue', formatCurrency(summary.todayRevenue)],
+          ['Total Bookings', revenueSummary.totalBookings],
+          ['Today', revenueSummary.todayBookings],
+          ['Upcoming', revenueSummary.upcomingBookings],
+          ['Cancelled', revenueSummary.cancelledBookings],
+          ['Total Revenue', formatCurrency(revenueSummary.totalRevenue)],
+          ['Today Revenue', formatCurrency(revenueSummary.todayRevenue)],
         ].map(([label, value]) => (
           <div key={label} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4">
             <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black">{label}</p>
@@ -579,8 +681,16 @@ const OwnerDashboard = () => {
                   <p className="font-black text-white mt-1">{formatCurrency(venue.pricePerHour)}/hr</p>
                 </div>
                 <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                  <p className="text-gray-500 text-xs uppercase font-bold">Courts</p>
+                  <p className="font-black text-white mt-1">{venue.courts || venue.numberOfCourts || 'Not set'}</p>
+                </div>
+                <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
                   <p className="text-gray-500 text-xs uppercase font-bold">Sports</p>
                   <p className="font-black text-white mt-1">{(venue.sportTypes || []).join(', ') || 'Not set'}</p>
+                </div>
+                <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                  <p className="text-gray-500 text-xs uppercase font-bold">Status</p>
+                  <p className="font-black text-white mt-1">{venue.isActive !== false ? 'Active' : 'Inactive'}</p>
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-4">{venue.description}</p>
@@ -589,7 +699,36 @@ const OwnerDashboard = () => {
         </section>
       )}
 
-      {activeTab === 'bookings' && renderBookingList(bookings)}
+      {activeTab === 'bookings' && (
+        <section className="space-y-4">
+          <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Search</label>
+              <input
+                type="text"
+                value={bookingFilters.search}
+                onChange={(e) => setBookingFilters((current) => ({ ...current, search: e.target.value }))}
+                placeholder="Search booking, player, phone, venue, location"
+                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Status</label>
+              <select
+                value={bookingFilters.status}
+                onChange={(e) => setBookingFilters((current) => ({ ...current, status: e.target.value }))}
+                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+              >
+                <option value="">All statuses</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          {renderBookingList(filteredBookings)}
+        </section>
+      )}
 
       {activeTab === 'pending-balance' && (
         <section className="space-y-4">
@@ -649,7 +788,7 @@ const OwnerDashboard = () => {
           </div>
 
           {slotMessage && (
-            <div className={`rounded-xl px-4 py-3 text-sm border ${slotMessage.toLowerCase().includes('updated') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+            <div className={`rounded-xl px-4 py-3 text-sm border ${slotMessage.toLowerCase().includes('updated') || slotMessage.toLowerCase().includes('blocked') || slotMessage.toLowerCase().includes('unblocked') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
               {slotMessage}
             </div>
           )}
@@ -659,38 +798,75 @@ const OwnerDashboard = () => {
           ) : slots.length === 0 ? (
             <div className="p-10 text-center text-gray-500">No slots found for the selected filters.</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {slots.map((slot) => {
-                const isLockedStatus = slot.status === 'booked' || slot.status === 'locked';
-                return (
-                  <div key={slot._id} className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
-                    <div className="flex justify-between gap-3">
-                      <div>
-                        <p className="font-bold text-white">{formatDate(slot.date)}</p>
-                        <p className="text-sm text-gray-400 mt-1">{formatSlotRange(slot)}</p>
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
+                <p className="text-sm text-gray-400">
+                  <span className="font-black text-white">{selectedSlotIds.length}</span> selected for block/unblock
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    disabled={selectedSlotIds.length === 0 || slotUpdatingId === 'bulk'}
+                    onClick={() => handleBulkSlotStatusUpdate('blocked')}
+                    className="bg-red-500/10 text-red-400 border border-red-500/30 font-bold rounded-xl px-4 py-2 disabled:opacity-40"
+                  >
+                    Block Selected
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedSlotIds.length === 0 || slotUpdatingId === 'bulk'}
+                    onClick={() => handleBulkSlotStatusUpdate('available')}
+                    className="bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/30 font-bold rounded-xl px-4 py-2 disabled:opacity-40"
+                  >
+                    Unblock Selected
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {slots.map((slot) => {
+                  const isLockedStatus = slot.status === 'booked' || slot.status === 'locked';
+                  const isSelected = selectedSlotIds.includes(slot._id);
+                  return (
+                    <div key={slot._id} className={`bg-[#0a0f1c] border rounded-xl p-4 transition ${isSelected ? 'border-[#39FF14] shadow-[0_0_0_1px_rgba(57,255,20,0.25)]' : 'border-gray-800'}`}>
+                      <div className="flex justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-white">{formatDate(slot.date)}</p>
+                          <p className="text-sm text-gray-400 mt-1">{formatSlotRange(slot)}</p>
+                        </div>
+                        <span className="text-xs uppercase font-black text-gray-400">{slot.status}</span>
                       </div>
-                      <span className="text-xs uppercase font-black text-gray-400">{slot.status}</span>
+                      <p className="text-sm text-gray-500 mt-3">{formatCurrency(slot.price)}</p>
+                      <label className={`mt-4 flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-bold ${isLockedStatus ? 'border-gray-800 text-gray-600' : 'border-gray-800 text-gray-300 cursor-pointer'}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isLockedStatus}
+                          onChange={() => toggleSlotSelection(slot)}
+                          className="accent-[#39FF14]"
+                        />
+                        Select slot
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <button
+                          disabled={isLockedStatus || slotUpdatingId === slot._id || slot.status === 'available'}
+                          onClick={() => handleSlotStatusUpdate(slot, 'available')}
+                          className="bg-[#39FF14]/10 text-[#39FF14] font-bold rounded-xl py-2 disabled:opacity-40"
+                        >
+                          Available
+                        </button>
+                        <button
+                          disabled={isLockedStatus || slotUpdatingId === slot._id || slot.status === 'blocked'}
+                          onClick={() => handleSlotStatusUpdate(slot, 'blocked')}
+                          className="bg-red-500/10 text-red-400 font-bold rounded-xl py-2 disabled:opacity-40"
+                        >
+                          Block
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500 mt-3">{formatCurrency(slot.price)}</p>
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                      <button
-                        disabled={isLockedStatus || slotUpdatingId === slot._id || slot.status === 'available'}
-                        onClick={() => handleSlotStatusUpdate(slot, 'available')}
-                        className="bg-[#39FF14]/10 text-[#39FF14] font-bold rounded-xl py-2 disabled:opacity-40"
-                      >
-                        Available
-                      </button>
-                      <button
-                        disabled={isLockedStatus || slotUpdatingId === slot._id || slot.status === 'blocked'}
-                        onClick={() => handleSlotStatusUpdate(slot, 'blocked')}
-                        className="bg-red-500/10 text-red-400 font-bold rounded-xl py-2 disabled:opacity-40"
-                      >
-                        Block
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </section>
