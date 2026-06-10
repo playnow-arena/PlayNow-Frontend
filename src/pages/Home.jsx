@@ -116,29 +116,6 @@ const Home = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
         
-        {/* Popular Sports - Horizontal Scroll on Mobile */}
-        <section>
-          <div className="flex justify-between items-end mb-6">
-            <h2 className="text-2xl md:text-3xl font-black uppercase">Popular Sports</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pb-4 md:pb-0">
-            {sportsList.map((sport, index) => (
-              <motion.div 
-                key={sport.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-[#151b2b] p-5 md:p-6 rounded-2xl border border-white/5 text-center cursor-pointer hover:border-[#39FF14]/50 transition-all group btn-touch"
-              >
-                <div className={`w-14 h-14 md:w-16 md:h-16 mx-auto ${sport.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                  <Trophy size={24} className="text-white" />
-                </div>
-                <h3 className="font-bold text-sm md:text-base tracking-tight">{sport.name}</h3>
-              </motion.div>
-            ))}
-          </div>npm run dev
-
-        </section>
 
         {/* Featured Venues */}
         <section>
