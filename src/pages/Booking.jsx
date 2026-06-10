@@ -173,6 +173,7 @@ const Booking = () => {
     const finalTotal = bookingDetails?.totalAmount ?? totalAmount;
     const balanceDue = bookingDetails?.remainingAmount ?? Math.max(finalTotal - paidOnline, 0);
     const paymentStatus = bookingDetails?.paymentStatus || (balanceDue > 0 ? 'advance_paid' : 'completed');
+    const bookingStatus = bookingDetails?.bookingStatus || 'confirmed';
     const venueAddress = venue.address || venue.location || 'Address unavailable';
     const playerName = bookingDetails?.userId?.name || storedUser?.name || storedUser?.username || '';
     const playerPhone = bookingDetails?.userId?.phone || storedUser?.phone || '';
@@ -201,6 +202,10 @@ const Booking = () => {
             <div className="flex justify-between mb-2">
               <span className="text-gray-400">Payment Status</span>
               <span className="font-bold uppercase">{paymentStatus.replace('_', ' ')}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Booking Status</span>
+              <span className="font-bold uppercase">{bookingStatus}</span>
             </div>
           </div>
 
@@ -255,6 +260,11 @@ const Booking = () => {
             <div className="rounded-2xl border border-[#39FF14]/30 bg-[#39FF14]/10 p-4 text-sm text-gray-200 flex items-start gap-3">
               <ShieldCheck size={18} className="text-[#39FF14] shrink-0 mt-0.5" />
               <span>Show this booking at the venue. Pay remaining balance before play.</span>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#0a0f1c] p-4 text-sm text-gray-300 space-y-2">
+              <p><span className="font-bold text-white">Need help?</span> Contact PlayNow support at +91 78712 56533 or playnowarena@gmail.com.</p>
+              <p>Cancellation allowed up to 4 hours before slot time.</p>
             </div>
           </div>
 

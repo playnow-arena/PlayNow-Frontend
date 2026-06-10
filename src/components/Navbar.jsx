@@ -35,6 +35,8 @@ const Navbar = () => {
               <Link to="/venues" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Venues</Link>
               <Link to="/host-match" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Host Match</Link>
               <Link to="/feed" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Open Matches</Link>
+              <Link to="/partner/register" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Partner with PlayNow</Link>
+              <Link to="/contact" className="text-gray-300 hover:text-[#39FF14] font-medium transition">Contact</Link>
               
               <div className="w-px h-6 bg-gray-700"></div>
 

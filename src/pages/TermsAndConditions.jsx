@@ -1,49 +1,60 @@
 import React from 'react';
 
+const sections = [
+  {
+    title: 'Booking Confirmation',
+    text: 'Your booking is confirmed after PlayNow creates a booking ID and shows the confirmation screen. Show the booking proof at the venue before play.',
+  },
+  {
+    title: 'Advance Payment Policy',
+    text: 'Some bookings may require an advance payment online. The advance confirms your slot and is adjusted against the total booking amount.',
+  },
+  {
+    title: 'Balance Payment at Venue',
+    text: 'If any balance amount is pending, pay it directly at the venue before play. Venue staff may verify your booking ID and payment status.',
+  },
+  {
+    title: 'Cancellation Policy',
+    text: 'Cancellation is allowed up to 4 hours before the slot start time. After that, cancellation may not be available because the venue has reserved the slot for you.',
+  },
+  {
+    title: 'Refunds and Adjustments',
+    text: 'Refunds or payment adjustments are subject to PlayNow and venue verification until online refunds are automated.',
+  },
+  {
+    title: 'No-show Policy',
+    text: 'If you do not arrive for your booked slot and do not cancel in time, the booking may be treated as used and payments may not be refundable.',
+  },
+  {
+    title: 'Venue Rules',
+    text: 'Players must follow venue rules, timing instructions, footwear requirements, and staff guidance. Play safely and respect other players.',
+  },
+  {
+    title: 'Contact Support',
+    text: 'For booking support, venue partnership, or payment issues, contact PlayNow at playnowarena@gmail.com or +91 78712 56533.',
+  },
+];
+
 const TermsAndConditions = () => {
   return (
     <div className="pt-24 pb-20 px-4 md:pt-32 min-h-screen">
-      <div className="max-w-4xl mx-auto space-y-8 bg-[#151b2b] p-8 md:p-12 rounded-3xl border border-white/5 shadow-xl">
-        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-8">
-          Terms & <span className="text-[#39FF14]">Conditions</span>
-        </h1>
-        
-        <div className="space-y-6 text-gray-400 leading-relaxed">
-          <p>
-            Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight">
+            Terms & Cancellation Policy
+          </h1>
+          <p className="text-gray-400 mt-3">
+            Simple rules for PlayNow bookings, payments, cancellations, and venue play.
           </p>
+        </div>
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">1. User Responsibilities</h2>
-            <p>
-              Users are responsible for providing accurate and updated account information. You agree to behave respectfully to other sports players and venue staff while participating in hosted matches and bookings.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">2. Booking Rules</h2>
-            <p>
-              All bookings are subject to venue availability and scheduling rules. Confirmations are only final once payments are successfully verified. Cancellations are subject to the specific venue's cancellation and refund guidelines.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">3. Platform Usage</h2>
-            <p>
-              PlayNow grants you a personal, non-exclusive, non-transferable license to access our platform for sports match organizing and venue discovery. Any unauthorized scripting, scraping, or misuse is strictly prohibited.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-xl font-bold text-white">4. Disclaimer</h2>
-            <p>
-              PlayNow is not responsible for injuries, cancellations, scheduling conflicts, or disputes arising between players and venue owners during offline games. All sports activities are participated in at the user's own risk.
-            </p>
-          </section>
-
-          <p className="pt-8 text-sm italic text-gray-500">
-            Note: This is a placeholder Terms and Conditions document for demonstration purposes.
-          </p>
+        <div className="bg-[#151b2b] border border-white/5 rounded-3xl p-6 md:p-10 space-y-6">
+          {sections.map((section) => (
+            <section key={section.title} className="border-b border-white/5 last:border-b-0 pb-5 last:pb-0">
+              <h2 className="text-lg md:text-xl font-black text-white mb-2">{section.title}</h2>
+              <p className="text-gray-400 leading-relaxed">{section.text}</p>
+            </section>
+          ))}
         </div>
       </div>
     </div>

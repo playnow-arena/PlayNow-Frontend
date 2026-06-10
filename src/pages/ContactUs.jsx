@@ -1,121 +1,53 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Mail, Phone, Globe, Briefcase, Handshake } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
+
+const contactItems = [
+  {
+    icon: Mail,
+    label: 'Email',
+    value: 'playnowarena@gmail.com',
+  },
+  {
+    icon: Phone,
+    label: 'Phone / WhatsApp',
+    value: '+91 78712 56533',
+  },
+  {
+    icon: MapPin,
+    label: 'Location',
+    value: 'Trichy, Tamil Nadu',
+  },
+];
 
 const ContactUs = () => {
   return (
-    <div className="pt-24 pb-20 px-4 md:pt-32 min-h-screen flex justify-center">
-      <div className="max-w-6xl w-full grid md:grid-cols-2 gap-12 lg:gap-20">
-        
-        {/* Contact Info Left Side */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-10"
-        >
-          <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
-              Get in <span className="text-[#39FF14]">Touch</span>
-            </h1>
-            <p className="text-gray-400 text-lg">
-              Have questions or want to partner with us? We'd love to hear from you.
-            </p>
+    <div className="pt-24 pb-20 px-4 md:pt-32 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight">
+            Contact PlayNow
+          </h1>
+          <p className="text-gray-400 mt-3 max-w-2xl">
+            For venue partnership, booking support, or payment issues, contact PlayNow.
+          </p>
+        </div>
+
+        <div className="bg-[#151b2b] border border-white/5 rounded-3xl p-6 md:p-10">
+          <h2 className="text-2xl font-black text-white mb-6">PlayNow Support</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {contactItems.map((item) => (
+              <div key={item.label} className="bg-[#0a0f1c] border border-gray-800 rounded-2xl p-5">
+                <item.icon className="text-[#39FF14] mb-4" size={24} />
+                <p className="text-xs text-gray-500 font-black uppercase tracking-widest">{item.label}</p>
+                <p className="text-white font-bold mt-2 break-words">{item.value}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4 bg-[#151b2b] p-4 rounded-2xl border border-white/5">
-              <div className="w-12 h-12 bg-[#39FF14]/10 rounded-xl flex items-center justify-center">
-                <Mail className="text-[#39FF14]" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Email</p>
-                <p className="text-white font-bold">playnowarena@gmail.com</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 bg-[#151b2b] p-4 rounded-2xl border border-white/5">
-              <div className="w-12 h-12 bg-[#39FF14]/10 rounded-xl flex items-center justify-center">
-                <Phone className="text-[#39FF14]" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Phone</p>
-                <p className="text-white font-bold">+91 93637 56533</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4 bg-[#151b2b] p-4 rounded-2xl border border-white/5">
-              <div className="w-12 h-12 bg-[#39FF14]/10 rounded-xl flex items-center justify-center">
-                <Globe className="text-[#39FF14]" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Instagram</p>
-                <p className="text-white font-bold">@playnowarena</p>
-              </div>
-            </div>
+          <div className="mt-8 rounded-2xl border border-[#39FF14]/30 bg-[#39FF14]/10 p-5 text-gray-200">
+            We usually help with booking proof, venue directions, balance payment questions, cancellations, and venue onboarding.
           </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
-            <div className="space-y-2">
-              <Briefcase className="text-gray-400" size={20} />
-              <h4 className="font-bold text-white">Business Enquiries</h4>
-              <p className="text-sm text-gray-500">business@playnow.in</p>
-            </div>
-            <div className="space-y-2">
-              <Handshake className="text-gray-400" size={20} />
-              <h4 className="font-bold text-white">Partnerships</h4>
-              <p className="text-sm text-gray-500">partner@playnow.in</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Contact Form Right Side */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-[#151b2b] p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#39FF14] opacity-5 rounded-full blur-[60px]"></div>
-          
-          <h3 className="text-2xl font-bold mb-6 text-white relative z-10">Send us a message</h3>
-          
-          <form className="space-y-5 relative z-10" onSubmit={(e) => { e.preventDefault(); alert('Message sent successfully! (Demo mode)'); }}>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Name</label>
-              <input 
-                type="text" 
-                required
-                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors"
-                placeholder="your name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
-              <input 
-                type="email" 
-                required
-                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors"
-                placeholder="yours email"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Message</label>
-              <textarea 
-                rows="4" 
-                required
-                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]/50 transition-colors resize-none"
-                placeholder="How can we help you?"
-              ></textarea>
-            </div>
-            <button 
-              type="submit"
-              className="w-full bg-[#39FF14] text-black font-bold py-4 rounded-xl hover:bg-[#32E612] transition-colors shadow-[0_0_15px_rgba(57,255,20,0.3)] cursor-pointer"
-            >
-              Send Message
-            </button>
-          </form>
-        </motion.div>
-
+        </div>
       </div>
     </div>
   );

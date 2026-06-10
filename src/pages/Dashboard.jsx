@@ -37,6 +37,8 @@ const formatSlotTimes = (slots = []) => {
     .join(', ');
 };
 
+const formatCurrency = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
+
 const getSlotStartDateTime = (slot) => {
   if (!slot?.date || !slot?.startTime) return null;
 
@@ -279,8 +281,32 @@ const Dashboard = () => {
                             <Calendar size={14} className="mr-2" /> {formatSlotDate(booking.slotIds?.[0])} | {formatSlotTimes(booking.slotIds)}
                           </p>
                           <p className="text-gray-400 text-sm flex items-center">
-                            <CreditCard size={14} className="mr-2" /> Paid ₹{booking.paidAmount || 0} of ₹{booking.totalAmount || 0}
+                            <CreditCard size={14} className="mr-2" /> Paid {formatCurrency(booking.paidAmount)} of {formatCurrency(booking.totalAmount)}
                           </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 text-xs">
+                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                              <p className="text-gray-500 font-bold uppercase">Slots</p>
+                              <p className="text-white font-black mt-1">{booking.slotIds?.length || 0}</p>
+                            </div>
+                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                              <p className="text-gray-500 font-bold uppercase">Total</p>
+                              <p className="text-white font-black mt-1">{formatCurrency(booking.totalAmount)}</p>
+                            </div>
+                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                              <p className="text-gray-500 font-bold uppercase">Paid Online</p>
+                              <p className="text-[#39FF14] font-black mt-1">{formatCurrency(booking.paidAmount)}</p>
+                            </div>
+                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
+                              <p className="text-gray-500 font-bold uppercase">Venue Balance</p>
+                              <p className="text-yellow-400 font-black mt-1">{formatCurrency(booking.remainingAmount)}</p>
+                            </div>
+                          </div>
+                          <div className="mt-4 rounded-xl border border-white/10 bg-[#0a0f1c] p-3 text-xs text-gray-400 space-y-1">
+                            <p><span className="text-white font-bold">Player:</span> {user?.name || 'Player'} {user?.phone ? `- ${user.phone}` : ''}</p>
+                            <p>Show this booking at the venue. Pay remaining balance before play.</p>
+                            <p>Need help? +91 78712 56533 | playnowarena@gmail.com</p>
+                            <p>Cancellation allowed up to 4 hours before slot time.</p>
+                          </div>
                         </div>
                         
                         <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto">
