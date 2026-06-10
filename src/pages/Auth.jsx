@@ -175,13 +175,28 @@ const handleVerifyOtp = async (e) => {
       return;
     }
 
+    console.log('Full User Data Received:', data);
+    console.log('User Role (possible locations):', data.role, data.user?.role);
     setUserData(data);
     if (data.name && data.name.startsWith('Player_')) {
-  setStep(3);
-} else {
-  login(data);
-  navigate('/');
-}
+      setStep(3);
+    } else {
+      // Determine role from possible fields
+      const role = data.role || data.user?.role;
+      login(data);
+      if (role) {
+        if (role === 'admin') {
+          navigate('/admin');
+        } else if (role === 'owner') {
+          navigate('/owner');
+        } else {
+          navigate('/');
+        }
+      } else {
+        // Role not yet available – stay on this page (could show a loading indicator)
+        console.warn('Role not found in response; staying on auth page until resolved.');
+      }
+    }
   } catch (err) {
     console.error('Verify OTP Error:', err);
     setError('Backend not connected. Please check server.');
@@ -253,9 +268,20 @@ body: JSON.stringify({
       return;
     }
 
-    setUserData(data);
-    login(data);
-    navigate('/');
+      // Determine role from possible fields
+      const roleSetup = data.role || data.user?.role;
+      login(data);
+      if (roleSetup) {
+        if (roleSetup === 'admin') {
+          navigate('/admin');
+        } else if (roleSetup === 'owner') {
+          navigate('/owner');
+        } else {
+          navigate('/');
+        }
+      } else {
+        console.warn('Role not found after profile setup; staying on page.');
+      }
   } catch (err) {
     console.error('Profile update error:', err);
     setError('Unable to save profile. Please try again.');

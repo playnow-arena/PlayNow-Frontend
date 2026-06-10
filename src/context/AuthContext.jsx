@@ -22,25 +22,27 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
- const login = (userData) => {
-  const fullUserData = {
-    ...userData,
-    id: userData._id,
-    isVerified: true,
+  const login = async (userData) => {
+    const fullUserData = {
+      ...userData,
+      id: userData._id,
+      isVerified: true,
+    };
+    console.log('Login called with userData:', userData);
+    console.log('Extracted role (userData.role):', userData.role);
+    console.log('Extracted role (userData.user?.role):', userData.user?.role);
+    setUser(fullUserData);
+    localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
+    if (userData.token) {
+      localStorage.setItem('playnow_token', userData.token);
+    }
   };
 
-  setUser(fullUserData);
-  localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
-
-  if (userData.token) {
-    localStorage.setItem('playnow_token', userData.token);
-  }
-};
   const logout = () => {
-  setUser(null);
-  localStorage.removeItem('playnow_user');
-  localStorage.removeItem('playnow_token');
-};
+    setUser(null);
+    localStorage.removeItem('playnow_user');
+    localStorage.removeItem('playnow_token');
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
