@@ -71,6 +71,44 @@ const formatRequestDate = (date) => {
   });
 };
 
+const formatMoney = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
+
+const formatSlotDate = (slot) => {
+  if (!slot?.date) return 'Date unavailable';
+
+  return new Date(slot.date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatTime = (time) => {
+  if (!time) return '';
+
+  const [hourValue, minute = '00'] = time.split(':');
+  const hour = Number(hourValue);
+  if (Number.isNaN(hour)) return time;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  return `${hour % 12 || 12}:${minute} ${period}`;
+};
+
+const formatSlotTimes = (slots = []) => {
+  if (!slots.length) return 'Time unavailable';
+
+  return slots
+    .map((slot) => [formatTime(slot.startTime), formatTime(slot.endTime)].filter(Boolean).join(' - '))
+    .filter(Boolean)
+    .join(', ');
+};
+
+const canCollectBookingBalance = (booking) => (
+  Number(booking?.remainingAmount || 0) > 0 &&
+  booking?.bookingStatus !== 'cancelled' &&
+  booking?.paymentStatus !== 'completed'
+);
+
 const AdminPortal = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -87,6 +125,8 @@ const AdminPortal = () => {
   const [editingVenueId, setEditingVenueId] = useState(null);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [venueError, setVenueError] = useState('');
+  const [venueImageUploading, setVenueImageUploading] = useState(false);
+  const [venueImageMessage, setVenueImageMessage] = useState('');
   const [slotForm, setSlotForm] = useState(emptySlotForm);
   const [slotMessage, setSlotMessage] = useState('');
   const [slotLoading, setSlotLoading] = useState(false);
@@ -98,6 +138,17 @@ const AdminPortal = () => {
   const [ownerRequestsLoading, setOwnerRequestsLoading] = useState(false);
   const [ownerRequestMessage, setOwnerRequestMessage] = useState('');
   const [ownerRequestActionId, setOwnerRequestActionId] = useState('');
+  const [adminBookings, setAdminBookings] = useState([]);
+  const [adminBookingsLoading, setAdminBookingsLoading] = useState(false);
+  const [adminBookingsMessage, setAdminBookingsMessage] = useState('');
+  const [bookingFilters, setBookingFilters] = useState({
+    status: '',
+    paymentStatus: '',
+    venueId: '',
+    date: '',
+  });
+  const [bookingCollectionMethods, setBookingCollectionMethods] = useState({});
+  const [bookingCollectionLoadingId, setBookingCollectionLoadingId] = useState('');
 
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -155,6 +206,43 @@ const AdminPortal = () => {
     }
   };
 
+  const fetchAdminBookings = async () => {
+    setAdminBookingsLoading(true);
+    setAdminBookingsMessage('');
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setAdminBookingsMessage('Admin token not found. Please login again.');
+      setAdminBookingsLoading(false);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      if (bookingFilters.status) params.set('status', bookingFilters.status);
+      if (bookingFilters.venueId) params.set('venueId', bookingFilters.venueId);
+      if (bookingFilters.date) params.set('date', bookingFilters.date);
+
+      const query = params.toString();
+      const res = await fetch(apiUrl(`/api/bookings/admin${query ? `?${query}` : ''}`), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setAdminBookingsMessage(getVenueErrorMessage(data, 'Failed to load platform bookings'));
+        return;
+      }
+
+      setAdminBookings(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Admin bookings fetch error:', error);
+      setAdminBookingsMessage(`Unable to load platform bookings: ${error.message}`);
+    } finally {
+      setAdminBookingsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeSection === 'venues') {
       fetchVenues();
@@ -162,15 +250,61 @@ const AdminPortal = () => {
     if (activeSection === 'owner-requests') {
       fetchOwnerRequests();
     }
+    if (activeSection === 'platform-bookings') {
+      fetchAdminBookings();
+      if (venues.length === 0) fetchVenues();
+    }
   }, [activeSection]);
 
   const resetVenueForm = () => {
     setVenueForm(emptyVenueForm);
     setEditingVenueId(null);
+    setVenueImageMessage('');
+    setVenueImageUploading(false);
   };
 
   const handleVenueChange = (field, value) => {
     setVenueForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleVenueImageUpload = async (file) => {
+    setVenueImageMessage('');
+
+    if (!file) return;
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setVenueImageMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+    setVenueImageUploading(true);
+
+    try {
+      const res = await fetch(apiUrl('/api/uploads/venue-image'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setVenueImageMessage(getVenueErrorMessage(data, 'Failed to upload image'));
+        return;
+      }
+
+      setVenueForm((current) => ({ ...current, imageUrl: data.url || '' }));
+      setVenueImageMessage('Image uploaded successfully.');
+    } catch (error) {
+      console.error('Venue image upload error:', error);
+      setVenueImageMessage(`Unable to upload image: ${error.message}`);
+    } finally {
+      setVenueImageUploading(false);
+    }
   };
 
   const handleSlotChange = (field, value) => {
@@ -342,6 +476,8 @@ const AdminPortal = () => {
 
   const handleEditVenue = (venue) => {
     setEditingVenueId(venue._id);
+    setVenueImageMessage('');
+    setVenueImageUploading(false);
     setVenueForm({
       name: venue.name || '',
       sportTypes: (venue.sportTypes || []).join(', '),
@@ -465,12 +601,91 @@ const AdminPortal = () => {
     }
   };
 
+  const handleBookingFilterChange = (field, value) => {
+    setBookingFilters((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleBookingCollectionMethodChange = (bookingId, method) => {
+    setBookingCollectionMethods((current) => ({ ...current, [bookingId]: method }));
+  };
+
+  const handleCollectBookingBalance = async (booking) => {
+    const bookingId = booking._id;
+    const method = bookingCollectionMethods[bookingId] || 'cash';
+    const token = localStorage.getItem('playnow_token');
+
+    if (!token) {
+      setAdminBookingsMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    setBookingCollectionLoadingId(bookingId);
+    setAdminBookingsMessage('');
+
+    try {
+      const res = await fetch(apiUrl(`/api/bookings/${bookingId}/collect-balance`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ method }),
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setAdminBookingsMessage(getVenueErrorMessage(data, 'Failed to collect balance'));
+        return;
+      }
+
+      setAdminBookings((current) => current.map((item) => (
+        item._id === bookingId ? data : item
+      )));
+      setAdminBookingsMessage('Balance marked as collected.');
+    } catch (error) {
+      console.error('Admin collect balance error:', error);
+      setAdminBookingsMessage(`Unable to collect balance: ${error.message}`);
+    } finally {
+      setBookingCollectionLoadingId('');
+    }
+  };
+
   const navItems = [
     { id: 'owner-requests', label: 'Owner Requests', icon: Mail },
+    { id: 'platform-bookings', label: 'Platform Bookings', icon: BarChart3 },
     { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, comingSoon: true },
   ];
+
+  const visibleAdminBookings = bookingFilters.paymentStatus
+    ? adminBookings.filter((booking) => booking.paymentStatus === bookingFilters.paymentStatus)
+    : adminBookings;
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const bookingSummary = visibleAdminBookings.reduce((summary, booking) => {
+    const createdKey = booking.createdAt ? new Date(booking.createdAt).toISOString().slice(0, 10) : '';
+
+    summary.totalBookings += 1;
+    summary.totalPaidAmount += Number(booking.paidAmount || 0);
+    summary.pendingBalance += Number(booking.remainingAmount || 0);
+
+    if (createdKey === todayKey) {
+      summary.todayBookings += 1;
+    }
+
+    if (booking.bookingStatus === 'cancelled') {
+      summary.cancelledBookings += 1;
+    }
+
+    return summary;
+  }, {
+    totalBookings: 0,
+    todayBookings: 0,
+    totalPaidAmount: 0,
+    pendingBalance: 0,
+    cancelledBookings: 0,
+  });
 
   return (
     <div className="fixed inset-0 bg-[#0a0f1c] flex overflow-hidden z-[100]">
@@ -563,6 +778,7 @@ const AdminPortal = () => {
                 onClick={() => {
                   if (activeSection === 'venues') fetchVenues();
                   if (activeSection === 'owner-requests') fetchOwnerRequests();
+                  if (activeSection === 'platform-bookings') fetchAdminBookings();
                 }}
                 className="bg-[#151b2b] border border-gray-800 p-2 rounded-xl text-gray-400 hover:text-white transition"
               >
@@ -638,6 +854,189 @@ const AdminPortal = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeSection === 'platform-bookings' && (
+            <div className="space-y-6">
+              <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-4 md:p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Booking Status
+                    </label>
+                    <select
+                      value={bookingFilters.status}
+                      onChange={(e) => handleBookingFilterChange('status', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">All</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Payment Status
+                    </label>
+                    <select
+                      value={bookingFilters.paymentStatus}
+                      onChange={(e) => handleBookingFilterChange('paymentStatus', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">All</option>
+                      <option value="pending">Pending</option>
+                      <option value="advance_paid">Advance Paid</option>
+                      <option value="completed">Completed</option>
+                      <option value="refunded">Refunded</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Venue
+                    </label>
+                    <select
+                      value={bookingFilters.venueId}
+                      onChange={(e) => handleBookingFilterChange('venueId', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">All Venues</option>
+                      {venues.map((venue) => (
+                        <option key={venue._id} value={venue._id}>{venue.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Slot Date
+                    </label>
+                    <input
+                      type="date"
+                      value={bookingFilters.date}
+                      onChange={(e) => handleBookingFilterChange('date', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={fetchAdminBookings}
+                      disabled={adminBookingsLoading}
+                      className="w-full bg-[#39FF14] text-black font-bold px-5 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {adminBookingsLoading ? 'Loading...' : 'Apply Filters'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                {[
+                  ['Total Bookings', bookingSummary.totalBookings],
+                  ['Today Bookings', bookingSummary.todayBookings],
+                  ['Total Paid', formatMoney(bookingSummary.totalPaidAmount)],
+                  ['Pending Balance', formatMoney(bookingSummary.pendingBalance)],
+                  ['Cancelled', bookingSummary.cancelledBookings],
+                ].map(([label, value]) => (
+                  <div key={label} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black">{label}</p>
+                    <p className="text-xl font-black text-white mt-2">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {adminBookingsMessage && (
+                <div className={`rounded-xl px-4 py-3 text-sm border ${adminBookingsMessage.toLowerCase().includes('collected') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                  {adminBookingsMessage}
+                </div>
+              )}
+
+              <div className="bg-[#151b2b] border border-gray-800 rounded-3xl overflow-hidden">
+                {adminBookingsLoading ? (
+                  <div className="p-12 text-center text-gray-500 font-bold">Loading platform bookings...</div>
+                ) : visibleAdminBookings.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500 font-bold">No bookings found for the selected filters.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left min-w-[1100px]">
+                      <thead className="bg-black/30 border-b border-gray-800">
+                        <tr className="text-xs font-black uppercase tracking-widest text-gray-500">
+                          <th className="p-4">Booking ID</th>
+                          <th className="p-4">Player</th>
+                          <th className="p-4">Venue</th>
+                          <th className="p-4">Slot</th>
+                          <th className="p-4">Payment</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleAdminBookings.map((booking) => {
+                          const bookingId = booking._id || booking.id;
+                          const shouldCollect = canCollectBookingBalance(booking);
+
+                          return (
+                            <tr key={bookingId} className="border-b border-white/5 align-top hover:bg-white/5">
+                              <td className="p-4 font-mono text-sm text-gray-400">
+                                #{bookingId?.slice(-8).toUpperCase()}
+                              </td>
+                              <td className="p-4">
+                                <p className="font-bold text-white">{booking.userId?.name || 'Guest'}</p>
+                                <p className="text-xs text-gray-500 mt-1">{booking.userId?.phone || 'Phone unavailable'}</p>
+                              </td>
+                              <td className="p-4">
+                                <p className="font-bold text-white">{booking.venueId?.name || 'Venue unavailable'}</p>
+                                <p className="text-xs text-gray-500 mt-1">{booking.venueId?.location || 'Location unavailable'}</p>
+                              </td>
+                              <td className="p-4">
+                                <p className="font-bold text-gray-300">{formatSlotDate(booking.slotIds?.[0])}</p>
+                                <p className="text-xs text-gray-500 mt-1">{formatSlotTimes(booking.slotIds)}</p>
+                              </td>
+                              <td className="p-4 text-sm">
+                                <p>Total: <span className="font-bold text-white">{formatMoney(booking.totalAmount)}</span></p>
+                                <p>Paid: <span className="font-bold text-[#39FF14]">{formatMoney(booking.paidAmount)}</span></p>
+                                <p>Balance: <span className="font-bold text-yellow-400">{formatMoney(booking.remainingAmount)}</span></p>
+                              </td>
+                              <td className="p-4">
+                                <p className="text-xs font-black uppercase text-gray-300">{booking.bookingStatus || 'unknown'}</p>
+                                <p className="text-xs text-gray-500 mt-1">{booking.paymentStatus || 'payment unknown'}</p>
+                              </td>
+                              <td className="p-4 text-right">
+                                {shouldCollect ? (
+                                  <div className="flex flex-col gap-2 items-end">
+                                    <select
+                                      value={bookingCollectionMethods[bookingId] || 'cash'}
+                                      onChange={(e) => handleBookingCollectionMethodChange(bookingId, e.target.value)}
+                                      className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#39FF14]"
+                                    >
+                                      <option value="cash">Cash</option>
+                                      <option value="upi">UPI</option>
+                                      <option value="card">Card</option>
+                                    </select>
+                                    <button
+                                      onClick={() => handleCollectBookingBalance(booking)}
+                                      disabled={bookingCollectionLoadingId === bookingId}
+                                      className="bg-[#39FF14] text-black font-bold px-4 py-2 rounded-xl text-sm hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {bookingCollectionLoadingId === bookingId ? 'Collecting...' : 'Mark Balance Collected'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">No balance due</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -761,6 +1160,38 @@ const AdminPortal = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Upload Venue Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={venueImageUploading}
+                      onChange={(e) => handleVenueImageUpload(e.target.files?.[0])}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-[#39FF14] file:px-4 file:py-2 file:font-bold file:text-black disabled:opacity-60"
+                    />
+                    {venueImageMessage && (
+                      <p className={`mt-2 text-xs font-bold ${venueImageMessage.toLowerCase().includes('success') ? 'text-[#39FF14]' : 'text-red-400'}`}>
+                        {venueImageMessage}
+                      </p>
+                    )}
+                    {venueImageUploading && (
+                      <p className="mt-2 text-xs font-bold text-gray-400">Uploading image...</p>
+                    )}
+                  </div>
+
+                  {venueForm.imageUrl && (
+                    <div className="md:col-span-2 bg-[#0a0f1c] border border-gray-800 rounded-2xl p-4">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Image Preview</p>
+                      <img
+                        src={venueForm.imageUrl}
+                        alt="Venue preview"
+                        className="w-full max-h-64 object-cover rounded-xl border border-gray-800"
+                      />
+                    </div>
+                  )}
+
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Description
@@ -785,9 +1216,10 @@ const AdminPortal = () => {
                   </label>
                   <button
                     type="submit"
-                    className="bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition"
+                    disabled={venueImageUploading}
+                    className="bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingVenueId ? 'Update Venue' : 'Create Venue'}
+                    {venueImageUploading ? 'Uploading Image...' : editingVenueId ? 'Update Venue' : 'Create Venue'}
                   </button>
                 </div>
               </form>
@@ -1101,7 +1533,7 @@ const AdminPortal = () => {
             </div>
           )}
 
-          {activeSection !== 'owner-requests' && activeSection !== 'venues' && (
+          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold">Coming Soon</h3>
