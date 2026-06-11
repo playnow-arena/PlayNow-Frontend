@@ -84,7 +84,7 @@ const formatSlotRange = (slot) => {
 
 // ── Reusable star-rating widget ─────────────────────────
 const StarRating = ({ value, onChange, size = 24, readonly = false }) => (
-  <div className="flex gap-1">
+    <div className="flex flex-wrap gap-1">
     {[1, 2, 3, 4, 5].map((star) => (
       <button
         key={star}
@@ -353,7 +353,7 @@ const VenueDetail = () => {
     }
   };
   const renderDateSelector = () => (
-    <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar">
+    <div className="flex gap-2 overflow-x-auto pb-2 mb-4 custom-scrollbar -mx-1 px-1 max-w-full">
       {dateOptions.map(({ dateKey, availableCount }) => {
         const isActive = selectedDateKey === dateKey;
 
@@ -379,7 +379,7 @@ const VenueDetail = () => {
   );
 
   return (
-    <div className="pb-32 md:pb-24">
+      <div className="pb-32 md:pb-24 overflow-x-hidden">
       {/* Hero Image & Overlay */}
       <div className="w-full h-[35vh] sm:h-[45vh] md:h-[60vh] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
@@ -395,23 +395,23 @@ const VenueDetail = () => {
         )}
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/40 to-transparent" />
         
-        <div className="absolute bottom-0 left-0 z-30 w-full p-4 md:p-12 max-w-7xl mx-auto">
+        <div className="absolute bottom-0 left-0 z-30 w-full p-4 md:p-12">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col gap-2 md:gap-4"
           >
-            <div className="flex gap-2">
-              <span className="bg-[#39FF14] text-black px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest shadow-lg">
+            <div className="flex flex-wrap gap-2 max-w-full">
+              <span className="bg-[#39FF14] text-black px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest shadow-lg max-w-full truncate">
                 {venue.sportTypes?.join(', ') || 'Sport'}
               </span>
-              <span className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/60 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/50'}`}>
+              <span className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/60 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/50'}`}>
                 {venue.isActive ? 'Open' : 'Maintenance'}
               </span>
             </div>
-            <h1 className="text-3xl md:text-6xl font-black text-white leading-tight uppercase tracking-tighter">{venue.name}</h1>
-            <p className="text-gray-300 flex items-center text-xs md:text-lg font-medium opacity-90">
-              <MapPin size={18} className="mr-2 text-[#39FF14]" /> {venue.location}
+            <h1 className="text-3xl md:text-6xl font-black text-white leading-tight uppercase tracking-tighter break-words">{venue.name}</h1>
+            <p className="text-gray-300 flex items-start text-xs md:text-lg font-medium opacity-90">
+              <MapPin size={18} className="mr-2 mt-0.5 text-[#39FF14] shrink-0" /> <span className="break-words">{venue.location}</span>
             </p>
           </motion.div>
         </div>
@@ -424,7 +424,7 @@ const VenueDetail = () => {
           <div className="lg:col-span-2 space-y-8 md:space-y-12">
             
             {/* Quick Stats (Mobile only/Desktop compact) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                <div className="bg-[#151b2b] p-4 rounded-[1.5rem] border border-white/5 flex flex-col items-center justify-center text-center">
                   <Star size={24} className="text-[#39FF14] mb-2" fill="currentColor" />
                   <span className="text-lg font-black">{venue.rating || 5}</span>
@@ -432,7 +432,7 @@ const VenueDetail = () => {
                </div>
                <div className="bg-[#151b2b] p-4 rounded-[1.5rem] border border-white/5 flex flex-col items-center justify-center text-center">
                   <Clock size={24} className="text-[#39FF14] mb-2" />
-                  <span className="text-lg font-black">6 AM - 11 PM</span>
+                  <span className="text-base md:text-lg font-black">6 AM - 11 PM</span>
                   <span className="text-[10px] text-gray-500 font-bold uppercase">Timing</span>
                </div>
                <div className="bg-[#151b2b] p-4 rounded-[1.5rem] border border-white/5 flex flex-col items-center justify-center text-center">
@@ -465,9 +465,9 @@ const VenueDetail = () => {
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {(venue.amenities || []).map((amenity, index) => (
-                  <div key={index} className="flex items-center text-gray-300 bg-black/40 p-4 rounded-2xl border border-white/5 font-bold text-xs md:text-sm">
+                  <div key={index} className="flex items-center text-gray-300 bg-black/40 p-3 md:p-4 rounded-2xl border border-white/5 font-bold text-xs md:text-sm min-w-0">
                     <CheckCircle size={18} className="text-[#39FF14] mr-3 shrink-0" />
-                    <span className="uppercase tracking-tight">{amenity}</span>
+                    <span className="uppercase tracking-tight break-words">{amenity}</span>
                   </div>
                 ))}
               </div>
@@ -480,7 +480,7 @@ const VenueDetail = () => {
                 <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest flex items-center">
                   <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Player Reviews
                 </h2>
-                <div className="flex items-center bg-black/40 px-5 py-3 rounded-2xl border border-white/5 shadow-inner">
+                <div className="flex items-center bg-black/40 px-4 md:px-5 py-3 rounded-2xl border border-white/5 shadow-inner w-full md:w-auto justify-center md:justify-start">
                   <Star size={20} className="text-[#39FF14] mr-2" fill="currentColor" />
                   <span className="font-black text-xl">{venue.rating ?? 5}</span>
                   <span className="text-gray-500 ml-2 font-bold text-xs uppercase tracking-tighter">({venue.reviewsCount ?? 0} reviews)</span>
@@ -491,7 +491,7 @@ const VenueDetail = () => {
               {user && !userReview && (
                 <form onSubmit={handleSubmitReview} className="mb-8 bg-black/30 rounded-2xl border border-white/10 p-5 md:p-6 space-y-4">
                   <h3 className="text-sm font-black uppercase tracking-widest text-gray-300">Write a Review</h3>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <span className="text-xs text-gray-500 font-bold uppercase">Your Rating</span>
                     <StarRating value={reviewForm.rating} onChange={(v) => setReviewForm((f) => ({ ...f, rating: v }))} size={22} />
                   </div>
@@ -508,7 +508,7 @@ const VenueDetail = () => {
                   <button
                     type="submit"
                     disabled={reviewSubmitting}
-                    className="flex items-center gap-2 bg-[#39FF14] text-black font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#39FF14] text-black font-black text-xs uppercase tracking-wider sm:tracking-widest px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <Send size={14} />
                     {reviewSubmitting ? 'Submitting…' : 'Submit Review'}
@@ -561,7 +561,7 @@ const VenueDetail = () => {
                         className="bg-black/20 p-5 md:p-6 rounded-2xl border border-white/5"
                       >
                         {/* Review header */}
-                        <div className="flex justify-between items-start mb-3 gap-2">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-3">
                           <div>
                             <div className="font-black text-sm uppercase tracking-wider">
                               {review.userId?.name || 'Anonymous'}
@@ -573,7 +573,7 @@ const VenueDetail = () => {
                               {reviewDate}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
                             {!isEditing && <StarRating value={review.rating} readonly size={13} />}
                             {(isOwn || isAdmin) && !isEditing && (
                               <div className="flex gap-1 ml-1">
@@ -602,7 +602,7 @@ const VenueDetail = () => {
                         {/* Edit mode */}
                         {isEditing ? (
                           <div className="space-y-3 mt-3">
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                               <span className="text-xs text-gray-500 font-bold uppercase">Rating</span>
                               <StarRating
                                 value={editForm.rating}
@@ -618,7 +618,7 @@ const VenueDetail = () => {
                               className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-[#39FF14]/50 transition"
                             />
                             {reviewError && <p className="text-red-400 text-xs font-bold">{reviewError}</p>}
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <button
                                 onClick={() => handleUpdateReview(review._id)}
                                 disabled={editSubmitting}
@@ -669,7 +669,7 @@ const VenueDetail = () => {
                 {dateOptions.length > 0 && renderDateSelector()}
                 <div className="grid grid-cols-2 gap-3">
                   {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
-                    <div className="col-span-2 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                  <div className="col-span-full rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
                       <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
                     </div>
@@ -745,10 +745,10 @@ const VenueDetail = () => {
 
       {/* Mobile Sticky Booking Bar */}
       <div className="lg:hidden fixed bottom-16 left-0 right-0 w-full glass-mobile border-t border-white/10 px-4 py-4 z-40 pb-safe">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          <div className="flex flex-col">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Selected Slots</span>
-            <span className="text-xl font-black text-[#39FF14] tracking-tighter">
+              <span className="text-lg sm:text-xl font-black text-[#39FF14] tracking-tighter">
               ₹{selectedSlots.length > 0 ? venue.pricePerHour * selectedSlots.length : venue.pricePerHour}
               {selectedSlots.length === 0 && <span className="text-[10px] text-gray-400 ml-1">/ hr</span>}
             </span>
@@ -760,7 +760,7 @@ const VenueDetail = () => {
                 document.getElementById('mobile-slot-anchor')?.scrollIntoView({ behavior: 'smooth' });
               }
             }}
-            className={`flex-1 py-3.5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all btn-touch shadow-xl ${
+            className={`flex-1 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all btn-touch shadow-xl ${
               selectedSlots.length > 0 
                 ? 'bg-[#39FF14] text-black shadow-[0_0_20px_rgba(57,255,20,0.4)]' 
                 : 'bg-white/10 text-white'
@@ -773,15 +773,15 @@ const VenueDetail = () => {
 
       {/* Mobile Slot Anchor for scrolling */}
       <div id="mobile-slot-anchor" className="lg:hidden px-4 mt-8 pb-32">
-         <div className="bg-[#151b2b] p-6 rounded-[2rem] border border-white/5">
-            <h3 className="text-lg font-black uppercase tracking-widest mb-1">Select Slots</h3>
+         <div className="bg-[#151b2b] p-4 sm:p-6 rounded-[2rem] border border-white/5">
+            <h3 className="text-lg font-black uppercase tracking-wider mb-1">Select Slots</h3>
             <p className="text-gray-500 text-[10px] font-bold uppercase mb-6 tracking-widest">
               Available {selectedDateLabel || 'Slots'}
             </p>
             {dateOptions.length > 0 && renderDateSelector()}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+             <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3">
                {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
-                  <div className="col-span-2 sm:col-span-3 rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
+                  <div className="col-span-full rounded-2xl border border-dashed border-white/10 bg-black/30 p-6 text-center">
                     <p className="text-sm font-black uppercase tracking-widest text-gray-300">No slots available for this date</p>
                     <p className="mt-2 text-xs text-gray-500">Please choose another date or try another venue.</p>
                   </div>
@@ -796,7 +796,7 @@ const VenueDetail = () => {
                       key={slot._id || i}
                       onClick={() => toggleSlot(slot)}
                       disabled={isBooked || isBlocked || !venue.isActive}
-                      className={`py-4 rounded-2xl text-xs font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
+                      className={`py-4 px-2 rounded-2xl text-xs font-black transition-all border flex flex-col items-center justify-center btn-touch relative overflow-hidden ${
                         isSelected 
                           ? 'bg-[#39FF14] text-black border-white ring-4 ring-[#39FF14]/35 shadow-[0_0_24px_rgba(57,255,20,0.55)] scale-[1.03]' 
                           : isLocked
@@ -808,7 +808,7 @@ const VenueDetail = () => {
                           : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
                       }`}
                     >
-                      <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
+                      <span className="uppercase tracking-tighter text-center break-words">{formatSlotRange(slot)}</span>
                     </button>
                   );
                 })}

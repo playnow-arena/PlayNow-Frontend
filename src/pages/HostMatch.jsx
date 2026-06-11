@@ -58,11 +58,11 @@ const handleNext = async (e) => {
 
   if (step === 4) {
     return (
-      <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-24 pb-24 px-4 flex flex-col items-center justify-center overflow-x-hidden">
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-[#151b2b] p-8 rounded-3xl border border-[#39FF14]/50 max-w-md w-full text-center relative overflow-hidden"
+          className="bg-[#151b2b] p-5 sm:p-8 rounded-3xl border border-[#39FF14]/50 max-w-md w-full text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-2 bg-[#39FF14]"></div>
           <div className="w-20 h-20 bg-[#39FF14]/20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -72,7 +72,7 @@ const handleNext = async (e) => {
           <p className="text-gray-400 mb-6">Your match is now live on the feed. Players can join and pay their share.</p>
           
           <div className="bg-[#0a0f1c] rounded-xl p-4 mb-8 text-left border border-gray-800">
-            <div className="flex justify-between mb-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-2 mb-2">
               <span className="text-gray-400">Share Link</span>
               <button 
                 onClick={() => {
@@ -100,9 +100,9 @@ const handleNext = async (e) => {
   }
 
   return (
-    <div className="pt-24 pb-24 px-4 max-w-2xl mx-auto min-h-screen">
+    <div className="pt-20 md:pt-24 pb-24 px-4 max-w-2xl mx-auto min-h-screen w-full overflow-x-hidden">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-2">Host a Match</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Host a Match</h1>
         <p className="text-gray-400">Split costs, find players, and play more.</p>
       </div>
 
@@ -120,7 +120,7 @@ const handleNext = async (e) => {
         key={step}
         initial={{ x: 20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        className="bg-[#151b2b] p-6 md:p-8 rounded-3xl border border-gray-800 shadow-xl"
+        className="bg-[#151b2b] p-4 sm:p-6 md:p-8 rounded-3xl border border-gray-800 shadow-xl min-w-0"
       >
         <form onSubmit={handleNext}>
           
@@ -143,7 +143,7 @@ const handleNext = async (e) => {
                   <input required type="text" placeholder="Search venue..." value={formData.venue} onChange={(e) => setFormData({...formData, venue: e.target.value})} className="w-full bg-[#0a0f1c] border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-[#39FF14]" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">Date</label>
                   <div className="relative">
@@ -193,19 +193,19 @@ const handleNext = async (e) => {
               <h2 className="text-xl font-bold border-b border-gray-800 pb-3 mb-5">Review & Publish</h2>
               
               <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 space-y-3">
-                <div className="flex justify-between">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Sport</span>
-                  <span className="font-bold">{formData.sport}</span>
+                  <span className="font-bold break-words sm:text-right">{formData.sport}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Venue</span>
-                  <span className="font-bold">{formData.venue}</span>
+                  <span className="font-bold break-words sm:text-right">{formData.venue}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Time</span>
-                  <span className="font-bold">{formData.date} at {formData.time}</span>
+                  <span className="font-bold break-words sm:text-right">{formData.date} at {formData.time}</span>
                 </div>
-                <div className="border-t border-gray-800 pt-3 flex justify-between text-[#39FF14]">
+                <div className="border-t border-gray-800 pt-3 flex flex-col sm:flex-row sm:justify-between gap-1 text-[#39FF14]">
                   <span>Cost per player</span>
                   <span className="font-bold">₹{pricePerPlayer} ({formData.totalPlayers} players)</span>
                 </div>
@@ -220,13 +220,13 @@ const handleNext = async (e) => {
             </div>
           )}
 
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
             {step > 1 && (
-              <button type="button" onClick={() => setStep(step - 1)} className="w-1/3 bg-transparent border border-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition">
+              <button type="button" onClick={() => setStep(step - 1)} className="w-full sm:w-1/3 bg-transparent border border-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition">
                 Back
               </button>
             )}
-            <button type="submit" className="flex-1 bg-[#39FF14] text-black font-bold py-3 rounded-xl hover:bg-[#32E612] transition flex justify-center items-center shadow-[0_0_15px_rgba(57,255,20,0.3)]">
+            <button type="submit" className="w-full flex-1 bg-[#39FF14] text-black font-bold py-3 rounded-xl hover:bg-[#32E612] transition flex justify-center items-center shadow-[0_0_15px_rgba(57,255,20,0.3)]">
               {step === 3 ? 'Publish Match' : 'Next'} <ArrowRight size={18} className="ml-2" />
             </button>
           </div>

@@ -13,7 +13,7 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: isCompact ? 0.6 : 0.5, delay: index * delayMultiplier, ease: "easeOut" }}
       whileHover={{ y: -6, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 20 } }}
-      className={`w-full bg-[#151b2b] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-colors group cursor-pointer shadow-xl ${isCompact ? 'rounded-3xl' : 'rounded-[2rem] shadow-2xl'}`}
+      className={`w-full min-w-0 bg-[#151b2b] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-colors group cursor-pointer shadow-xl ${isCompact ? 'rounded-3xl' : 'rounded-[2rem] shadow-2xl'}`}
     >
       <div className={`relative overflow-hidden ${isCompact ? 'h-48 md:h-52' : 'h-52 md:h-56'}`}>
         <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -24,8 +24,8 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
         </div>
         
         {/* Bottom Badges */}
-        <div className={`absolute flex gap-2 ${isCompact ? 'bottom-3 left-3' : 'bottom-4 left-4'}`}>
-          <span className={`bg-[#39FF14] text-black rounded-full text-[10px] font-black uppercase ${isCompact ? 'px-3 py-1' : 'px-4 py-1.5 shadow-[0_4px_10px_rgba(57,255,20,0.4)]'}`}>
+        <div className={`absolute flex flex-wrap gap-2 max-w-[calc(100%-1.5rem)] ${isCompact ? 'bottom-3 left-3' : 'bottom-4 left-4 right-3'}`}>
+          <span className={`max-w-full truncate bg-[#39FF14] text-black rounded-full text-[10px] font-black uppercase ${isCompact ? 'px-3 py-1' : 'px-4 py-1.5 shadow-[0_4px_10px_rgba(57,255,20,0.4)]'}`}>
             {venue.sportTypes?.[0] || 'Sport'}
           </span>
           {!isCompact && venue.isActive !== undefined && (
@@ -37,15 +37,16 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
       </div>
       
       <div className={isCompact ? 'p-4 sm:p-5 md:p-6' : 'p-4 sm:p-6 md:p-8'}>
-        <div className="flex justify-between items-start mb-3 md:mb-4">
-          <h3 className={`${isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'} font-black leading-tight truncate pr-2 md:pr-4`}>{venue.name}</h3>
-          <div className="text-right flex-shrink-0">
+        <div className="flex justify-between items-start gap-3 mb-3 md:mb-4 min-w-0">
+          <h3 className={`${isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'} font-black leading-tight min-w-0 break-words line-clamp-2 pr-1 md:pr-4`}>{venue.name}</h3>
+          <div className="text-right shrink-0">
             <span className={`text-[#39FF14] font-black ${isCompact ? 'text-lg' : 'text-2xl'}`}>₹{venue.pricePerHour}</span>
             <span className="text-[10px] text-gray-500 block font-bold uppercase tracking-tighter">/ hour</span>
           </div>
         </div>
-        <p className={`text-gray-400 text-sm flex items-center font-medium ${isCompact ? 'mb-5 text-xs md:text-sm' : 'mb-6'}`}>
-          <MapPin size={isCompact ? 14 : 16} className={`text-gray-600 ${isCompact ? 'mr-1' : 'mr-2'}`} /> {venue.location}
+        <p className={`text-gray-400 text-sm flex items-start font-medium min-w-0 ${isCompact ? 'mb-5 text-xs md:text-sm' : 'mb-6'}`}>
+          <MapPin size={isCompact ? 14 : 16} className={`text-gray-600 shrink-0 mt-0.5 ${isCompact ? 'mr-1' : 'mr-2'}`} />
+          <span className="min-w-0 break-words">{venue.location}</span>
         </p>
 
         {/* Amenities (Only visible if showAmenities is true) */}
@@ -69,7 +70,7 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.98 }}
           transition={{ type: "spring", stiffness: 400, damping: 15 }}
-          className={`block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white rounded-2xl transition-all font-black text-sm uppercase btn-touch ${isCompact ? 'py-3 tracking-widest' : 'py-4 tracking-[0.2em] shadow-xl'}`}
+          className={`block w-full text-center bg-white/5 hover:bg-[#39FF14] hover:text-black text-white rounded-2xl transition-all font-black text-sm uppercase btn-touch ${isCompact ? 'py-3 tracking-widest' : 'py-4 tracking-widest sm:tracking-[0.2em] shadow-xl'}`}
         >
           {isCompact ? 'Book Slot' : 'VIEW & BOOK'}
         </MotionLink>

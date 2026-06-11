@@ -83,10 +83,10 @@ const Footer = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="flex flex-wrap justify-center gap-4 md:gap-6 text-sm font-semibold text-gray-300">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-3 md:gap-x-6 text-sm font-semibold text-gray-300 text-center">
             <Link to="/terms" className="hover:text-[#39FF14] transition-colors">Terms</Link>
             <Link to="/contact" className="hover:text-[#39FF14] transition-colors">Contact</Link>
-            <Link to="/partner/register" className="hover:text-[#39FF14] transition-colors">Partner with PlayNow</Link>
+            <Link to="/partner/register" className="hover:text-[#39FF14] transition-colors max-w-full break-words">Partner with PlayNow</Link>
             <Link to="/admin" className="hover:text-[#39FF14] transition-colors">Admin</Link>
           </div>
         </div>

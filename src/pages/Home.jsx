@@ -114,12 +114,12 @@ const Home = () => {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20 w-full overflow-x-hidden">
         
 
         {/* Featured Venues */}
         <section>
-          <div className="flex justify-between items-end mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
             <h2 className="text-2xl md:text-3xl font-black uppercase">Featured Venues</h2>
             <Link to="/venues" className="text-[#39FF14] text-sm font-black flex items-center hover:underline uppercase tracking-tighter">
               View All <ArrowRight size={14} className="ml-1" />
@@ -138,7 +138,7 @@ const Home = () => {
 
         {/* Hosted Matches */}
         <section>
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-8">
             <h2 className="text-3xl font-bold">Join Stranger Matches</h2>
             <Link to="/host-match" className="text-[#39FF14] font-medium flex items-center hover:underline">
               Host Match <ArrowRight size={16} className="ml-1" />
@@ -151,7 +151,7 @@ const Home = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row gap-6 items-center"
+                className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] p-4 sm:p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row gap-5 md:gap-6 items-center min-w-0"
               >
                 <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-4 bg-[#0a0f1c] rounded-xl border border-gray-800">
                   <div className="w-16 h-16 bg-gray-800 rounded-full mb-2 flex items-center justify-center">
@@ -162,21 +162,21 @@ const Home = () => {
                 </div>
                 <div className="w-full md:w-2/3 flex flex-col justify-between h-full">
                   <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-bold">{match.sport}</h3>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                      <h3 className="text-xl font-bold break-words">{match.sport}</h3>
                       <span className="bg-[#39FF14]/20 text-[#39FF14] px-3 py-1 rounded-full text-xs font-bold">
                         ₹{match.pricePerPlayer} / share
                       </span>
                     </div>
-                    <p className="text-gray-400 text-sm flex items-center mb-1">
-                      <MapPin size={14} className="mr-2 text-gray-500" /> {match.venue}
+                    <p className="text-gray-400 text-sm flex items-start mb-1">
+                      <MapPin size={14} className="mr-2 mt-0.5 text-gray-500 shrink-0" /> <span className="break-words">{match.venue}</span>
                     </p>
-                    <p className="text-gray-400 text-sm flex items-center">
-                      <Clock size={14} className="mr-2 text-gray-500" /> {match.date}, {match.time}
+                    <p className="text-gray-400 text-sm flex items-start">
+                      <Clock size={14} className="mr-2 mt-0.5 text-gray-500 shrink-0" /> <span className="break-words">{match.date}, {match.time}</span>
                     </p>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-gray-800 flex items-center justify-between">
+                  <div className="mt-4 pt-4 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <div className="flex -space-x-2 mb-1">
                         {[...Array(match.joinedPlayers)].map((_, i) => (
@@ -185,7 +185,7 @@ const Home = () => {
                       </div>
                       <span className="text-xs text-[#39FF14] font-medium">{match.playersNeeded} more needed</span>
                     </div>
-                    <button className="bg-white text-black px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition">
+                    <button className="w-full sm:w-auto bg-white text-black px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition">
                       Join Now
                     </button>
                   </div>

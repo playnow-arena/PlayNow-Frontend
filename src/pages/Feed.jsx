@@ -56,7 +56,7 @@ const Feed = () => {
   };
 
   return (
-    <div className="pt-24 pb-24 px-4 max-w-3xl mx-auto min-h-screen">
+    <div className="pt-20 md:pt-24 pb-24 px-4 max-w-3xl mx-auto min-h-screen w-full overflow-x-hidden">
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2">
           Open Matches
@@ -89,35 +89,35 @@ const Feed = () => {
             return (
               <div
                 key={match._id}
-                className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] rounded-2xl border border-[#39FF14]/30 overflow-hidden relative p-5"
+                className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] rounded-2xl border border-[#39FF14]/30 overflow-hidden relative p-4 sm:p-5 min-w-0"
               >
                 <div className="absolute top-0 right-0 bg-[#39FF14] text-black text-xs font-bold px-3 py-1 rounded-bl-lg">
                   {isFull ? 'Full' : 'Open Match'}
                 </div>
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold">
+                <div className="flex items-center gap-3 mb-4 min-w-0 pr-20">
+                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold shrink-0">
                     {match.host?.name?.charAt(0) || 'P'}
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-white">
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-white truncate">
                       {match.host?.name || 'PlayNow Player'}
                     </h3>
 
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 break-words">
                       Hosted an Open Match • {match.sport}
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-lg">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-2 min-w-0">
+                    <span className="font-bold text-lg break-words">
                       {match.venue}
                     </span>
 
-                    <span className="text-[#39FF14] font-bold">
+                    <span className="text-[#39FF14] font-bold shrink-0">
                       ₹{pricePerPlayer}
                     </span>
                   </div>
@@ -126,7 +126,7 @@ const Feed = () => {
                     {match.date} at {match.time}
                   </div>
 
-                  <div className="mt-3 flex justify-between items-center">
+                  <div className="mt-3 flex flex-wrap justify-between items-center gap-2">
                     <span className="text-xs text-[#39FF14] bg-[#39FF14]/10 px-2 py-1 rounded">
                       {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
                     </span>

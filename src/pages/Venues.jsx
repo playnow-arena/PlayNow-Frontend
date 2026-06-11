@@ -36,7 +36,7 @@ const Venues = () => {
   });
 
   return (
-    <div className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-7xl mx-auto min-h-screen">
+    <div className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-7xl mx-auto min-h-screen w-full overflow-x-hidden">
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-12">
         <motion.div
@@ -75,7 +75,7 @@ const Venues = () => {
             transition: { staggerChildren: 0.05, delayChildren: 0.2 }
           }
         }}
-        className="flex items-center gap-3 overflow-x-auto pb-6 mb-8 md:mb-10 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+        className="flex items-center gap-3 overflow-x-auto pb-6 mb-8 md:mb-10 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0 max-w-[100vw]"
       >
         <motion.button 
           variants={{
@@ -118,7 +118,7 @@ const Venues = () => {
             }
           }
         }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 min-w-0"
       >
         {loading ? (
           <div className="col-span-full py-20 text-center flex flex-col items-center">
@@ -126,7 +126,7 @@ const Venues = () => {
             <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Fetching Venues...</p>
           </div>
         ) : filteredVenues.length === 0 ? (
-          <div className="col-span-full py-20 text-center bg-[#151b2b] rounded-[2rem] border border-dashed border-white/10">
+          <div className="col-span-full py-16 md:py-20 px-4 text-center bg-[#151b2b] rounded-[2rem] border border-dashed border-white/10">
             <p className="text-gray-300 font-bold uppercase tracking-widest text-sm">No venues found</p>
             <p className="text-gray-500 text-sm mt-2">Try a different sport or search area.</p>
             <button onClick={() => {setFilterSport('All'); setSearchQuery('');}} className="mt-4 text-[#39FF14] font-black uppercase text-xs hover:underline">Clear filters</button>

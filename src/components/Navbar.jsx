@@ -12,7 +12,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const isAuthPage = location.pathname === '/login';
-  const isAdminPage = location.pathname === '/super-admin-portal-2026';
+  const isAdminPage = location.pathname === '/super-admin-portal-2026' || location.pathname === '/admin';
 
   // Notification States
   const [notifications, setNotifications] = useState([]);
@@ -344,7 +344,7 @@ const Navbar = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-72 bg-[#0a0f1c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden"
+                    className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-72 bg-[#0a0f1c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden"
                   >
                     <div className="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
                       <span className="text-xs font-black uppercase tracking-wider text-white">Notifications</span>

@@ -167,11 +167,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
-      <div className="flex flex-col md:flex-row gap-8">
+    <div className="pt-20 md:pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen w-full overflow-x-hidden">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
         
         {/* Profile Sidebar */}
-        <div className="w-full md:w-1/3 lg:w-1/4">
+        <div className="w-full md:w-1/3 lg:w-1/4 min-w-0">
           <div className="bg-[#151b2b] p-6 rounded-2xl border border-gray-800 flex flex-col items-center text-center sticky top-24">
             <div className="w-24 h-24 bg-gradient-energetic rounded-full border-2 border-[#39FF14] flex items-center justify-center mb-4 text-3xl font-bold overflow-hidden">
               {user.avatar ? (
@@ -180,11 +180,11 @@ const Dashboard = () => {
                 user.name.charAt(0)
               )}
             </div>
-            <h2 className="text-xl font-bold">{user.name}</h2>
-            <p className="text-gray-400 mb-2">{user.phone}</p>
+            <h2 className="text-xl font-bold break-words max-w-full">{user.name}</h2>
+            <p className="text-gray-400 mb-2 break-words max-w-full">{user.phone}</p>
             <div className="bg-[#0a0f1c] border border-[#39FF14]/50 px-4 py-2 rounded-xl mb-6 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
               <span className="text-xs text-gray-400 block mb-1">PlayNow ID</span>
-              <span className="font-mono text-[#39FF14] font-bold tracking-wider">{user.playNowId}</span>
+              <span className="font-mono text-[#39FF14] font-bold tracking-wider break-all">{user.playNowId}</span>
             </div>
             
             <div className="w-full space-y-2 mb-6">
@@ -215,7 +215,7 @@ const Dashboard = () => {
         </div>
 
         {/* Main Content */}
-        <div className="w-full md:w-2/3 lg:w-3/4 space-y-8">
+        <div className="w-full md:w-2/3 lg:w-3/4 space-y-8 min-w-0">
           
           <AnimatePresence mode="wait">
             {activeTab === 'bookings' && (
@@ -261,11 +261,11 @@ const Dashboard = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         key={booking._id} 
-                        className="bg-[#151b2b] p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                        className="bg-[#151b2b] p-4 sm:p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-w-0"
                       >
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400">#{(booking._id || '').slice(-8).toUpperCase()}</span>
+                        <div className="min-w-0 w-full">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400 break-all">#{(booking._id || '').slice(-8).toUpperCase()}</span>
                             <span className={`px-2 py-1 rounded text-xs font-bold ${booking.bookingStatus === 'confirmed' ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-yellow-500/20 text-yellow-500'}`}>
                               {booking.bookingStatus || 'unknown'}
                             </span>
@@ -273,15 +273,15 @@ const Dashboard = () => {
                               {booking.paymentStatus || 'payment unknown'}
                             </span>
                           </div>
-                          <h3 className="text-xl font-bold mb-1">{booking.venueId?.name || 'Venue unavailable'}</h3>
-                          <p className="text-gray-500 text-sm flex items-center mb-1">
-                            <MapPin size={14} className="mr-2" /> {booking.venueId?.location || 'Location unavailable'}
+                          <h3 className="text-lg sm:text-xl font-bold mb-1 break-words">{booking.venueId?.name || 'Venue unavailable'}</h3>
+                          <p className="text-gray-500 text-sm flex items-start mb-1 min-w-0">
+                            <MapPin size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">{booking.venueId?.location || 'Location unavailable'}</span>
                           </p>
-                          <p className="text-gray-400 text-sm flex items-center mb-1">
-                            <Calendar size={14} className="mr-2" /> {formatSlotDate(booking.slotIds?.[0])} | {formatSlotTimes(booking.slotIds)}
+                          <p className="text-gray-400 text-sm flex items-start mb-1 min-w-0">
+                            <Calendar size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">{formatSlotDate(booking.slotIds?.[0])} | {formatSlotTimes(booking.slotIds)}</span>
                           </p>
-                          <p className="text-gray-400 text-sm flex items-center">
-                            <CreditCard size={14} className="mr-2" /> Paid {formatCurrency(booking.paidAmount)} of {formatCurrency(booking.totalAmount)}
+                          <p className="text-gray-400 text-sm flex items-start min-w-0">
+                            <CreditCard size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">Paid {formatCurrency(booking.paidAmount)} of {formatCurrency(booking.totalAmount)}</span>
                           </p>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 text-xs">
                             <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
@@ -309,7 +309,7 @@ const Dashboard = () => {
                           </div>
                         </div>
                         
-                        <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto">
+                        <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
                           <button 
                             onClick={() => handleDirections(`${booking.venueId?.name || ''} ${booking.venueId?.location || ''}`)}
                             className="flex-1 md:flex-none bg-[#39FF14]/10 hover:bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center flex items-center justify-center gap-2"
@@ -324,7 +324,7 @@ const Dashboard = () => {
                               <XCircle size={14} className="mr-1" /> Cancel
                             </button>
                           ) : (
-                            <div className="flex-1 md:flex-none flex items-center justify-center text-gray-500 border border-gray-800 bg-[#0a0f1c] px-4 py-2 rounded-xl font-medium text-xs uppercase tracking-widest">
+                            <div className="flex-1 md:flex-none flex items-center justify-center text-gray-500 border border-gray-800 bg-[#0a0f1c] px-4 py-2 rounded-xl font-medium text-xs uppercase tracking-wider sm:tracking-widest text-center">
                               {cancelState.label}
                             </div>
                           )}
@@ -388,16 +388,16 @@ const Dashboard = () => {
                       { id: 'TXN-77342', date: 'Oct 12, 2026', venue: 'Greenfield Turf', amount: 800, status: 'Failed' }
                     ].map((txn) => (
                       <div key={txn.id} className="p-5 space-y-3">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-3">
                           <div>
                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Transaction ID</p>
-                            <p className="font-mono text-sm text-white">{txn.id}</p>
+                            <p className="font-mono text-sm text-white break-all">{txn.id}</p>
                           </div>
                           <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${txn.status === 'Successful' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                             {txn.status}
                           </span>
                         </div>
-                        <div className="flex justify-between items-end">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
                           <div>
                             <p className="text-sm font-bold text-white mb-0.5">{txn.venue}</p>
                             <p className="text-xs text-gray-500">{txn.date}</p>
@@ -416,7 +416,7 @@ const Dashboard = () => {
             <div className="absolute right-0 top-0 w-32 h-32 bg-[#39FF14] rounded-full blur-[80px] opacity-20"></div>
             <h3 className="text-xl font-bold mb-2">Want to host a match?</h3>
             <p className="text-gray-300 mb-4 max-w-md">Split costs with strangers and make new sports buddies. Host a match today!</p>
-            <Link to="/host-match" className="inline-block bg-[#39FF14] text-black px-6 py-2 rounded-xl font-bold hover:bg-[#32E612] transition shadow-lg relative z-10">
+            <Link to="/host-match" className="inline-block w-full sm:w-auto text-center bg-[#39FF14] text-black px-6 py-2 rounded-xl font-bold hover:bg-[#32E612] transition shadow-lg relative z-10">
               Host Match Now
             </Link>
           </section>
