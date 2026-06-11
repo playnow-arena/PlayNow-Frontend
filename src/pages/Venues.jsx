@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { sportsList } from '../data/mockData';
 import VenueCard from '../components/VenueCard';
 import { motion } from 'framer-motion';
+import { sportMatchesFilter } from '../utils/sports';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -29,7 +30,7 @@ const Venues = () => {
   }, []);
 
   const filteredVenues = venues.filter(venue => {
-    const matchesSport = filterSport === 'All' || venue.sportTypes?.includes(filterSport);
+    const matchesSport = sportMatchesFilter(venue.sportTypes, filterSport);
     const matchesSearch = venue.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           venue.location.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSport && matchesSearch;

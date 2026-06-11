@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, RefreshCw } from 'lucide-react';
+import { formatSportTypes } from '../utils/sports';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -686,7 +687,7 @@ const OwnerDashboard = () => {
                 </div>
                 <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
                   <p className="text-gray-500 text-xs uppercase font-bold">Sports</p>
-                  <p className="font-black text-white mt-1">{(venue.sportTypes || []).join(', ') || 'Not set'}</p>
+                  <p className="font-black text-white mt-1">{formatSportTypes(venue.sportTypes) || 'Not set'}</p>
                 </div>
                 <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
                   <p className="text-gray-500 text-xs uppercase font-bold">Status</p>

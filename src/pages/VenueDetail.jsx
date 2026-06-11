@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, CheckCircle, Clock, Info, Pencil, Trash2, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
+import { formatSportTypes } from '../utils/sports';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -403,7 +404,7 @@ const VenueDetail = () => {
           >
             <div className="flex flex-wrap gap-2 max-w-full">
               <span className="bg-[#39FF14] text-black px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest shadow-lg max-w-full truncate">
-                {venue.sportTypes?.join(', ') || 'Sport'}
+                {formatSportTypes(venue.sportTypes) || 'Sport'}
               </span>
               <span className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/60 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/50'}`}>
                 {venue.isActive ? 'Open' : 'Maintenance'}

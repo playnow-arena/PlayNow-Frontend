@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { normalizeSportName } from '../utils/sports';
 
 const MotionLink = motion(Link);
 
@@ -26,7 +27,7 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
         {/* Bottom Badges */}
         <div className={`absolute flex flex-wrap gap-2 max-w-[calc(100%-1.5rem)] ${isCompact ? 'bottom-3 left-3' : 'bottom-4 left-4 right-3'}`}>
           <span className={`max-w-full truncate bg-[#39FF14] text-black rounded-full text-[10px] font-black uppercase ${isCompact ? 'px-3 py-1' : 'px-4 py-1.5 shadow-[0_4px_10px_rgba(57,255,20,0.4)]'}`}>
-            {venue.sportTypes?.[0] || 'Sport'}
+            {normalizeSportName(venue.sportTypes?.[0]) || 'Sport'}
           </span>
           {!isCompact && venue.isActive !== undefined && (
             <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/80 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/30'}`}>

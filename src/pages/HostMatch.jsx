@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, MapPin, Calendar, Clock, DollarSign, CheckCircle2, ArrowRight, Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { generateMatchId, createMatchLink } from '../utils/matchLink';
+import { normalizeSportName } from '../utils/sports';
 
 const HostMatch = () => {
   const navigate = useNavigate();
@@ -133,7 +134,8 @@ const handleNext = async (e) => {
                   <option value="" disabled>Select Sport</option>
                   <option value="Football Turf">Football Turf</option>
                   <option value="Badminton">Badminton</option>
-                  <option value="Cricket Nets">Cricket Nets</option>
+                  <option value="Cricket">Cricket</option>
+                  <option value="Pickleball">Pickleball</option>
                 </select>
               </div>
               <div>
@@ -195,7 +197,7 @@ const handleNext = async (e) => {
               <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Sport</span>
-                  <span className="font-bold break-words sm:text-right">{formData.sport}</span>
+                  <span className="font-bold break-words sm:text-right">{normalizeSportName(formData.sport)}</span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Venue</span>

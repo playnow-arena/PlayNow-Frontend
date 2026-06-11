@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { normalizeSportName } from '../utils/sports';
 
 const Feed = () => {
   const [matches, setMatches] = useState([]);
@@ -106,7 +107,7 @@ const Feed = () => {
                     </h3>
 
                     <div className="text-xs text-gray-500 break-words">
-                      Hosted an Open Match • {match.sport}
+                      Hosted an Open Match • {normalizeSportName(match.sport)}
                     </div>
                   </div>
                 </div>

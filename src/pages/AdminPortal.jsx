@@ -3,6 +3,7 @@ import { Shield, Users, Building2, XCircle, AlertTriangle, BarChart3, Search, Ma
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { formatSportTypes, normalizeSportTypes } from '../utils/sports';
 
 const emptyVenueForm = {
   name: '',
@@ -41,6 +42,8 @@ const toList = (value) => value
   .split(',')
   .map((item) => item.trim())
   .filter(Boolean);
+
+const toSportList = (value) => normalizeSportTypes(toList(value));
 
 const readResponseBody = async (res) => {
   const text = await res.text();
@@ -427,7 +430,7 @@ const AdminPortal = () => {
 
     const payload = {
       name: venueForm.name.trim(),
-      sportTypes: toList(venueForm.sportTypes),
+      sportTypes: toSportList(venueForm.sportTypes),
       location: venueForm.location.trim(),
       address: venueForm.address.trim(),
       pricePerHour: Number(venueForm.pricePerHour),
@@ -480,7 +483,7 @@ const AdminPortal = () => {
     setVenueImageUploading(false);
     setVenueForm({
       name: venue.name || '',
-      sportTypes: (venue.sportTypes || []).join(', '),
+      sportTypes: formatSportTypes(venue.sportTypes),
       location: venue.location || '',
       address: venue.address || '',
       pricePerHour: venue.pricePerHour || '',
@@ -860,7 +863,7 @@ const AdminPortal = () => {
                             <span><strong className="text-gray-300">Owner:</strong> {request.ownerName}</span>
                             <span><strong className="text-gray-300">Phone:</strong> {request.phone}</span>
                             <span><strong className="text-gray-300">Email:</strong> {request.email || 'Not provided'}</span>
-                            <span><strong className="text-gray-300">Sports:</strong> {(request.sportTypes || []).join(', ') || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Sports:</strong> {formatSportTypes(request.sportTypes) || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Price:</strong> {request.pricePerHour ? `Rs ${request.pricePerHour}/hr` : 'Not provided'}</span>
                             <span><strong className="text-gray-300">Created:</strong> {formatRequestDate(request.createdAt || request.submittedAt)}</span>
                           </div>
@@ -1126,7 +1129,7 @@ const AdminPortal = () => {
                       required
                       value={venueForm.sportTypes}
                       onChange={(e) => handleVenueChange('sportTypes', e.target.value)}
-                      placeholder="Badminton, Football Turf"
+                      placeholder="Badminton, Football Turf, Cricket, Pickleball"
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     />
                   </div>
@@ -1286,7 +1289,7 @@ const AdminPortal = () => {
                           </div>
                           <p className="text-sm text-gray-400">{venue.location}</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {(venue.sportTypes || []).join(', ') || 'No sports'} | Rs {venue.pricePerHour}/hr
+                            {formatSportTypes(venue.sportTypes) || 'No sports'} | Rs {venue.pricePerHour}/hr
                           </p>
                           {venue.ownerId?.name && (
                             <p className="text-xs text-gray-600 mt-1">Owner: {venue.ownerId.name}</p>
