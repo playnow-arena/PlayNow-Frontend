@@ -5,12 +5,12 @@ const contactItems = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'playnowarena@gmail.com',
+    value: 'playnowsupport@gmail.com',
   },
   {
     icon: Phone,
     label: 'Phone / WhatsApp',
-    value: '+91 78712 56533',
+    value: '+91 93637 56533',
   },
   {
     icon: MapPin,

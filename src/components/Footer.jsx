@@ -87,7 +87,6 @@ const Footer = () => {
             <Link to="/terms" className="hover:text-[#39FF14] transition-colors">Terms</Link>
             <Link to="/contact" className="hover:text-[#39FF14] transition-colors">Contact</Link>
             <Link to="/partner/register" className="hover:text-[#39FF14] transition-colors max-w-full break-words">Partner with PlayNow</Link>
-            <Link to="/admin" className="hover:text-[#39FF14] transition-colors">Admin</Link>
           </div>
         </div>
 

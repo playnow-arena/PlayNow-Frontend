@@ -31,7 +31,7 @@ const sections = [
   },
   {
     title: 'Contact Support',
-    text: 'For booking support, venue partnership, or payment issues, contact PlayNow at playnowarena@gmail.com or +91 78712 56533.',
+    text: 'For booking support, venue partnership, or payment issues, contact PlayNow at playnowsupport@gmail.com or +91 93637 56533.',
   },
 ];
 

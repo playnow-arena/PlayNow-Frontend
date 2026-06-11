@@ -304,7 +304,7 @@ const Dashboard = () => {
                           <div className="mt-4 rounded-xl border border-white/10 bg-[#0a0f1c] p-3 text-xs text-gray-400 space-y-1">
                             <p><span className="text-white font-bold">Player:</span> {user?.name || 'Player'} {user?.phone ? `- ${user.phone}` : ''}</p>
                             <p>Show this booking at the venue. Pay remaining balance before play.</p>
-                            <p>Need help? +91 78712 56533 | playnowarena@gmail.com</p>
+                            <p>Need help? +91 93637 56533 | playnowsupport@gmail.com</p>
                             <p>Cancellation allowed up to 4 hours before slot time.</p>
                           </div>
                         </div>

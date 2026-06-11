@@ -263,7 +263,7 @@ const Booking = () => {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-[#0a0f1c] p-4 text-sm text-gray-300 space-y-2">
-              <p><span className="font-bold text-white">Need help?</span> Contact PlayNow support at +91 78712 56533 or playnowarena@gmail.com.</p>
+              <p><span className="font-bold text-white">Need help?</span> Contact PlayNow support at +91 93637 56533 or playnowsupport@gmail.com.</p>
               <p>Cancellation allowed up to 4 hours before slot time.</p>
             </div>
           </div>
