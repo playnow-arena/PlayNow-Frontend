@@ -19,11 +19,33 @@ const emptyVenueForm = {
   amenities: '',
   description: '',
   imageUrl: '',
+  contactOwnerName: '',
+  contactOwnerPhone: '',
+  contactManagerName: '',
+  contactManagerPhone: '',
+  contactManagerWhatsapp: '',
+  contactInchargeName: '',
+  contactInchargePhone: '',
+  contactInchargeWhatsapp: '',
+  courtGroups: [],
+  isActive: true,
+};
+
+const emptyCourtGroup = {
+  courtCode: '',
+  name: '',
+  sports: '',
+  courtCount: '1',
+  pricePerHour: '',
+  courtType: 'Standard',
+  dependencyGroup: '',
+  bookingMode: 'independent',
   isActive: true,
 };
 
 const emptySlotForm = {
   venueId: '',
+  courtCode: '',
   date: '',
   startTime: '',
   endTime: '',
@@ -32,6 +54,7 @@ const emptySlotForm = {
 
 const emptyGenerateSlotsForm = {
   venueId: '',
+  courtCode: '',
   startDate: '',
   openingTime: '06:00',
   closingTime: '23:00',
@@ -39,6 +62,28 @@ const emptyGenerateSlotsForm = {
   price: '',
   days: '30',
 };
+
+const emptyRecurringBlockForm = {
+  venueId: '',
+  courtCode: '',
+  daysOfWeek: [],
+  startTime: '',
+  endTime: '',
+  startDate: '',
+  endDate: '',
+  reason: '',
+  isActive: true,
+};
+
+const dayOptions = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+];
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const apiUrl = (path) => `${API_BASE_URL}${path}`;
@@ -49,6 +94,45 @@ const toList = (value) => value
   .filter(Boolean);
 
 const toSportList = (value) => normalizeSportTypes(toList(value));
+const formatCourtGroupSports = (sports = []) => formatSportTypes(sports);
+
+const normalizeCourtGroupsForForm = (courtGroups = []) => (
+  Array.isArray(courtGroups) && courtGroups.length > 0
+    ? courtGroups.map((group) => ({
+      courtCode: group.courtCode || '',
+      name: group.name || '',
+      sports: formatCourtGroupSports(group.sports),
+      courtCount: String(group.courtCount || 1),
+      pricePerHour: group.pricePerHour ?? '',
+      courtType: group.courtType || 'Standard',
+      dependencyGroup: group.dependencyGroup || '',
+      bookingMode: group.bookingMode || 'independent',
+      isActive: group.isActive !== false,
+    }))
+    : [{ ...emptyCourtGroup }]
+);
+
+const serializeCourtGroups = (courtGroups = []) => (
+  courtGroups
+    .map((group) => ({
+      courtCode: group.courtCode || undefined,
+      name: group.name.trim(),
+      sports: toSportList(group.sports),
+      courtCount: Number(group.courtCount) || 1,
+      pricePerHour: Number(group.pricePerHour) || 0,
+      courtType: group.courtType.trim() || 'Standard',
+      dependencyGroup: group.dependencyGroup?.trim() || '',
+      bookingMode: group.bookingMode || 'independent',
+      isActive: group.isActive !== false,
+    }))
+    .filter((group) => group.name && group.sports.length > 0 && group.pricePerHour > 0)
+);
+
+const getVenueCourtGroups = (venue) => (
+  Array.isArray(venue?.courtGroups) && venue.courtGroups.length > 0
+    ? venue.courtGroups
+    : [{ courtCode: 'legacy', name: 'Main Court', sports: venue?.sportTypes || [], courtCount: 1, pricePerHour: venue?.pricePerHour, courtType: 'Standard', dependencyGroup: '', bookingMode: 'independent', isActive: true }]
+);
 
 const readResponseBody = async (res) => {
   const text = await res.text();
@@ -111,6 +195,11 @@ const formatSlotTimes = (slots = []) => {
     .join(', ');
 };
 
+const formatRuleDays = (days = []) => dayOptions
+  .filter((day) => days.includes(day.value))
+  .map((day) => day.label)
+  .join(', ') || 'No days';
+
 const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
 );
@@ -135,7 +224,7 @@ const AdminPortal = () => {
 
   const [activeSection, setActiveSection] = useState('venues');
   const [venues, setVenues] = useState([]);
-  const [venueForm, setVenueForm] = useState(emptyVenueForm);
+  const [venueForm, setVenueForm] = useState({ ...emptyVenueForm, courtGroups: [{ ...emptyCourtGroup }] });
   const [editingVenueId, setEditingVenueId] = useState(null);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [venueError, setVenueError] = useState('');
@@ -163,6 +252,11 @@ const AdminPortal = () => {
   });
   const [bookingCollectionMethods, setBookingCollectionMethods] = useState({});
   const [bookingCollectionLoadingId, setBookingCollectionLoadingId] = useState('');
+  const [recurringRules, setRecurringRules] = useState([]);
+  const [recurringRuleForm, setRecurringRuleForm] = useState(emptyRecurringBlockForm);
+  const [editingRuleId, setEditingRuleId] = useState('');
+  const [recurringRulesLoading, setRecurringRulesLoading] = useState(false);
+  const [recurringRuleMessage, setRecurringRuleMessage] = useState('');
 
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -257,6 +351,31 @@ const AdminPortal = () => {
     }
   };
 
+  const fetchRecurringRules = async () => {
+    setRecurringRulesLoading(true);
+    setRecurringRuleMessage('');
+
+    try {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(apiUrl('/api/recurring-block-rules'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(getVenueErrorMessage(data, 'Failed to load recurring block rules'));
+        return;
+      }
+
+      setRecurringRules(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Recurring rules fetch error:', error);
+      setRecurringRuleMessage(`Unable to load recurring rules: ${error.message}`);
+    } finally {
+      setRecurringRulesLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeSection === 'venues') {
       fetchVenues();
@@ -268,10 +387,14 @@ const AdminPortal = () => {
       fetchAdminBookings();
       if (venues.length === 0) fetchVenues();
     }
+    if (activeSection === 'recurring-blocks') {
+      fetchRecurringRules();
+      if (venues.length === 0) fetchVenues();
+    }
   }, [activeSection]);
 
   const resetVenueForm = () => {
-    setVenueForm(emptyVenueForm);
+    setVenueForm({ ...emptyVenueForm, courtGroups: [{ ...emptyCourtGroup }] });
     setEditingVenueId(null);
     setVenueImageMessage('');
     setVenueImageUploading(false);
@@ -279,6 +402,29 @@ const AdminPortal = () => {
 
   const handleVenueChange = (field, value) => {
     setVenueForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleCourtGroupChange = (index, field, value) => {
+    setVenueForm((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.map((group, groupIndex) => (
+        groupIndex === index ? { ...group, [field]: value } : group
+      )),
+    }));
+  };
+
+  const addCourtGroup = () => {
+    setVenueForm((current) => ({
+      ...current,
+      courtGroups: [...current.courtGroups, { ...emptyCourtGroup }],
+    }));
+  };
+
+  const removeCourtGroup = (index) => {
+    setVenueForm((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.filter((_, groupIndex) => groupIndex !== index),
+    }));
   };
 
   const handleVenueImageUpload = async (file) => {
@@ -344,6 +490,7 @@ const AdminPortal = () => {
     try {
       const payload = {
         venueId: slotForm.venueId,
+        courtCode: slotForm.courtCode,
         date: slotForm.date,
         slotsData: [{
           startTime: slotForm.startTime,
@@ -393,6 +540,7 @@ const AdminPortal = () => {
     try {
       const payload = {
         venueId: generateSlotsForm.venueId,
+        courtCode: generateSlotsForm.courtCode,
         startDate: generateSlotsForm.startDate,
         days: Number(generateSlotsForm.days) || 30,
         openingTime: generateSlotsForm.openingTime,
@@ -450,8 +598,29 @@ const AdminPortal = () => {
       pricePerHour: Number(venueForm.pricePerHour),
       amenities: toList(venueForm.amenities),
       description: venueForm.description.trim(),
+      contacts: {
+        owner: {
+          name: venueForm.contactOwnerName.trim(),
+          phone: venueForm.contactOwnerPhone.trim(),
+        },
+        manager: {
+          name: venueForm.contactManagerName.trim(),
+          phone: venueForm.contactManagerPhone.trim(),
+          whatsapp: venueForm.contactManagerWhatsapp.trim(),
+        },
+        incharge: {
+          name: venueForm.contactInchargeName.trim(),
+          phone: venueForm.contactInchargePhone.trim(),
+          whatsapp: venueForm.contactInchargeWhatsapp.trim(),
+        },
+      },
       isActive: venueForm.isActive,
     };
+
+    const courtGroups = serializeCourtGroups(venueForm.courtGroups);
+    if (courtGroups.length > 0) {
+      payload.courtGroups = courtGroups;
+    }
 
     if (venueForm.imageUrl.trim()) {
       payload.images = [venueForm.imageUrl.trim()];
@@ -515,6 +684,15 @@ const AdminPortal = () => {
       amenities: (venue.amenities || []).join(', '),
       description: venue.description || '',
       imageUrl: venue.images?.[0] || '',
+      contactOwnerName: venue.contacts?.owner?.name || '',
+      contactOwnerPhone: venue.contacts?.owner?.phone || '',
+      contactManagerName: venue.contacts?.manager?.name || '',
+      contactManagerPhone: venue.contacts?.manager?.phone || '',
+      contactManagerWhatsapp: venue.contacts?.manager?.whatsapp || '',
+      contactInchargeName: venue.contacts?.incharge?.name || '',
+      contactInchargePhone: venue.contacts?.incharge?.phone || '',
+      contactInchargeWhatsapp: venue.contacts?.incharge?.whatsapp || '',
+      courtGroups: normalizeCourtGroupsForForm(venue.courtGroups),
       isActive: venue.isActive !== false,
     });
   };
@@ -678,11 +856,121 @@ const AdminPortal = () => {
     }
   };
 
+  const handleRecurringRuleChange = (field, value) => {
+    setRecurringRuleForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleRecurringRuleDay = (dayValue) => {
+    setRecurringRuleForm((current) => ({
+      ...current,
+      daysOfWeek: current.daysOfWeek.includes(dayValue)
+        ? current.daysOfWeek.filter((day) => day !== dayValue)
+        : [...current.daysOfWeek, dayValue],
+    }));
+  };
+
+  const resetRecurringRuleForm = () => {
+    setRecurringRuleForm(emptyRecurringBlockForm);
+    setEditingRuleId('');
+  };
+
+  const handleEditRecurringRule = (rule) => {
+    setEditingRuleId(rule._id);
+    setRecurringRuleForm({
+      venueId: rule.venueId?._id || rule.venueId || '',
+      courtCode: rule.courtCode || '',
+      daysOfWeek: rule.daysOfWeek || [],
+      startTime: rule.startTime || '',
+      endTime: rule.endTime || '',
+      startDate: rule.startDate ? rule.startDate.slice(0, 10) : '',
+      endDate: rule.endDate ? rule.endDate.slice(0, 10) : '',
+      reason: rule.reason || '',
+      isActive: rule.isActive !== false,
+    });
+    setRecurringRuleMessage('');
+  };
+
+  const handleRecurringRuleSubmit = async (e) => {
+    e.preventDefault();
+    setRecurringRuleMessage('');
+
+    const token = localStorage.getItem('playnow_token');
+    if (!token) {
+      setRecurringRuleMessage('Admin token not found. Please login again.');
+      return;
+    }
+
+    const payload = {
+      ...recurringRuleForm,
+      courtCode: recurringRuleForm.courtCode || '',
+      daysOfWeek: recurringRuleForm.daysOfWeek.map(Number),
+      endDate: recurringRuleForm.endDate || undefined,
+    };
+
+    try {
+      const res = await fetch(apiUrl(`/api/recurring-block-rules${editingRuleId ? `/${editingRuleId}` : ''}`), {
+        method: editingRuleId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(getVenueErrorMessage(data, 'Failed to save recurring block rule'));
+        return;
+      }
+
+      const savedRule = data.rule || data;
+      setRecurringRules((current) => (
+        editingRuleId
+          ? current.map((rule) => (rule._id === savedRule._id ? savedRule : rule))
+          : [savedRule, ...current]
+      ));
+      resetRecurringRuleForm();
+      setRecurringRuleMessage(`Recurring rule saved. ${data.applySummary?.modifiedSlots || 0} existing slot${Number(data.applySummary?.modifiedSlots || 0) === 1 ? '' : 's'} blocked.`);
+    } catch (error) {
+      console.error('Recurring rule save error:', error);
+      setRecurringRuleMessage(`Unable to save recurring rule: ${error.message}`);
+    }
+  };
+
+  const handleDeleteRecurringRule = async (rule) => {
+    if (!window.confirm(`Remove recurring block rule "${rule.reason}"? Existing blocked slots will not be automatically unblocked.`)) {
+      return;
+    }
+
+    setRecurringRuleMessage('');
+
+    try {
+      const token = localStorage.getItem('playnow_token');
+      const res = await fetch(apiUrl(`/api/recurring-block-rules/${rule._id}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await readResponseBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(getVenueErrorMessage(data, 'Failed to delete recurring block rule'));
+        return;
+      }
+
+      setRecurringRules((current) => current.filter((item) => item._id !== rule._id));
+      setRecurringRuleMessage('Recurring rule removed.');
+    } catch (error) {
+      console.error('Recurring rule delete error:', error);
+      setRecurringRuleMessage(`Unable to delete recurring rule: ${error.message}`);
+    }
+  };
+
   const navItems = [
     { id: 'owner-requests', label: 'Owner Requests', icon: Mail },
     { id: 'platform-bookings', label: 'Platform Bookings', icon: BarChart3 },
     { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
+    { id: 'recurring-blocks', label: 'Recurring Blocks', icon: AlertTriangle },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, comingSoon: true },
     { id: 'notification-metrics', label: 'Notifications', icon: Shield }
   ];
@@ -1323,6 +1611,192 @@ const AdminPortal = () => {
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] min-h-20"
                     />
                   </div>
+
+                  <div className="md:col-span-2 border-t border-gray-800 pt-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                      <div>
+                        <h4 className="text-sm font-black text-gray-300 uppercase tracking-widest">Court Groups</h4>
+                        <p className="text-xs text-gray-600 mt-1">Each group is a physical court block. Multiple sports can share the same group.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addCourtGroup}
+                        className="bg-white/10 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-white/20"
+                      >
+                        Add Court Group
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {venueForm.courtGroups.map((group, index) => (
+                        <div key={`${group.courtCode || 'new'}-${index}`} className="bg-[#0a0f1c] border border-gray-800 rounded-2xl p-4">
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <div>
+                              <p className="font-bold text-white">Court Group {index + 1}</p>
+                              {group.courtCode && <p className="text-xs text-gray-600 mt-1">{group.courtCode}</p>}
+                            </div>
+                            {venueForm.courtGroups.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeCourtGroup(index)}
+                                className="text-red-400 font-bold text-sm hover:text-red-300"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input
+                              value={group.name}
+                              onChange={(e) => handleCourtGroupChange(index, 'name', e.target.value)}
+                              placeholder="Badminton Block"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <input
+                              value={group.sports}
+                              onChange={(e) => handleCourtGroupChange(index, 'sports', e.target.value)}
+                              placeholder="Badminton, Pickleball"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              value={group.courtCount}
+                              onChange={(e) => handleCourtGroupChange(index, 'courtCount', e.target.value)}
+                              placeholder="Court count"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              value={group.pricePerHour}
+                              onChange={(e) => handleCourtGroupChange(index, 'pricePerHour', e.target.value)}
+                              placeholder="Price per hour"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <input
+                              value={group.courtType}
+                              onChange={(e) => handleCourtGroupChange(index, 'courtType', e.target.value)}
+                              placeholder="Indoor, Turf, Outdoor"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <input
+                              value={group.dependencyGroup}
+                              onChange={(e) => handleCourtGroupChange(index, 'dependencyGroup', e.target.value)}
+                              placeholder="Dependency group e.g. tokyo-main-turf"
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                            <select
+                              value={group.bookingMode}
+                              onChange={(e) => handleCourtGroupChange(index, 'bookingMode', e.target.value)}
+                              className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            >
+                              <option value="independent">Independent</option>
+                              <option value="full">Full Turf</option>
+                              <option value="half">Half Turf</option>
+                            </select>
+                            <label className="flex items-center gap-3 bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-sm font-bold text-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={group.isActive}
+                                onChange={(e) => handleCourtGroupChange(index, 'isActive', e.target.checked)}
+                                className="w-4 h-4 accent-[#39FF14]"
+                              />
+                              Court group active
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 border-t border-gray-800 pt-4">
+                    <h4 className="text-sm font-black text-gray-300 uppercase tracking-widest mb-3">
+                      Operational Contacts
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Owner Name
+                        </label>
+                        <input
+                          value={venueForm.contactOwnerName}
+                          onChange={(e) => handleVenueChange('contactOwnerName', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Owner Phone
+                        </label>
+                        <input
+                          value={venueForm.contactOwnerPhone}
+                          onChange={(e) => handleVenueChange('contactOwnerPhone', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Manager Name
+                        </label>
+                        <input
+                          value={venueForm.contactManagerName}
+                          onChange={(e) => handleVenueChange('contactManagerName', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Manager Phone
+                        </label>
+                        <input
+                          value={venueForm.contactManagerPhone}
+                          onChange={(e) => handleVenueChange('contactManagerPhone', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Manager WhatsApp
+                        </label>
+                        <input
+                          value={venueForm.contactManagerWhatsapp}
+                          onChange={(e) => handleVenueChange('contactManagerWhatsapp', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Incharge Name
+                        </label>
+                        <input
+                          value={venueForm.contactInchargeName}
+                          onChange={(e) => handleVenueChange('contactInchargeName', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Incharge Phone
+                        </label>
+                        <input
+                          value={venueForm.contactInchargePhone}
+                          onChange={(e) => handleVenueChange('contactInchargePhone', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                          Incharge WhatsApp
+                        </label>
+                        <input
+                          value={venueForm.contactInchargeWhatsapp}
+                          onChange={(e) => handleVenueChange('contactInchargeWhatsapp', e.target.value)}
+                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1379,6 +1853,15 @@ const AdminPortal = () => {
                           <p className="text-xs text-gray-500 mt-1">
                             {formatSportTypes(venue.sportTypes) || 'No sports'} | Rs {venue.pricePerHour}/hr
                           </p>
+                          {getVenueCourtGroups(venue).length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {getVenueCourtGroups(venue).map((group) => (
+                                <span key={group.courtCode} className="text-[10px] bg-black/30 text-gray-400 border border-gray-800 px-2 py-1 rounded-lg font-bold uppercase">
+                                  {group.name}: {group.courtCount || 1} court{Number(group.courtCount || 1) === 1 ? '' : 's'} | Rs {group.pricePerHour}/hr{group.bookingMode && group.bookingMode !== 'independent' ? ` | ${group.bookingMode}` : ''}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {venue.ownerId?.name && (
                             <p className="text-xs text-gray-600 mt-1">Owner: {venue.ownerId.name}</p>
                           )}
@@ -1429,13 +1912,34 @@ const AdminPortal = () => {
                     <select
                       required
                       value={slotForm.venueId}
-                      onChange={(e) => handleSlotChange('venueId', e.target.value)}
+                      onChange={(e) => {
+                        handleSlotChange('venueId', e.target.value);
+                        handleSlotChange('courtCode', '');
+                      }}
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     >
                       <option value="">Select venue</option>
                       {venues.map((venue) => (
                         <option key={venue._id} value={venue._id}>
                           {venue.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Court Group
+                    </label>
+                    <select
+                      value={slotForm.courtCode}
+                      onChange={(e) => handleSlotChange('courtCode', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Default court group</option>
+                      {getVenueCourtGroups(venues.find((venue) => venue._id === slotForm.venueId)).map((group) => (
+                        <option key={group.courtCode} value={group.courtCode}>
+                          {group.name} ({formatCourtGroupSports(group.sports)})
                         </option>
                       ))}
                     </select>
@@ -1549,13 +2053,34 @@ const AdminPortal = () => {
                     <select
                       required
                       value={generateSlotsForm.venueId}
-                      onChange={(e) => handleGenerateSlotsChange('venueId', e.target.value)}
+                      onChange={(e) => {
+                        handleGenerateSlotsChange('venueId', e.target.value);
+                        handleGenerateSlotsChange('courtCode', '');
+                      }}
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     >
                       <option value="">Select venue</option>
                       {venues.map((venue) => (
                         <option key={venue._id} value={venue._id}>
                           {venue.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Court Group
+                    </label>
+                    <select
+                      value={generateSlotsForm.courtCode}
+                      onChange={(e) => handleGenerateSlotsChange('courtCode', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Default court group</option>
+                      {getVenueCourtGroups(venues.find((venue) => venue._id === generateSlotsForm.venueId)).map((group) => (
+                        <option key={group.courtCode} value={group.courtCode}>
+                          {group.name} ({formatCourtGroupSports(group.sports)})
                         </option>
                       ))}
                     </select>
@@ -1657,6 +2182,158 @@ const AdminPortal = () => {
             </div>
           )}
 
+          {activeSection === 'recurring-blocks' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleRecurringRuleSubmit}
+                className="bg-[#151b2b] border border-gray-800 rounded-3xl p-4 md:p-6 space-y-4"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-bold">{editingRuleId ? 'Edit Recurring Block' : 'Create Recurring Block'}</h3>
+                    <p className="text-sm text-gray-500">Automatically block coaching, academy, maintenance or tournament timings.</p>
+                  </div>
+                  {editingRuleId && (
+                    <button type="button" onClick={resetRecurringRuleForm} className="text-sm font-bold text-gray-400 hover:text-white">
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
+                {recurringRuleMessage && (
+                  <div className={`rounded-xl px-4 py-3 text-sm border ${recurringRuleMessage.toLowerCase().includes('saved') || recurringRuleMessage.toLowerCase().includes('removed') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                    {recurringRuleMessage}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Venue</label>
+                    <select
+                      required
+                      value={recurringRuleForm.venueId}
+                      onChange={(e) => setRecurringRuleForm((current) => ({ ...current, venueId: e.target.value, courtCode: '' }))}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Select venue</option>
+                      {venues.map((venue) => (
+                        <option key={venue._id} value={venue._id}>{venue.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Court Group</label>
+                    <select
+                      value={recurringRuleForm.courtCode}
+                      onChange={(e) => handleRecurringRuleChange('courtCode', e.target.value)}
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    >
+                      <option value="">Whole venue / all court groups</option>
+                      {getVenueCourtGroups(venues.find((venue) => venue._id === recurringRuleForm.venueId)).map((group) => (
+                        <option key={group.courtCode} value={group.courtCode}>
+                          {group.name} ({formatCourtGroupSports(group.sports)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-4">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Days</label>
+                    <div className="flex flex-wrap gap-2">
+                      {dayOptions.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleRecurringRuleDay(day.value)}
+                          className={`px-4 py-2 rounded-xl text-sm font-bold border ${recurringRuleForm.daysOfWeek.includes(day.value) ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'bg-[#0a0f1c] text-gray-400 border-gray-800'}`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Time</label>
+                    <input required type="time" value={recurringRuleForm.startTime} onChange={(e) => handleRecurringRuleChange('startTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">End Time</label>
+                    <input required type="time" value={recurringRuleForm.endTime} onChange={(e) => handleRecurringRuleChange('endTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Date</label>
+                    <input required type="date" value={recurringRuleForm.startDate} onChange={(e) => handleRecurringRuleChange('startDate', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">End Date Optional</label>
+                    <input type="date" value={recurringRuleForm.endDate} onChange={(e) => handleRecurringRuleChange('endDate', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                  </div>
+                  <div className="lg:col-span-3">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Reason</label>
+                    <input required value={recurringRuleForm.reason} onChange={(e) => handleRecurringRuleChange('reason', e.target.value)} placeholder="Coaching, Maintenance, Tournament" className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  </div>
+                  <label className="flex items-center gap-3 bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-sm font-bold text-gray-300">
+                    <input type="checkbox" checked={recurringRuleForm.isActive} onChange={(e) => handleRecurringRuleChange('isActive', e.target.checked)} className="accent-[#39FF14]" />
+                    Active
+                  </label>
+                </div>
+
+                <div className="flex justify-end">
+                  <button type="submit" className="w-full sm:w-auto bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition">
+                    {editingRuleId ? 'Save Rule' : 'Create Rule'}
+                  </button>
+                </div>
+              </form>
+
+              <div className="bg-[#151b2b] border border-gray-800 rounded-3xl overflow-hidden">
+                <div className="p-4 md:p-6 border-b border-gray-800 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-bold">Recurring Block Rules</h3>
+                    <p className="text-sm text-gray-500">Rules block future available slots. Booked slots stay unchanged.</p>
+                  </div>
+                  <button onClick={fetchRecurringRules} className="bg-white/10 text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-white/20">
+                    Refresh
+                  </button>
+                </div>
+
+                {recurringRulesLoading ? (
+                  <div className="p-10 text-center text-gray-500">Loading recurring rules...</div>
+                ) : recurringRules.length === 0 ? (
+                  <div className="p-10 text-center text-gray-500">No recurring block rules yet.</div>
+                ) : (
+                  <div className="divide-y divide-gray-800">
+                    {recurringRules.map((rule) => (
+                      <div key={rule._id} className="p-4 md:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-black text-white">{rule.reason}</h4>
+                            <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-full ${rule.isActive ? 'bg-[#39FF14]/10 text-[#39FF14]' : 'bg-gray-800 text-gray-500'}`}>
+                              {rule.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 mt-1">{rule.venueId?.name || 'Venue'} | {rule.courtCode || 'All courts'}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatRuleDays(rule.daysOfWeek)} | {formatTime(rule.startTime)} - {formatTime(rule.endTime)} | From {formatRequestDate(rule.startDate)}{rule.endDate ? ` to ${formatRequestDate(rule.endDate)}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleEditRecurringRule(rule)} className="flex-1 lg:flex-none px-4 py-2 bg-gray-800 text-white rounded-xl font-bold text-sm hover:bg-gray-700">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDeleteRecurringRule(rule)} className="flex-1 lg:flex-none px-4 py-2 bg-red-500/10 text-red-400 rounded-xl font-bold text-sm hover:bg-red-500 hover:text-white">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeSection === 'notification-metrics' && (
             <div className="space-y-6">
               {metricsError && (
@@ -1729,7 +2406,7 @@ const AdminPortal = () => {
             </div>
           )}
 
-          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && activeSection !== 'notification-metrics' && (
+          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && activeSection !== 'recurring-blocks' && activeSection !== 'notification-metrics' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold">Coming Soon</h3>

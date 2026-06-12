@@ -40,6 +40,15 @@ const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || ''
 );
 
+const getVenueSupportPhone = (venue) => (
+  venue?.contacts?.manager?.phone ||
+  venue?.contacts?.manager?.whatsapp ||
+  venue?.contacts?.incharge?.phone ||
+  venue?.contacts?.incharge?.whatsapp ||
+  venue?.contacts?.owner?.phone ||
+  ''
+);
+
 const getStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('playnow_user') || 'null');
@@ -51,7 +60,7 @@ const getStoredUser = () => {
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedSlots = [], venue = null } = location.state || {};
+  const { selectedSlots = [], venue = null, selectedSport = '' } = location.state || {};
   
   const [paymentType, setPaymentType] = useState('full'); // full or advance
   const [paymentStep, setPaymentStep] = useState(1); // 1: summary, 2: processing, 3: success
@@ -128,6 +137,7 @@ const Booking = () => {
         body: JSON.stringify({
           venueId: venue._id || venue.id,
           slotIds: selectedSlots.map(s => s._id),
+          selectedSport,
           paymentType,
           paidAmount: amountToPay
         })
@@ -179,6 +189,7 @@ const Booking = () => {
     const paymentStatus = bookingDetails?.paymentStatus || (balanceDue > 0 ? 'advance_paid' : 'completed');
     const bookingStatus = bookingDetails?.bookingStatus || 'confirmed';
     const venueAddress = [venue.address, formatVenueLocation(venue)].filter(Boolean).join(' • ') || 'Address unavailable';
+    const venueSupportPhone = getVenueSupportPhone(venue);
     const playerName = bookingDetails?.userId?.name || storedUser?.name || storedUser?.username || '';
     const playerPhone = bookingDetails?.userId?.phone || storedUser?.phone || '';
 
@@ -234,7 +245,18 @@ const Booking = () => {
             <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
               <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Slot Time</p>
               <p className="font-bold text-white leading-relaxed">{selectedSlots.map(formatSlotRange).join(', ')}</p>
+              {selectedSport && <p className="text-sm text-gray-400 mt-2">Sport: {selectedSport}</p>}
+              <p className="text-sm text-gray-400 mt-1">
+                {selectedSlots.map((slot) => `${slot.courtName || 'Court'}${slot.courtNumber ? ` #${slot.courtNumber}` : ''}`).join(', ')}
+              </p>
             </div>
+
+            {venueSupportPhone && (
+              <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Venue Contact</p>
+                <p className="font-bold text-white">{venueSupportPhone}</p>
+              </div>
+            )}
 
             {(playerName || playerPhone) && (
               <div className="bg-[#0a0f1c] rounded-2xl p-4 border border-gray-800">
@@ -304,11 +326,15 @@ const Booking = () => {
             <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Selected Slots</span>
             <span className="font-black text-[#39FF14] sm:text-right text-sm max-w-full sm:max-w-none break-words">
               {selectedSlots.map(formatSlotRange).join(', ')}
+              {selectedSport && <span className="block text-xs text-gray-500 mt-1">Sport: {selectedSport}</span>}
+              <span className="block text-xs text-gray-500 mt-1">
+                {selectedSlots.map((slot) => `${slot.courtName || 'Court'}${slot.courtNumber ? ` #${slot.courtNumber}` : ''}`).join(', ')}
+              </span>
             </span>
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
             <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Price per slot</span>
-            <span className="font-black text-white">₹{venue.pricePerHour}</span>
+            <span className="font-black text-white">₹{selectedSlots[0]?.price || venue.pricePerHour}</span>
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 font-black text-xl sm:text-2xl mt-8 border-t border-white/5 pt-6">
             <span className="uppercase tracking-tighter">Total Amount</span>

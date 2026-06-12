@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Star, CheckCircle, Clock, Info, Pencil, Trash2, X, Send } from 'lucide-react';
+import { MapPin, Star, CheckCircle, Clock, Info, Pencil, Trash2, X, Send, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 import { formatSportTypes } from '../utils/sports';
@@ -12,6 +12,32 @@ const getVenueImage = (venue) => (venue.images || []).find((image) => image && !
 const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
 );
+const getVenueSupportPhone = (venue) => (
+  venue?.contacts?.manager?.phone ||
+  venue?.contacts?.manager?.whatsapp ||
+  venue?.contacts?.incharge?.phone ||
+  venue?.contacts?.incharge?.whatsapp ||
+  venue?.contacts?.owner?.phone ||
+  ''
+);
+
+const getVenueCourtGroups = (venue) => (
+  Array.isArray(venue?.courtGroups) && venue.courtGroups.length > 0
+    ? venue.courtGroups.filter((group) => group.isActive !== false)
+    : [{ courtCode: 'legacy', name: 'Main Court', sports: venue?.sportTypes || [], courtCount: 1, pricePerHour: venue?.pricePerHour, courtType: 'Standard', isActive: true }]
+);
+
+const getVenueSports = (venue) => (
+  [...new Set(getVenueCourtGroups(venue).flatMap((group) => group.sports || []).filter(Boolean))]
+);
+
+const slotMatchesSport = (slot, selectedSport, venue) => {
+  if (!selectedSport) return true;
+  if (Array.isArray(slot?.sports) && slot.sports.length > 0) {
+    return slot.sports.includes(selectedSport);
+  }
+  return (venue?.sportTypes || []).includes(selectedSport);
+};
 
 const getDateKey = (dateValue) => {
   const date = new Date(dateValue);
@@ -115,6 +141,8 @@ const VenueDetail = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedDateKey, setSelectedDateKey] = useState('');
   const [selectedSlots, setSelectedSlots] = useState([]);
+  const [selectedSport, setSelectedSport] = useState('');
+  const [selectedCourtCode, setSelectedCourtCode] = useState('');
   const [loading, setLoading] = useState(true);
 
   // ── Review state ──────────────────────────────────────
@@ -294,7 +322,13 @@ const VenueDetail = () => {
           .map((slot) => getDateKey(slot.date))
           .filter((dateKey) => dateKey && !isPastDateKey(dateKey)))].sort();
         
+        const venueSports = getVenueSports(venueData);
+        const firstSport = venueSports[0] || '';
+        const firstCourtGroup = getVenueCourtGroups(venueData).find((group) => !firstSport || group.sports?.includes(firstSport));
+
         setVenue(venueData);
+        setSelectedSport((current) => current || firstSport);
+        setSelectedCourtCode((current) => current || firstCourtGroup?.courtCode || '');
         setAvailableSlots(uniqueSlots);
         setSelectedDateKey((currentDateKey) => (
           currentDateKey && futureDateKeys.includes(currentDateKey)
@@ -316,17 +350,26 @@ const VenueDetail = () => {
 
   const toggleSlot = (slot) => {
     if (slot.status !== 'available') return;
-    
-    if (selectedSlots.find(s => s._id === slot._id)) {
-      setSelectedSlots(selectedSlots.filter(s => s._id !== slot._id));
-    } else {
-      setSelectedSlots([...selectedSlots, slot]);
-    }
+
+    setSelectedSlots((currentSlots) => {
+      if (currentSlots.find(s => s._id === slot._id)) {
+        return currentSlots.filter(s => s._id !== slot._id);
+      }
+
+      const slotCourtCode = slot.courtCode || 'legacy';
+      const firstSelectedSlot = currentSlots[0];
+      const samePhysicalCourt = !firstSelectedSlot || (
+        (firstSelectedSlot.courtCode || 'legacy') === slotCourtCode &&
+        Number(firstSelectedSlot.courtNumber || 1) === Number(slot.courtNumber || 1)
+      );
+
+      return samePhysicalCourt ? [...currentSlots, slot] : [slot];
+    });
   };
 
   const handleProceed = () => {
     if (selectedSlots.length > 0) {
-      navigate(`/book/${id}`, { state: { selectedSlots, venue } });
+      navigate(`/book/${id}`, { state: { selectedSlots, venue, selectedSport } });
     }
   };
 
@@ -334,7 +377,37 @@ const VenueDetail = () => {
   if (!venue) return <div className="pt-24 text-center">Venue not found.</div>;
 
   const venueImage = getVenueImage(venue);
-  const slotsByDate = availableSlots.reduce((groups, slot) => {
+  const venueSupportPhone = getVenueSupportPhone(venue);
+  const venueSports = getVenueSports(venue);
+  const courtGroups = getVenueCourtGroups(venue);
+  const matchingCourtGroups = selectedSport
+    ? courtGroups.filter((group) => group.sports?.includes(selectedSport))
+    : courtGroups;
+  const selectedCourtGroup = matchingCourtGroups.find((group) => group.courtCode === selectedCourtCode) || matchingCourtGroups[0];
+  const visibleSlots = availableSlots.filter((slot) => {
+    const slotCourtCode = slot.courtCode || 'legacy';
+    return (
+      slot.status !== 'blocked' &&
+      slotMatchesSport(slot, selectedSport, venue) &&
+      (!selectedCourtGroup?.courtCode || slotCourtCode === selectedCourtGroup.courtCode)
+    );
+  });
+  const selectedSlotTotal = selectedSlots.reduce((sum, slot) => sum + Number(slot.price || selectedCourtGroup?.pricePerHour || venue.pricePerHour || 0), 0);
+  const selectedBasePrice = selectedCourtGroup?.pricePerHour || venue.pricePerHour;
+
+  const selectSport = (sport) => {
+    const firstGroup = courtGroups.find((group) => group.sports?.includes(sport));
+    setSelectedSport(sport);
+    setSelectedCourtCode(firstGroup?.courtCode || '');
+    setSelectedSlots([]);
+  };
+
+  const selectCourtGroup = (courtCode) => {
+    setSelectedCourtCode(courtCode);
+    setSelectedSlots([]);
+  };
+
+  const slotsByDate = visibleSlots.reduce((groups, slot) => {
     const dateKey = getDateKey(slot.date);
     if (!dateKey || isPastDateKey(dateKey) || isPastSlotForToday(slot)) return groups;
 
@@ -379,6 +452,54 @@ const VenueDetail = () => {
           </button>
         );
       })}
+    </div>
+  );
+  const renderSportCourtSelector = () => (
+    <div className="space-y-4 mb-5">
+      {venueSports.length > 0 && (
+        <div>
+          <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Select Sport</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {venueSports.map((sport) => (
+              <button
+                key={sport}
+                type="button"
+                onClick={() => selectSport(sport)}
+                className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-black uppercase transition ${
+                  selectedSport === sport ? 'bg-[#39FF14] text-black' : 'bg-black/40 text-gray-400 border border-white/5'
+                }`}
+              >
+                {sport}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {matchingCourtGroups.length > 1 && (
+        <div>
+          <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Select Court Group</p>
+          <div className="grid grid-cols-1 gap-2">
+            {matchingCourtGroups.map((group) => (
+              <button
+                key={group.courtCode}
+                type="button"
+                onClick={() => selectCourtGroup(group.courtCode)}
+                className={`text-left rounded-xl border px-4 py-3 transition ${
+                  selectedCourtGroup?.courtCode === group.courtCode
+                    ? 'bg-[#39FF14] text-black border-[#39FF14]'
+                    : 'bg-black/40 text-gray-400 border-white/5'
+                }`}
+              >
+                <span className="block text-sm font-black">{group.name}</span>
+                <span className="block text-[10px] uppercase font-bold opacity-70 mt-1">
+                  {group.courtCount || 1} court{Number(group.courtCount || 1) === 1 ? '' : 's'} | Rs {group.pricePerHour}/hr
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -476,6 +597,29 @@ const VenueDetail = () => {
                 ))}
               </div>
             </section>
+
+            {venueSupportPhone && (
+              <section className="bg-[#151b2b] p-6 md:p-8 rounded-[2rem] border border-white/5">
+                <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest mb-4 flex items-center">
+                  <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Venue Support
+                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-black/30 border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Phone size={18} className="text-[#39FF14] shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Manager / Support</p>
+                      <p className="text-white font-black break-words">{venueSupportPhone}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={`tel:${venueSupportPhone}`}
+                    className="bg-[#39FF14] text-black text-center font-black text-xs uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-[#32E612] transition"
+                  >
+                    Call Venue
+                  </a>
+                </div>
+              </section>
+            )}
 
             {/* Reviews Section */}
             <section className="bg-[#151b2b] p-6 md:p-10 rounded-[2rem] border border-white/5">
@@ -663,12 +807,13 @@ const VenueDetail = () => {
               <div className="flex items-center mb-8 text-[#39FF14] bg-[#39FF14]/5 p-5 rounded-2xl border border-[#39FF14]/20 shadow-inner">
                 <Clock size={24} className="mr-3" />
                 <div>
-                  <span className="text-2xl font-black block">₹{venue.pricePerHour}</span>
+                  <span className="text-2xl font-black block">₹{selectedBasePrice}</span>
                   <span className="text-[10px] uppercase font-black opacity-60">Per Hour</span>
                 </div>
               </div>
 
               <div className="mb-8 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                {renderSportCourtSelector()}
                 <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Select Timing</h4>
                 {dateOptions.length > 0 && renderDateSelector()}
                 <div className="grid grid-cols-2 gap-3">
@@ -701,6 +846,8 @@ const VenueDetail = () => {
                         }`}
                       >
                         <span className="uppercase tracking-tighter">{formatSlotRange(slot)}</span>
+                        <span className="text-[9px] uppercase font-black mt-1 opacity-70">{slot.courtName || selectedCourtGroup?.name || 'Court'} {slot.courtNumber ? `#${slot.courtNumber}` : ''}</span>
+                        <span className="text-[9px] uppercase font-black mt-1 opacity-70">₹{slot.price || selectedBasePrice}</span>
                         {isLocked && <span className="text-[8px] uppercase font-black animate-pulse mt-1">Locked</span>}
                         {isBooked && <span className="text-[8px] uppercase font-black mt-1">Sold Out</span>}
                       </button>
@@ -720,11 +867,11 @@ const VenueDetail = () => {
                   >
                     <div className="flex justify-between items-center mb-2 text-gray-500 font-bold text-xs uppercase tracking-widest">
                       <span>{selectedSlots.length} Slots</span>
-                      <span>₹{venue.pricePerHour * selectedSlots.length}</span>
+                      <span>₹{selectedSlotTotal}</span>
                     </div>
                     <div className="flex justify-between items-center font-black text-xl text-white">
                       <span className="uppercase tracking-tighter">Total</span>
-                      <span className="text-[#39FF14]">₹{venue.pricePerHour * selectedSlots.length}</span>
+                      <span className="text-[#39FF14]">₹{selectedSlotTotal}</span>
                     </div>
                   </motion.div>
                 )}
@@ -753,7 +900,7 @@ const VenueDetail = () => {
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Selected Slots</span>
               <span className="text-lg sm:text-xl font-black text-[#39FF14] tracking-tighter">
-              ₹{selectedSlots.length > 0 ? venue.pricePerHour * selectedSlots.length : venue.pricePerHour}
+              ₹{selectedSlots.length > 0 ? selectedSlotTotal : selectedBasePrice}
               {selectedSlots.length === 0 && <span className="text-[10px] text-gray-400 ml-1">/ hr</span>}
             </span>
           </div>
@@ -782,6 +929,7 @@ const VenueDetail = () => {
             <p className="text-gray-500 text-[10px] font-bold uppercase mb-6 tracking-widest">
               Available {selectedDateLabel || 'Slots'}
             </p>
+            {renderSportCourtSelector()}
             {dateOptions.length > 0 && renderDateSelector()}
              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3">
                {dateOptions.length === 0 || selectedDateAvailableSlots.length === 0 ? (
@@ -813,6 +961,8 @@ const VenueDetail = () => {
                       }`}
                     >
                       <span className="uppercase tracking-tighter text-center break-words">{formatSlotRange(slot)}</span>
+                      <span className="text-[9px] uppercase font-black mt-1 opacity-70">{slot.courtName || selectedCourtGroup?.name || 'Court'} {slot.courtNumber ? `#${slot.courtNumber}` : ''}</span>
+                      <span className="text-[9px] uppercase font-black mt-1 opacity-70">₹{slot.price || selectedBasePrice}</span>
                     </button>
                   );
                 })}

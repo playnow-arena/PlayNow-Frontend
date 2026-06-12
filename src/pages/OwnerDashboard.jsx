@@ -35,6 +35,78 @@ const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
 );
 
+const emptyCourtGroup = {
+  courtCode: '',
+  name: '',
+  sports: '',
+  courtCount: '1',
+  pricePerHour: '',
+  courtType: 'Standard',
+  dependencyGroup: '',
+  bookingMode: 'independent',
+  isActive: true,
+};
+
+const emptyRecurringBlockForm = {
+  venueId: '',
+  courtCode: '',
+  daysOfWeek: [],
+  startTime: '',
+  endTime: '',
+  startDate: todayInput(),
+  endDate: '',
+  reason: '',
+  isActive: true,
+};
+
+const dayOptions = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+];
+
+const toList = (value) => String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+const formatCourtGroupSports = (sports = []) => formatSportTypes(sports);
+const getVenueCourtGroups = (venue) => (
+  Array.isArray(venue?.courtGroups) && venue.courtGroups.length > 0
+    ? venue.courtGroups
+    : [{ courtCode: 'legacy', name: 'Main Court', sports: venue?.sportTypes || [], courtCount: 1, pricePerHour: venue?.pricePerHour, courtType: 'Standard', dependencyGroup: '', bookingMode: 'independent', isActive: true }]
+);
+const normalizeCourtGroupsForForm = (courtGroups = []) => (
+  Array.isArray(courtGroups) && courtGroups.length > 0
+    ? courtGroups.map((group) => ({
+      courtCode: group.courtCode || '',
+      name: group.name || '',
+      sports: formatCourtGroupSports(group.sports),
+      courtCount: String(group.courtCount || 1),
+      pricePerHour: group.pricePerHour ?? '',
+      courtType: group.courtType || 'Standard',
+      dependencyGroup: group.dependencyGroup || '',
+      bookingMode: group.bookingMode || 'independent',
+      isActive: group.isActive !== false,
+    }))
+    : [{ ...emptyCourtGroup }]
+);
+const serializeCourtGroups = (courtGroups = []) => (
+  courtGroups
+    .map((group) => ({
+      courtCode: group.courtCode || undefined,
+      name: group.name.trim(),
+      sports: toList(group.sports),
+      courtCount: Number(group.courtCount) || 1,
+      pricePerHour: Number(group.pricePerHour) || 0,
+      courtType: group.courtType.trim() || 'Standard',
+      dependencyGroup: group.dependencyGroup?.trim() || '',
+      bookingMode: group.bookingMode || 'independent',
+      isActive: group.isActive !== false,
+    }))
+    .filter((group) => group.name && group.sports.length > 0 && group.pricePerHour > 0)
+);
+
 const getBookingId = (booking) => booking?._id || booking?.id;
 const getBookingDisplayId = (booking) => booking?.bookingCode || getBookingId(booking)?.slice(-8).toUpperCase();
 
@@ -44,6 +116,11 @@ const canCollectBalance = (booking) => (
   booking?.paymentStatus !== 'completed'
 );
 
+const formatRuleDays = (days = []) => dayOptions
+  .filter((day) => days.includes(day.value))
+  .map((day) => day.label)
+  .join(', ') || 'No days';
+
 const emptyVenueSettings = {
   venueId: '',
   pricePerHour: '',
@@ -51,9 +128,10 @@ const emptyVenueSettings = {
   isActive: true,
   contacts: {
     owner: { name: '', phone: '', email: '' },
-    manager: { name: '', phone: '', email: '' },
-    incharge: { name: '', phone: '', email: '' },
+    manager: { name: '', phone: '', email: '', whatsapp: '' },
+    incharge: { name: '', phone: '', email: '', whatsapp: '' },
   },
+  courtGroups: [{ ...emptyCourtGroup }],
 };
 
 const OwnerDashboard = () => {
@@ -74,6 +152,7 @@ const OwnerDashboard = () => {
 
   const [slotFilters, setSlotFilters] = useState({
     venueId: '',
+    courtCode: '',
     date: todayInput(),
     status: '',
   });
@@ -85,6 +164,7 @@ const OwnerDashboard = () => {
 
   const [generateForm, setGenerateForm] = useState({
     venueId: '',
+    courtCode: '',
     startDate: todayInput(),
     days: '30',
     openingTime: '06:00',
@@ -95,6 +175,12 @@ const OwnerDashboard = () => {
   const [generateMessage, setGenerateMessage] = useState('');
   const [generateSummary, setGenerateSummary] = useState(null);
   const [generateLoading, setGenerateLoading] = useState(false);
+
+  const [recurringRules, setRecurringRules] = useState([]);
+  const [recurringRuleForm, setRecurringRuleForm] = useState(emptyRecurringBlockForm);
+  const [editingRuleId, setEditingRuleId] = useState('');
+  const [recurringRulesLoading, setRecurringRulesLoading] = useState(false);
+  const [recurringRuleMessage, setRecurringRuleMessage] = useState('');
 
   const [venueSettings, setVenueSettings] = useState(emptyVenueSettings);
   const [settingsMessage, setSettingsMessage] = useState('');
@@ -156,6 +242,7 @@ const OwnerDashboard = () => {
 
     setSlotFilters((current) => ({ ...current, venueId: current.venueId || firstVenueId }));
     setGenerateForm((current) => ({ ...current, venueId: current.venueId || firstVenueId }));
+    setRecurringRuleForm((current) => ({ ...current, venueId: current.venueId || firstVenueId }));
     setVenueSettings((current) => {
       if (current.venueId) return current;
       return buildVenueSettings(venues[0]);
@@ -224,6 +311,7 @@ const OwnerDashboard = () => {
   const buildQuery = (filters) => {
     const params = new URLSearchParams();
     if (filters.venueId) params.set('venueId', filters.venueId);
+    if (filters.courtCode) params.set('courtCode', filters.courtCode);
     if (filters.date) params.set('date', filters.date);
     if (filters.status) params.set('status', filters.status);
     const query = params.toString();
@@ -259,7 +347,37 @@ const OwnerDashboard = () => {
     if (activeTab === 'slots' && slotFilters.venueId) {
       fetchManagedSlots();
     }
-  }, [activeTab, slotFilters.venueId, slotFilters.date, slotFilters.status]);
+  }, [activeTab, slotFilters.venueId, slotFilters.courtCode, slotFilters.date, slotFilters.status]);
+
+  const fetchRecurringRules = async () => {
+    setRecurringRulesLoading(true);
+    setRecurringRuleMessage('');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/recurring-block-rules`, {
+        headers: authHeaders(),
+      });
+      const data = await readBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(data.message || 'Unable to load recurring block rules');
+        return;
+      }
+
+      setRecurringRules(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Recurring block rules load error:', error);
+      setRecurringRuleMessage('Unable to load recurring block rules. Please try again.');
+    } finally {
+      setRecurringRulesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'recurring-blocks') {
+      fetchRecurringRules();
+    }
+  }, [activeTab]);
 
   const handleCollectionMethodChange = (bookingId, method) => {
     setCollectionMethods((current) => ({ ...current, [bookingId]: method }));
@@ -402,6 +520,7 @@ const OwnerDashboard = () => {
     try {
       const payload = {
         venueId: generateForm.venueId,
+        courtCode: generateForm.courtCode,
         startDate: generateForm.startDate,
         days: Number(generateForm.days) || 30,
         openingTime: generateForm.openingTime,
@@ -439,6 +558,112 @@ const OwnerDashboard = () => {
     }
   };
 
+  const handleRecurringRuleChange = (field, value) => {
+    setRecurringRuleForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleRecurringRuleDay = (dayValue) => {
+    setRecurringRuleForm((current) => ({
+      ...current,
+      daysOfWeek: current.daysOfWeek.includes(dayValue)
+        ? current.daysOfWeek.filter((day) => day !== dayValue)
+        : [...current.daysOfWeek, dayValue],
+    }));
+  };
+
+  const resetRecurringRuleForm = () => {
+    setRecurringRuleForm({
+      ...emptyRecurringBlockForm,
+      venueId: venues[0]?._id || '',
+    });
+    setEditingRuleId('');
+  };
+
+  const handleEditRecurringRule = (rule) => {
+    setEditingRuleId(rule._id);
+    setRecurringRuleForm({
+      venueId: rule.venueId?._id || rule.venueId || '',
+      courtCode: rule.courtCode || '',
+      daysOfWeek: rule.daysOfWeek || [],
+      startTime: rule.startTime || '',
+      endTime: rule.endTime || '',
+      startDate: rule.startDate ? rule.startDate.slice(0, 10) : todayInput(),
+      endDate: rule.endDate ? rule.endDate.slice(0, 10) : '',
+      reason: rule.reason || '',
+      isActive: rule.isActive !== false,
+    });
+    setRecurringRuleMessage('');
+  };
+
+  const handleRecurringRuleSubmit = async (e) => {
+    e.preventDefault();
+    setRecurringRuleMessage('');
+
+    try {
+      const payload = {
+        ...recurringRuleForm,
+        courtCode: recurringRuleForm.courtCode || '',
+        daysOfWeek: recurringRuleForm.daysOfWeek.map(Number),
+        endDate: recurringRuleForm.endDate || undefined,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/recurring-block-rules${editingRuleId ? `/${editingRuleId}` : ''}`, {
+        method: editingRuleId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await readBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(data.message || 'Unable to save recurring block rule');
+        return;
+      }
+
+      const savedRule = data.rule || data;
+      setRecurringRules((current) => (
+        editingRuleId
+          ? current.map((rule) => (rule._id === savedRule._id ? savedRule : rule))
+          : [savedRule, ...current]
+      ));
+      setRecurringRuleMessage(`Recurring rule saved. ${data.applySummary?.modifiedSlots || 0} existing slot${Number(data.applySummary?.modifiedSlots || 0) === 1 ? '' : 's'} blocked.`);
+      resetRecurringRuleForm();
+      if (activeTab === 'slots') fetchManagedSlots();
+    } catch (error) {
+      console.error('Recurring rule save error:', error);
+      setRecurringRuleMessage('Unable to save recurring rule. Please try again.');
+    }
+  };
+
+  const handleDeleteRecurringRule = async (rule) => {
+    if (!window.confirm(`Remove recurring block rule "${rule.reason}"? Existing blocked slots will not be automatically unblocked.`)) {
+      return;
+    }
+
+    setRecurringRuleMessage('');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/recurring-block-rules/${rule._id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      const data = await readBody(res);
+
+      if (!res.ok) {
+        setRecurringRuleMessage(data.message || 'Unable to delete recurring block rule');
+        return;
+      }
+
+      setRecurringRules((current) => current.filter((item) => item._id !== rule._id));
+      setRecurringRuleMessage('Recurring rule removed.');
+    } catch (error) {
+      console.error('Recurring rule delete error:', error);
+      setRecurringRuleMessage('Unable to delete recurring rule. Please try again.');
+    }
+  };
+
   function buildVenueSettings(venue) {
     return {
       venueId: venue?._id || '',
@@ -455,13 +680,16 @@ const OwnerDashboard = () => {
           name: venue?.contacts?.manager?.name || '',
           phone: venue?.contacts?.manager?.phone || '',
           email: venue?.contacts?.manager?.email || '',
+          whatsapp: venue?.contacts?.manager?.whatsapp || '',
         },
         incharge: {
           name: venue?.contacts?.incharge?.name || '',
           phone: venue?.contacts?.incharge?.phone || '',
           email: venue?.contacts?.incharge?.email || '',
+          whatsapp: venue?.contacts?.incharge?.whatsapp || '',
         },
       },
+      courtGroups: normalizeCourtGroupsForForm(venue?.courtGroups),
     };
   }
 
@@ -484,6 +712,29 @@ const OwnerDashboard = () => {
     }));
   };
 
+  const handleCourtGroupChange = (index, field, value) => {
+    setVenueSettings((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.map((group, groupIndex) => (
+        groupIndex === index ? { ...group, [field]: value } : group
+      )),
+    }));
+  };
+
+  const addCourtGroup = () => {
+    setVenueSettings((current) => ({
+      ...current,
+      courtGroups: [...current.courtGroups, { ...emptyCourtGroup }],
+    }));
+  };
+
+  const removeCourtGroup = (index) => {
+    setVenueSettings((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.filter((_, groupIndex) => groupIndex !== index),
+    }));
+  };
+
   const handleSaveVenueSettings = async (e) => {
     e.preventDefault();
     setSettingsMessage('');
@@ -501,6 +752,7 @@ const OwnerDashboard = () => {
           description: venueSettings.description,
           isActive: venueSettings.isActive,
           contacts: venueSettings.contacts,
+          courtGroups: serializeCourtGroups(venueSettings.courtGroups),
         }),
       });
       const data = await readBody(res);
@@ -653,6 +905,7 @@ const OwnerDashboard = () => {
           ['pending-balance', 'Pending Balance'],
           ['slots', 'Manage Slots'],
           ['generate-slots', 'Generate Slots'],
+          ['recurring-blocks', 'Recurring Blocks'],
           ['settings', 'Venue Settings'],
         ].map(([id, label]) => (
           <button
@@ -702,6 +955,13 @@ const OwnerDashboard = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-500 mt-4">{venue.description}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {getVenueCourtGroups(venue).map((group) => (
+                  <span key={group.courtCode} className="text-[10px] bg-[#0a0f1c] text-gray-400 border border-gray-800 rounded-lg px-2 py-1 font-bold uppercase">
+                    {group.name}: {formatCourtGroupSports(group.sports)} | {group.courtCount || 1} court{Number(group.courtCount || 1) === 1 ? '' : 's'}{group.bookingMode && group.bookingMode !== 'independent' ? ` | ${group.bookingMode}` : ''}
+                  </span>
+                ))}
+              </div>
             </div>
           ))}
         </section>
@@ -756,10 +1016,23 @@ const OwnerDashboard = () => {
               <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Venue</label>
               <select
                 value={slotFilters.venueId}
-                onChange={(e) => setSlotFilters((current) => ({ ...current, venueId: e.target.value }))}
+                onChange={(e) => setSlotFilters((current) => ({ ...current, venueId: e.target.value, courtCode: '' }))}
                 className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
               >
                 {venues.map((venue) => <option key={venue._id} value={venue._id}>{venue.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Court Group</label>
+              <select
+                value={slotFilters.courtCode}
+                onChange={(e) => setSlotFilters((current) => ({ ...current, courtCode: e.target.value }))}
+                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+              >
+                <option value="">All court groups</option>
+                {getVenueCourtGroups(venues.find((venue) => venue._id === slotFilters.venueId)).map((group) => (
+                  <option key={group.courtCode} value={group.courtCode}>{group.name}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -841,6 +1114,7 @@ const OwnerDashboard = () => {
                         <div>
                           <p className="font-bold text-white">{formatDate(slot.date)}</p>
                           <p className="text-sm text-gray-400 mt-1">{formatSlotRange(slot)}</p>
+                          <p className="text-xs text-gray-600 mt-1">{slot.courtName || 'Court'} {slot.courtNumber ? `#${slot.courtNumber}` : ''}</p>
                         </div>
                         <span className="text-xs uppercase font-black text-gray-400">{slot.status}</span>
                       </div>
@@ -888,10 +1162,23 @@ const OwnerDashboard = () => {
               <select
                 required
                 value={generateForm.venueId}
-                onChange={(e) => setGenerateForm((current) => ({ ...current, venueId: e.target.value }))}
+                onChange={(e) => setGenerateForm((current) => ({ ...current, venueId: e.target.value, courtCode: '' }))}
                 className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
               >
                 {venues.map((venue) => <option key={venue._id} value={venue._id}>{venue.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Court Group</label>
+              <select
+                value={generateForm.courtCode}
+                onChange={(e) => setGenerateForm((current) => ({ ...current, courtCode: e.target.value }))}
+                className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+              >
+                <option value="">Default court group</option>
+                {getVenueCourtGroups(venues.find((venue) => venue._id === generateForm.venueId)).map((group) => (
+                  <option key={group.courtCode} value={group.courtCode}>{group.name} ({formatCourtGroupSports(group.sports)})</option>
+                ))}
               </select>
             </div>
             {[
@@ -949,6 +1236,146 @@ const OwnerDashboard = () => {
         </form>
       )}
 
+      {activeTab === 'recurring-blocks' && (
+        <section className="space-y-5">
+          <form onSubmit={handleRecurringRuleSubmit} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-5 md:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black text-white">{editingRuleId ? 'Edit Recurring Block' : 'Create Recurring Block'}</h2>
+                <p className="text-sm text-gray-500 mt-1">Block repeated coaching, academy, maintenance or tournament hours.</p>
+              </div>
+              {editingRuleId && (
+                <button type="button" onClick={resetRecurringRuleForm} className="text-sm font-bold text-gray-400 hover:text-white">
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+
+            {recurringRuleMessage && (
+              <div className={`rounded-xl px-4 py-3 text-sm border ${recurringRuleMessage.toLowerCase().includes('saved') || recurringRuleMessage.toLowerCase().includes('removed') ? 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14]' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                {recurringRuleMessage}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="lg:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Venue</label>
+                <select
+                  required
+                  value={recurringRuleForm.venueId}
+                  onChange={(e) => setRecurringRuleForm((current) => ({ ...current, venueId: e.target.value, courtCode: '' }))}
+                  className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+                >
+                  {venues.map((venue) => <option key={venue._id} value={venue._id}>{venue.name}</option>)}
+                </select>
+              </div>
+              <div className="lg:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Court Group</label>
+                <select
+                  value={recurringRuleForm.courtCode}
+                  onChange={(e) => handleRecurringRuleChange('courtCode', e.target.value)}
+                  className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+                >
+                  <option value="">Whole venue / all court groups</option>
+                  {getVenueCourtGroups(venues.find((venue) => venue._id === recurringRuleForm.venueId)).map((group) => (
+                    <option key={group.courtCode} value={group.courtCode}>{group.name} ({formatCourtGroupSports(group.sports)})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="lg:col-span-4">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Days</label>
+                <div className="flex flex-wrap gap-2">
+                  {dayOptions.map((day) => (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => toggleRecurringRuleDay(day.value)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border ${recurringRuleForm.daysOfWeek.includes(day.value) ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'bg-[#0a0f1c] text-gray-400 border-gray-800'}`}
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Start Time</label>
+                <input required type="time" value={recurringRuleForm.startTime} onChange={(e) => handleRecurringRuleChange('startTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">End Time</label>
+                <input required type="time" value={recurringRuleForm.endTime} onChange={(e) => handleRecurringRuleChange('endTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Start Date</label>
+                <input required type="date" value={recurringRuleForm.startDate} onChange={(e) => handleRecurringRuleChange('startDate', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">End Date Optional</label>
+                <input type="date" value={recurringRuleForm.endDate} onChange={(e) => handleRecurringRuleChange('endDate', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+              </div>
+              <div className="lg:col-span-3">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Reason</label>
+                <input required value={recurringRuleForm.reason} onChange={(e) => handleRecurringRuleChange('reason', e.target.value)} placeholder="Coaching, Maintenance, Tournament" className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+              </div>
+              <label className="flex items-center gap-3 bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-sm font-bold text-gray-300">
+                <input type="checkbox" checked={recurringRuleForm.isActive} onChange={(e) => handleRecurringRuleChange('isActive', e.target.checked)} className="accent-[#39FF14]" />
+                Active
+              </label>
+            </div>
+
+            <button type="submit" disabled={venues.length === 0} className="w-full md:w-auto bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl disabled:opacity-50">
+              {editingRuleId ? 'Save Rule' : 'Create Rule'}
+            </button>
+          </form>
+
+          <div className="bg-[#151b2b] border border-gray-800 rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-gray-800 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black text-white">Recurring Rules</h2>
+                <p className="text-sm text-gray-500">Booked slots are never modified by recurring rules.</p>
+              </div>
+              <button onClick={fetchRecurringRules} className="bg-white/10 text-white rounded-xl px-4 py-2 font-bold text-sm">
+                Refresh
+              </button>
+            </div>
+            {recurringRulesLoading ? (
+              <div className="p-10 text-center text-gray-500">Loading recurring rules...</div>
+            ) : recurringRules.length === 0 ? (
+              <div className="p-10 text-center text-gray-500">No recurring block rules yet.</div>
+            ) : (
+              <div className="divide-y divide-gray-800">
+                {recurringRules.map((rule) => (
+                  <div key={rule._id} className="p-4 md:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-black text-white">{rule.reason}</h3>
+                        <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-full ${rule.isActive ? 'bg-[#39FF14]/10 text-[#39FF14]' : 'bg-gray-800 text-gray-500'}`}>
+                          {rule.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 mt-1">{rule.venueId?.name || 'Venue'} | {rule.courtCode || 'All courts'}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatRuleDays(rule.daysOfWeek)} | {formatTime(rule.startTime)} - {formatTime(rule.endTime)} | From {formatDate(rule.startDate)}{rule.endDate ? ` to ${formatDate(rule.endDate)}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEditRecurringRule(rule)} className="flex-1 lg:flex-none px-4 py-2 bg-gray-800 text-white rounded-xl font-bold text-sm">
+                        Edit
+                      </button>
+                      <button onClick={() => handleDeleteRecurringRule(rule)} className="flex-1 lg:flex-none px-4 py-2 bg-red-500/10 text-red-400 rounded-xl font-bold text-sm">
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {activeTab === 'settings' && (
         <form onSubmit={handleSaveVenueSettings} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-5 md:p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -992,11 +1419,60 @@ const OwnerDashboard = () => {
             />
           </div>
 
+          <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="font-black text-white">Court Groups</h3>
+                <p className="text-xs text-gray-500 mt-1">Manage physical court blocks and supported sports.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addCourtGroup}
+                className="bg-white/10 text-white font-bold rounded-xl px-4 py-2 hover:bg-white/20"
+              >
+                Add Court Group
+              </button>
+            </div>
+
+            {venueSettings.courtGroups.map((group, index) => (
+              <div key={`${group.courtCode || 'new'}-${index}`} className="bg-[#151b2b] border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <p className="font-bold text-white">Group {index + 1}</p>
+                    {group.courtCode && <p className="text-xs text-gray-600">{group.courtCode}</p>}
+                  </div>
+                  {venueSettings.courtGroups.length > 1 && (
+                    <button type="button" onClick={() => removeCourtGroup(index)} className="text-red-400 font-bold text-sm">
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input value={group.name} onChange={(e) => handleCourtGroupChange(index, 'name', e.target.value)} placeholder="Court group name" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <input value={group.sports} onChange={(e) => handleCourtGroupChange(index, 'sports', e.target.value)} placeholder="Sports: Football, Cricket" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <input type="number" min="1" value={group.courtCount} onChange={(e) => handleCourtGroupChange(index, 'courtCount', e.target.value)} placeholder="Court count" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <input type="number" min="1" value={group.pricePerHour} onChange={(e) => handleCourtGroupChange(index, 'pricePerHour', e.target.value)} placeholder="Price per hour" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <input value={group.courtType} onChange={(e) => handleCourtGroupChange(index, 'courtType', e.target.value)} placeholder="Court type" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <input value={group.dependencyGroup} onChange={(e) => handleCourtGroupChange(index, 'dependencyGroup', e.target.value)} placeholder="Dependency group e.g. tokyo-main-turf" className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white" />
+                  <select value={group.bookingMode} onChange={(e) => handleCourtGroupChange(index, 'bookingMode', e.target.value)} className="bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white">
+                    <option value="independent">Independent</option>
+                    <option value="full">Full Turf</option>
+                    <option value="half">Half Turf</option>
+                  </select>
+                  <label className="flex items-center gap-3 bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3">
+                    <input type="checkbox" checked={group.isActive} onChange={(e) => handleCourtGroupChange(index, 'isActive', e.target.checked)} />
+                    <span className="font-bold text-white">Active</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {['owner', 'manager', 'incharge'].map((role) => (
             <div key={role} className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
               <h3 className="font-black text-white capitalize mb-3">{role} Contact</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {['name', 'phone', 'email'].map((field) => (
+                {['name', 'phone', 'email', ...(role === 'owner' ? [] : ['whatsapp'])].map((field) => (
                   <input
                     key={field}
                     type={field === 'email' ? 'email' : 'text'}
