@@ -9,6 +9,9 @@ import { useAuth } from '../context/AuthContext';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const UPCOMING_SLOT_DAYS = 30;
 const getVenueImage = (venue) => (venue.images || []).find((image) => image && !image.includes('default-venue'));
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
 
 const getDateKey = (dateValue) => {
   const date = new Date(dateValue);
@@ -412,7 +415,7 @@ const VenueDetail = () => {
             </div>
             <h1 className="text-3xl md:text-6xl font-black text-white leading-tight uppercase tracking-tighter break-words">{venue.name}</h1>
             <p className="text-gray-300 flex items-start text-xs md:text-lg font-medium opacity-90">
-              <MapPin size={18} className="mr-2 mt-0.5 text-[#39FF14] shrink-0" /> <span className="break-words">{venue.location}</span>
+              <MapPin size={18} className="mr-2 mt-0.5 text-[#39FF14] shrink-0" /> <span className="break-words">{formatVenueLocation(venue)}</span>
             </p>
           </motion.div>
         </div>

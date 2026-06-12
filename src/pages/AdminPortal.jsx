@@ -9,6 +9,11 @@ const emptyVenueForm = {
   name: '',
   sportTypes: '',
   location: '',
+  city: '',
+  area: '',
+  landmark: '',
+  coordinateLat: '',
+  coordinateLng: '',
   address: '',
   pricePerHour: '',
   amenities: '',
@@ -106,11 +111,17 @@ const formatSlotTimes = (slots = []) => {
     .join(', ');
 };
 
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
+
 const canCollectBookingBalance = (booking) => (
   Number(booking?.remainingAmount || 0) > 0 &&
   booking?.bookingStatus !== 'cancelled' &&
   booking?.paymentStatus !== 'completed'
 );
+
+const getBookingDisplayId = (booking) => booking?.bookingCode || (booking?._id || booking?.id || '').slice(-8).toUpperCase();
 
 const AdminPortal = () => {
   const { logout } = useAuth();
@@ -432,6 +443,9 @@ const AdminPortal = () => {
       name: venueForm.name.trim(),
       sportTypes: toSportList(venueForm.sportTypes),
       location: venueForm.location.trim(),
+      city: venueForm.city.trim(),
+      area: venueForm.area.trim(),
+      landmark: venueForm.landmark.trim(),
       address: venueForm.address.trim(),
       pricePerHour: Number(venueForm.pricePerHour),
       amenities: toList(venueForm.amenities),
@@ -441,6 +455,12 @@ const AdminPortal = () => {
 
     if (venueForm.imageUrl.trim()) {
       payload.images = [venueForm.imageUrl.trim()];
+    }
+
+    if (venueForm.coordinateLat || venueForm.coordinateLng) {
+      payload.coordinates = {};
+      if (venueForm.coordinateLat) payload.coordinates.lat = Number(venueForm.coordinateLat);
+      if (venueForm.coordinateLng) payload.coordinates.lng = Number(venueForm.coordinateLng);
     }
 
     try {
@@ -485,6 +505,11 @@ const AdminPortal = () => {
       name: venue.name || '',
       sportTypes: formatSportTypes(venue.sportTypes),
       location: venue.location || '',
+      city: venue.city || '',
+      area: venue.area || '',
+      landmark: venue.landmark || '',
+      coordinateLat: venue.coordinates?.lat ?? '',
+      coordinateLng: venue.coordinates?.lng ?? '',
       address: venue.address || '',
       pricePerHour: venue.pricePerHour || '',
       amenities: (venue.amenities || []).join(', '),
@@ -1018,7 +1043,7 @@ const AdminPortal = () => {
                           return (
                             <tr key={bookingId} className="border-b border-white/5 align-top hover:bg-white/5">
                               <td className="p-4 font-mono text-sm text-gray-400">
-                                #{bookingId?.slice(-8).toUpperCase()}
+                                #{getBookingDisplayId(booking)}
                               </td>
                               <td className="p-4">
                                 <p className="font-bold text-white">{booking.userId?.name || 'Guest'}</p>
@@ -1026,7 +1051,7 @@ const AdminPortal = () => {
                               </td>
                               <td className="p-4">
                                 <p className="font-bold text-white">{booking.venueId?.name || 'Venue unavailable'}</p>
-                                <p className="text-xs text-gray-500 mt-1">{booking.venueId?.location || 'Location unavailable'}</p>
+                                <p className="text-xs text-gray-500 mt-1">{formatVenueLocation(booking.venueId)}</p>
                               </td>
                               <td className="p-4">
                                 <p className="font-bold text-gray-300">{formatSlotDate(booking.slotIds?.[0])}</p>
@@ -1148,6 +1173,30 @@ const AdminPortal = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      City
+                    </label>
+                    <input
+                      value={venueForm.city}
+                      onChange={(e) => handleVenueChange('city', e.target.value)}
+                      placeholder="Trichy"
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Area
+                    </label>
+                    <input
+                      value={venueForm.area}
+                      onChange={(e) => handleVenueChange('area', e.target.value)}
+                      placeholder="Thillai Nagar"
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Price Per Hour
                     </label>
                     <input
@@ -1158,6 +1207,42 @@ const AdminPortal = () => {
                       onChange={(e) => handleVenueChange('pricePerHour', e.target.value)}
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Landmark
+                    </label>
+                    <input
+                      value={venueForm.landmark}
+                      onChange={(e) => handleVenueChange('landmark', e.target.value)}
+                      placeholder="Near bus stand"
+                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Coordinates Optional
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="number"
+                        step="any"
+                        value={venueForm.coordinateLat}
+                        onChange={(e) => handleVenueChange('coordinateLat', e.target.value)}
+                        placeholder="Latitude"
+                        className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                      <input
+                        type="number"
+                        step="any"
+                        value={venueForm.coordinateLng}
+                        onChange={(e) => handleVenueChange('coordinateLng', e.target.value)}
+                        placeholder="Longitude"
+                        className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
@@ -1287,7 +1372,10 @@ const AdminPortal = () => {
                               {venue.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-400">{venue.location}</p>
+                          <p className="text-sm text-gray-400">{formatVenueLocation(venue)}</p>
+                          {venue.venueCode && (
+                            <p className="text-xs text-gray-600 mt-1">Code: {venue.venueCode}</p>
+                          )}
                           <p className="text-xs text-gray-500 mt-1">
                             {formatSportTypes(venue.sportTypes) || 'No sports'} | Rs {venue.pricePerHour}/hr
                           </p>

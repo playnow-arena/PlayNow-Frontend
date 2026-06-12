@@ -31,8 +31,14 @@ const Venues = () => {
 
   const filteredVenues = venues.filter(venue => {
     const matchesSport = sportMatchesFilter(venue.sportTypes, filterSport);
-    const matchesSearch = venue.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          venue.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchableLocation = [
+      venue.name,
+      venue.location,
+      venue.area,
+      venue.city,
+      venue.landmark
+    ].filter(Boolean).join(' ').toLowerCase();
+    const matchesSearch = searchableLocation.includes(searchQuery.toLowerCase());
     return matchesSport && matchesSearch;
   });
 

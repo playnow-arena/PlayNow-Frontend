@@ -39,6 +39,10 @@ const formatSlotTimes = (slots = []) => {
 
 const formatCurrency = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
 
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
+
 const getSlotStartDateTime = (slot) => {
   if (!slot?.date || !slot?.startTime) return null;
 
@@ -265,7 +269,7 @@ const Dashboard = () => {
                       >
                         <div className="min-w-0 w-full">
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400 break-all">#{(booking._id || '').slice(-8).toUpperCase()}</span>
+                            <span className="bg-[#0a0f1c] px-2 py-1 rounded border border-gray-700 text-xs font-mono text-gray-400 break-all">#{booking.bookingCode || (booking._id || '').slice(-8).toUpperCase()}</span>
                             <span className={`px-2 py-1 rounded text-xs font-bold ${booking.bookingStatus === 'confirmed' ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-yellow-500/20 text-yellow-500'}`}>
                               {booking.bookingStatus || 'unknown'}
                             </span>
@@ -275,7 +279,7 @@ const Dashboard = () => {
                           </div>
                           <h3 className="text-lg sm:text-xl font-bold mb-1 break-words">{booking.venueId?.name || 'Venue unavailable'}</h3>
                           <p className="text-gray-500 text-sm flex items-start mb-1 min-w-0">
-                            <MapPin size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">{booking.venueId?.location || 'Location unavailable'}</span>
+                            <MapPin size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">{formatVenueLocation(booking.venueId)}</span>
                           </p>
                           <p className="text-gray-400 text-sm flex items-start mb-1 min-w-0">
                             <Calendar size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">{formatSlotDate(booking.slotIds?.[0])} | {formatSlotTimes(booking.slotIds)}</span>
@@ -311,7 +315,7 @@ const Dashboard = () => {
                         
                         <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
                           <button 
-                            onClick={() => handleDirections(`${booking.venueId?.name || ''} ${booking.venueId?.location || ''}`)}
+                            onClick={() => handleDirections(`${booking.venueId?.name || ''} ${formatVenueLocation(booking.venueId)}`)}
                             className="flex-1 md:flex-none bg-[#39FF14]/10 hover:bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center flex items-center justify-center gap-2"
                           >
                             <MapPin size={14} /> Directions

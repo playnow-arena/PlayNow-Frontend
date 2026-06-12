@@ -31,7 +31,12 @@ const formatSlotRange = (slot) => (
   [formatTime(slot?.startTime), formatTime(slot?.endTime)].filter(Boolean).join(' - ') || 'Time unavailable'
 );
 
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
+
 const getBookingId = (booking) => booking?._id || booking?.id;
+const getBookingDisplayId = (booking) => booking?.bookingCode || getBookingId(booking)?.slice(-8).toUpperCase();
 
 const canCollectBalance = (booking) => (
   Number(booking?.remainingAmount || 0) > 0 &&
@@ -169,10 +174,11 @@ const OwnerDashboard = () => {
       const matchesStatus = !bookingFilters.status || booking.bookingStatus === bookingFilters.status;
       const searchable = [
         booking._id,
+        booking.bookingCode,
         booking.userId?.name,
         booking.userId?.phone,
         booking.venueId?.name,
-        booking.venueId?.location,
+        formatVenueLocation(booking.venueId),
       ].filter(Boolean).join(' ').toLowerCase();
 
       return matchesStatus && (!search || searchable.includes(search));
@@ -540,10 +546,10 @@ const OwnerDashboard = () => {
                 const bookingId = getBookingId(booking);
                 return (
                   <tr key={bookingId} className="border-t border-white/5 align-top">
-                    <td className="p-4 font-mono text-sm text-gray-400">{bookingId?.slice(-8).toUpperCase()}</td>
+                    <td className="p-4 font-mono text-sm text-gray-400">{getBookingDisplayId(booking)}</td>
                     <td className="p-4">
                       <p className="font-bold text-white">{booking.venueId?.name || 'Venue unavailable'}</p>
-                      <p className="text-xs text-gray-500 mt-1">{booking.venueId?.location || 'Location unavailable'}</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatVenueLocation(booking.venueId)}</p>
                     </td>
                     <td className="p-4">
                       <p className="font-bold text-white">{booking.userId?.name || 'Guest'}</p>
@@ -670,7 +676,8 @@ const OwnerDashboard = () => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black text-white">{venue.name}</h2>
-                  <p className="text-sm text-gray-400 mt-2 flex items-center gap-2"><MapPin size={14} /> {venue.location}</p>
+                  <p className="text-sm text-gray-400 mt-2 flex items-center gap-2"><MapPin size={14} /> {formatVenueLocation(venue)}</p>
+                  {venue.venueCode && <p className="text-xs text-gray-600 mt-1">Code: {venue.venueCode}</p>}
                 </div>
                 <span className={`text-xs font-black uppercase px-3 py-1 rounded-full ${venue.isActive !== false ? 'bg-[#39FF14]/10 text-[#39FF14]' : 'bg-red-500/10 text-red-400'}`}>
                   {venue.isActive !== false ? 'Active' : 'Inactive'}

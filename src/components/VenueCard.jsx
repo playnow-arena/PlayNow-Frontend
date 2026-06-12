@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { normalizeSportName } from '../utils/sports';
 
 const MotionLink = motion(Link);
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
 
 const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05, isCompact = false }) => {
   return (
@@ -47,7 +50,7 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
         </div>
         <p className={`text-gray-400 text-sm flex items-start font-medium min-w-0 ${isCompact ? 'mb-5 text-xs md:text-sm' : 'mb-6'}`}>
           <MapPin size={isCompact ? 14 : 16} className={`text-gray-600 shrink-0 mt-0.5 ${isCompact ? 'mr-1' : 'mr-2'}`} />
-          <span className="min-w-0 break-words">{venue.location}</span>
+          <span className="min-w-0 break-words">{formatVenueLocation(venue)}</span>
         </p>
 
         {/* Amenities (Only visible if showAmenities is true) */}

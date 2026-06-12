@@ -36,6 +36,10 @@ const formatSlotDate = (slot) => {
 
 const formatCurrency = (amount) => `Rs ${Number(amount || 0).toLocaleString('en-IN')}`;
 
+const formatVenueLocation = (venue) => (
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || ''
+);
+
 const getStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('playnow_user') || 'null');
@@ -168,13 +172,13 @@ const Booking = () => {
   }
 
   if (paymentStep === 3) {
-    const bookingId = bookingDetails?._id || 'ERROR';
+    const bookingId = bookingDetails?.bookingCode || bookingDetails?._id || 'ERROR';
     const paidOnline = bookingDetails?.paidAmount ?? amountToPay;
     const finalTotal = bookingDetails?.totalAmount ?? totalAmount;
     const balanceDue = bookingDetails?.remainingAmount ?? Math.max(finalTotal - paidOnline, 0);
     const paymentStatus = bookingDetails?.paymentStatus || (balanceDue > 0 ? 'advance_paid' : 'completed');
     const bookingStatus = bookingDetails?.bookingStatus || 'confirmed';
-    const venueAddress = venue.address || venue.location || 'Address unavailable';
+    const venueAddress = [venue.address, formatVenueLocation(venue)].filter(Boolean).join(' • ') || 'Address unavailable';
     const playerName = bookingDetails?.userId?.name || storedUser?.name || storedUser?.username || '';
     const playerPhone = bookingDetails?.userId?.phone || storedUser?.phone || '';
 
@@ -197,7 +201,7 @@ const Booking = () => {
           <div className="bg-[#0a0f1c] rounded-2xl p-4 mb-5 text-left border border-gray-800">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-1 mb-2">
               <span className="text-gray-400">Booking ID</span>
-              <span className="font-bold text-[#39FF14]">#{bookingId.slice(-8).toUpperCase()}</span>
+              <span className="font-bold text-[#39FF14]">#{bookingId}</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:justify-between gap-1 mb-2">
               <span className="text-gray-400">Payment Status</span>
