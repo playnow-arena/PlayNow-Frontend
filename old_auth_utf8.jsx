@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Auth = () => {
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
 
-  // ── Login Handler ──
+  // ΓöÇΓöÇ Login Handler ΓöÇΓöÇ
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -79,7 +79,7 @@ const Auth = () => {
     }
   };
 
-  // ── Register Handler ──
+  // ΓöÇΓöÇ Register Handler ΓöÇΓöÇ
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
@@ -140,7 +140,7 @@ const Auth = () => {
     setError('');
   };
 
-  // ── Render ──
+  // ΓöÇΓöÇ Render ΓöÇΓöÇ
   return (
     <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center p-4 relative overflow-hidden font-outfit">
 
@@ -205,7 +205,7 @@ const Auth = () => {
 
         {/* Tab Content */}
         <AnimatePresence mode="wait">
-          {/* ── LOGIN TAB ── */}
+          {/* ΓöÇΓöÇ LOGIN TAB ΓöÇΓöÇ */}
           {activeTab === 'login' && (
             <motion.form
               key="login"
@@ -290,7 +290,7 @@ const Auth = () => {
             </motion.form>
           )}
 
-          {/* ── REGISTER TAB ── */}
+          {/* ΓöÇΓöÇ REGISTER TAB ΓöÇΓöÇ */}
           {activeTab === 'register' && (
             <motion.form
               key="register"
@@ -422,15 +422,15 @@ const Auth = () => {
           )}
         </AnimatePresence>
 
-        {/* Admin / Venue Partner Link */}
+        {/* Venue Partner Link */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500 font-medium">
-            Admin or Venue Partner?{' '}
+            Are you a venue partner?{' '}
             <Link
               to="/partner/login"
               className="text-[#39FF14] font-bold hover:underline"
             >
-              Staff Login
+              Login here
             </Link>
           </p>
         </div>
