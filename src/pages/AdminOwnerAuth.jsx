@@ -14,10 +14,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 // ── AdminOwnerAuth ──────────────────────────────────────────────────────────
-// Provides Mobile Number → OTP login flow exclusively for Admin and Owner roles.
-// Players must use /login (Email + Password).
+// Provides Mobile Number → OTP login flow for Admin or Owner roles.
 // ────────────────────────────────────────────────────────────────────────────
-const AdminOwnerAuth = () => {
+const AdminOwnerAuth = ({ portalType = 'owner' }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -119,14 +118,24 @@ const AdminOwnerAuth = () => {
 
       const role = data.role || data.user?.role;
 
-      // Only allow admin and owner roles through this portal
+      // Restrict access based on the specific portal type
       if (role === 'player') {
-        setError('Players must use the Player Login page. This portal is for Admins and Venue Partners only.');
+        setError('Access denied. Players must use the Player Login page.');
+        return;
+      }
+
+      if (portalType === 'admin' && role !== 'admin') {
+        setError('Access denied. This portal is for Administrators only.');
+        return;
+      }
+
+      if (portalType === 'owner' && role !== 'owner') {
+        setError('Access denied. This portal is for Venue Partners only.');
         return;
       }
 
       if (!role || (role !== 'admin' && role !== 'owner')) {
-        setError('Access denied. This portal is for Admins and Venue Partners only.');
+        setError('Access denied.');
         return;
       }
 
@@ -210,12 +219,12 @@ const AdminOwnerAuth = () => {
           <div className="flex items-center gap-1.5 bg-[#39FF14]/10 border border-[#39FF14]/30 rounded-full px-4 py-1.5 mb-4">
             <ShieldCheck size={14} className="text-[#39FF14]" />
             <span className="text-[#39FF14] text-xs font-black uppercase tracking-widest">
-              Staff Portal
+              {portalType === 'admin' ? 'Admin Portal' : 'Partner Portal'}
             </span>
           </div>
 
           <h2 className="text-2xl font-black text-white tracking-tight text-center">
-            {step === 1 && 'Admin & Partner Login'}
+            {step === 1 && (portalType === 'admin' ? 'Admin Login' : 'Venue Partner Login')}
             {step === 2 && 'Verify OTP'}
           </h2>
           <p className="text-gray-400 text-sm mt-2 font-medium text-center">
