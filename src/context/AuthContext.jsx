@@ -14,7 +14,8 @@ const normalizeUser = (userData) => {
   return {
     ...baseUser,
     id: baseUser._id || baseUser.id || userData._id || userData.id,
-    role: baseUser.role || userData.role,
+    role: baseUser.role || userData.role || baseUser.roles?.[0] || userData.roles?.[0],
+    roles: baseUser.roles || userData.roles || (baseUser.role || userData.role ? [baseUser.role || userData.role] : []),
     email: baseUser.email || userData.email,
     isVerified: baseUser.isVerified ?? userData.isVerified ?? true,
   };
@@ -27,13 +28,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check for saved user on load
     const savedUser = localStorage.getItem('playnow_user');
-    const savedToken = localStorage.getItem('playnow_token');
+    const legacyToken = localStorage.getItem('token');
+    const savedToken = localStorage.getItem('playnow_token') || legacyToken;
     if (savedUser && savedToken) {
       try {
         const parsedUser = JSON.parse(savedUser);
         const normalizedUser = normalizeUser(parsedUser);
         setUser(normalizedUser);
         localStorage.setItem('playnow_user', JSON.stringify(normalizedUser));
+        if (!localStorage.getItem('playnow_token') && legacyToken) {
+          localStorage.setItem('playnow_token', legacyToken);
+        }
       } catch (e) {
         console.error('Failed to parse saved user');
         localStorage.removeItem('playnow_user');
@@ -57,6 +62,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('playnow_user');
     localStorage.removeItem('playnow_token');
+    localStorage.removeItem('token');
   };
 
   const updateProfile = (userData) => {

@@ -88,8 +88,7 @@ const dayOptions = [
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const apiUrl = (path) => `${API_BASE_URL}${path}`;
 
-const toList = (value) => value
-  .split(',')
+const toList = (value) => (Array.isArray(value) ? value : String(value || '').split(','))
   .map((item) => item.trim())
   .filter(Boolean);
 
@@ -116,12 +115,12 @@ const serializeCourtGroups = (courtGroups = []) => (
   courtGroups
     .map((group) => ({
       courtCode: group.courtCode || undefined,
-      name: group.name.trim(),
+      name: String(group.name || '').trim(),
       sports: toSportList(group.sports),
       courtCount: Number(group.courtCount) || 1,
       pricePerHour: Number(group.pricePerHour) || 0,
-      courtType: group.courtType.trim() || 'Standard',
-      dependencyGroup: group.dependencyGroup?.trim() || '',
+      courtType: String(group.courtType || '').trim() || 'Standard',
+      dependencyGroup: String(group.dependencyGroup || '').trim(),
       bookingMode: group.bookingMode || 'independent',
       isActive: group.isActive !== false,
     }))
@@ -202,6 +201,10 @@ const formatRuleDays = (days = []) => dayOptions
 
 const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+);
+
+const formatRequestLocation = (request) => (
+  [request?.area, request?.city, request?.landmark].filter(Boolean).join(' • ') || request?.location || 'Location unavailable'
 );
 
 const canCollectBookingBalance = (booking) => (
@@ -1173,13 +1176,27 @@ const AdminPortal = () => {
                           <h4 className="font-bold text-base md:text-lg text-white">{request.venueName}</h4>
                           <p className="text-sm text-gray-400 mt-1">{request.address}</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-xs text-gray-500 mt-4">
-                            <span><strong className="text-gray-300">Owner:</strong> {request.ownerName}</span>
-                            <span><strong className="text-gray-300">Phone:</strong> {request.phone}</span>
-                            <span><strong className="text-gray-300">Email:</strong> {request.email || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Applicant:</strong> {request.ownerName}</span>
+                            <span><strong className="text-gray-300">Applicant Phone:</strong> {request.phone}</span>
+                            <span><strong className="text-gray-300">Applicant Email:</strong> {request.email || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Location:</strong> {formatRequestLocation(request)}</span>
+                            <span><strong className="text-gray-300">Manager:</strong> {request.contacts?.manager?.name || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Manager Phone:</strong> {request.contacts?.manager?.phone || request.contacts?.manager?.whatsapp || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Incharge:</strong> {request.contacts?.incharge?.name || 'Not provided'}</span>
+                            <span><strong className="text-gray-300">Incharge Phone:</strong> {request.contacts?.incharge?.phone || request.contacts?.incharge?.whatsapp || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Sports:</strong> {formatSportTypes(request.sportTypes) || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Price:</strong> {request.pricePerHour ? `Rs ${request.pricePerHour}/hr` : 'Not provided'}</span>
                             <span><strong className="text-gray-300">Created:</strong> {formatRequestDate(request.createdAt || request.submittedAt)}</span>
                           </div>
+                          {Array.isArray(request.courtGroups) && request.courtGroups.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {request.courtGroups.map((group, groupIndex) => (
+                                <span key={`${group.name || 'court-group'}-${groupIndex}`} className="rounded-lg border border-gray-800 bg-black/30 px-3 py-2 text-[10px] font-bold uppercase text-gray-400">
+                                  {group.name || 'Court Group'} | {formatCourtGroupSports(group.sports) || 'Sport'} | {group.courtCount || 1} court{Number(group.courtCount || 1) === 1 ? '' : 's'} | Rs {group.pricePerHour || 0}/hr | {group.courtType || 'Standard'}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                       
