@@ -27,7 +27,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check for saved user on load
     const savedUser = localStorage.getItem('playnow_user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('playnow_token');
+    if (savedUser && savedToken) {
       try {
         const parsedUser = JSON.parse(savedUser);
         const normalizedUser = normalizeUser(parsedUser);
@@ -37,6 +38,8 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to parse saved user');
         localStorage.removeItem('playnow_user');
       }
+    } else if (savedUser && !savedToken) {
+      localStorage.removeItem('playnow_user');
     }
     setLoading(false);
   }, []);
@@ -56,8 +59,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('playnow_token');
   };
 
+  const updateProfile = (userData) => {
+    const fullUserData = normalizeUser(userData);
+    setUser(fullUserData);
+    localStorage.setItem('playnow_user', JSON.stringify(fullUserData));
+    if (userData?.token) {
+      localStorage.setItem('playnow_token', userData.token);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

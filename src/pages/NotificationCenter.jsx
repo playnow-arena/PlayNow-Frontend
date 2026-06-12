@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Bell, Trash2, Check, Filter, Search, Settings, Calendar, Award, MessageSquare, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const NotificationCenter = () => {
   const { user, updateProfile } = useAuth();
   
@@ -53,7 +55,7 @@ const NotificationCenter = () => {
     if (!token) return;
     setLoading(true);
     try {
-      let url = `/api/notifications?page=${page}&limit=10`;
+      let url = `${API_BASE_URL}/api/notifications?page=${page}&limit=10`;
       if (filterType) url += `&type=${filterType}`;
       if (debouncedSearch) url += `&search=${encodeURIComponent(debouncedSearch)}`;
       
@@ -98,7 +100,7 @@ const NotificationCenter = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications/read-selected', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-selected`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +126,7 @@ const NotificationCenter = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications/delete-selected', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/delete-selected`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +150,7 @@ const NotificationCenter = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

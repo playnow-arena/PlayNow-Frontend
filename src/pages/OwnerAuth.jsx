@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Building2, User, Lock, ArrowRight, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const OwnerAuth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
@@ -33,7 +35,7 @@ const OwnerAuth = () => {
     try {
       if (isLogin) {
         // Real Backend Fetch
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

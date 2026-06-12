@@ -5,6 +5,8 @@ import { useSocket } from '../context/SocketContext';
 import { MapPin, Bell, UserCircle, Search, Trash2, Check, CheckSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const Navbar = () => {
   const { user } = useAuth();
   const socket = useSocket();
@@ -39,7 +41,7 @@ const Navbar = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications/unread-count', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -56,7 +58,7 @@ const Navbar = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/notifications?page=${pageNum}&limit=10`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications?page=${pageNum}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -101,7 +103,7 @@ const Navbar = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch(`/api/notifications/${id}/read`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -120,7 +122,7 @@ const Navbar = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/notifications/read-all', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -138,7 +140,7 @@ const Navbar = () => {
     const token = localStorage.getItem('playnow_token');
     if (!token) return;
     try {
-      const res = await fetch(`/api/notifications/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

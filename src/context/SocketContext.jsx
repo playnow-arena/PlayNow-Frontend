@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext();
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 export const useSocket = () => useContext(SocketContext);
 
@@ -12,7 +13,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Connect to the backend
-    const newSocket = io({
+    const newSocket = io(API_BASE_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
@@ -33,7 +34,7 @@ export const SocketProvider = ({ children }) => {
 
       // If user is logged in, join their private owner room
       if (user && (user.role === 'owner' || user.roles?.includes('owner'))) {
-        newSocket.emit('join_owner_room', user.playNowId);
+        newSocket.emit('join_owner_room', user.id || user._id || user.playNowId);
       }
 
       // If user is logged in, join their private user room for notifications
