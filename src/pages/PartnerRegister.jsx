@@ -1,42 +1,158 @@
 import React, { useState } from 'react';
-import { Building2, User, Mail, Phone, MapPin, Camera, CheckCircle2, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Building2, CheckCircle2, Plus, Trash2, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { normalizeSportTypes } from '../utils/sports';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const sportOptions = ['Badminton', 'Pickleball', 'Cricket', 'Football', 'Tennis', 'Basketball', 'Table Tennis'];
+
+const emptyCourtGroup = {
+  name: '',
+  sports: [],
+  courtCount: '1',
+  pricePerHour: '',
+  courtType: 'Indoor',
+  isActive: true,
+};
+
+const initialFormData = {
+  ownerName: '',
+  phone: '',
+  email: '',
+  venueName: '',
+  address: '',
+  city: '',
+  area: '',
+  landmark: '',
+  managerName: '',
+  managerPhone: '',
+  managerWhatsapp: '',
+  inchargeName: '',
+  inchargePhone: '',
+  inchargeWhatsapp: '',
+  courtGroups: [{ ...emptyCourtGroup }],
+};
+
+const Field = ({ label, children }) => (
+  <div className="space-y-2">
+    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">{label}</label>
+    {children}
+  </div>
+);
+
+const inputClass = 'w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700';
+
 const PartnerRegister = () => {
-  const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [formData, setFormData] = useState({
-    ownerName: '',
-    venueName: '',
-    phone: '',
-    email: '',
-    address: '',
-    courts: 1,
-    proof: null
-  });
+  const [formData, setFormData] = useState(initialFormData);
+
+  const updateField = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateCourtGroup = (index, field, value) => {
+    setFormData((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.map((group, groupIndex) => (
+        groupIndex === index ? { ...group, [field]: value } : group
+      )),
+    }));
+  };
+
+  const toggleSport = (index, sport) => {
+    setFormData((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.map((group, groupIndex) => {
+        if (groupIndex !== index) return group;
+        const sports = group.sports.includes(sport)
+          ? group.sports.filter((item) => item !== sport)
+          : [...group.sports, sport];
+        return { ...group, sports };
+      }),
+    }));
+  };
+
+  const addCourtGroup = () => {
+    setFormData((current) => ({
+      ...current,
+      courtGroups: [...current.courtGroups, { ...emptyCourtGroup }],
+    }));
+  };
+
+  const removeCourtGroup = (index) => {
+    setFormData((current) => ({
+      ...current,
+      courtGroups: current.courtGroups.length === 1
+        ? current.courtGroups
+        : current.courtGroups.filter((_, groupIndex) => groupIndex !== index),
+    }));
+  };
+
+  const buildPayload = () => {
+    const courtGroups = formData.courtGroups
+      .map((group) => ({
+        name: group.name.trim(),
+        sports: normalizeSportTypes(group.sports),
+        courtCount: Number(group.courtCount) || 1,
+        pricePerHour: Number(group.pricePerHour) || 0,
+        courtType: group.courtType.trim() || 'Standard',
+        isActive: true,
+      }))
+      .filter((group) => group.name && group.sports.length && group.pricePerHour > 0);
+
+    return {
+      ownerName: formData.ownerName,
+      phone: formData.phone,
+      email: formData.email,
+      venueName: formData.venueName,
+      address: formData.address,
+      city: formData.city,
+      area: formData.area,
+      landmark: formData.landmark,
+      sportTypes: [...new Set(courtGroups.flatMap((group) => group.sports))],
+      pricePerHour: courtGroups.length ? Math.min(...courtGroups.map((group) => group.pricePerHour)) : undefined,
+      contacts: {
+        owner: {
+          name: formData.ownerName,
+          phone: formData.phone,
+          email: formData.email,
+        },
+        manager: {
+          name: formData.managerName,
+          phone: formData.managerPhone,
+          whatsapp: formData.managerWhatsapp,
+        },
+        incharge: {
+          name: formData.inchargeName,
+          phone: formData.inchargePhone,
+          whatsapp: formData.inchargeWhatsapp,
+        },
+      },
+      courtGroups,
+    };
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
+
+    const payload = buildPayload();
+    if (!payload.courtGroups.length) {
+      setSubmitError('Please add at least one court group with sport and price.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/owner-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ownerName: formData.ownerName,
-          phone: formData.phone,
-          email: formData.email,
-          venueName: formData.venueName,
-          address: formData.address,
-          numberOfCourts: formData.courts,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -58,7 +174,7 @@ const PartnerRegister = () => {
   if (isSubmitted) {
     return (
       <div className="min-h-screen pt-24 pb-12 flex items-center justify-center px-4 bg-[#0a0f1c]">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full bg-[#151b2b] border border-gray-800 rounded-3xl p-10 text-center"
@@ -68,17 +184,9 @@ const PartnerRegister = () => {
           </div>
           <h1 className="text-3xl font-extrabold text-white mb-4">Request Submitted!</h1>
           <p className="text-gray-400 mb-8 leading-relaxed">
-            Thank you for registering <span className="text-white font-bold">{formData.venueName}</span>. Our admin team will review your application and documents.
+            Thank you for registering <span className="text-white font-bold">{formData.venueName}</span>. Our admin team will review your venue details.
           </p>
-          <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 text-left mb-8">
-            <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">What happens next?</h4>
-            <ul className="text-sm text-gray-300 space-y-2">
-              <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[#39FF14] mt-1.5"></div> Admin verifies your venue details</li>
-              <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[#39FF14] mt-1.5"></div> Credential generation (Owner ID)</li>
-              <li className="flex gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[#39FF14] mt-1.5"></div> Notification via Email/WhatsApp</li>
-            </ul>
-          </div>
-          <button 
+          <button
             onClick={() => window.location.href = '/'}
             className="w-full bg-[#151b2b] border border-gray-700 text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition"
           >
@@ -91,111 +199,155 @@ const PartnerRegister = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 bg-[#0a0f1c]">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10 md:mb-16">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase"
           >
             Partner with <span className="text-[#39FF14]">PlayNow</span>
           </motion.h1>
-          <p className="text-gray-500 text-sm md:text-lg font-medium uppercase tracking-widest">Join the elite network of 500+ venues</p>
+          <p className="text-gray-500 text-sm md:text-lg font-medium uppercase tracking-widest">Share your real venue and court details</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 md:space-y-10">
-          {/* Section 1: Owner Info */}
-          <motion.div 
+          <motion.section
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="bg-[#151b2b] border border-white/5 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-8 opacity-[0.02]">
-               <User size={120} />
+              <User size={120} />
             </div>
             <h3 className="text-lg md:text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-3">
-              <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Owner Information
+              <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Owner / Applicant Info
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Full Name</label>
-                <input 
-                  type="text" required placeholder="Owner's Name"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700"
-                  onChange={(e) => setFormData({...formData, ownerName: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Email Address</label>
-                <input 
-                  type="email" required placeholder="owner@example.com"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700"
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Phone Number</label>
-                <div className="relative">
-                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 font-bold">+91</div>
-                   <input 
-                     type="tel" required placeholder="98765 43210"
-                     className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-16 pr-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700"
-                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                   />
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Field label="Applicant name">
+                <input required value={formData.ownerName} onChange={(e) => updateField('ownerName', e.target.value)} placeholder="Owner or applicant name" className={inputClass} />
+              </Field>
+              <Field label="Applicant phone">
+                <input required value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} placeholder="98765 43210" className={inputClass} />
+              </Field>
+              <Field label="Applicant email">
+                <input type="email" value={formData.email} onChange={(e) => updateField('email', e.target.value)} placeholder="owner@example.com" className={inputClass} />
+              </Field>
             </div>
-          </motion.div>
+          </motion.section>
 
-          {/* Section 2: Venue Info */}
-          <motion.div 
+          <motion.section
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="bg-[#151b2b] border border-white/5 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-8 opacity-[0.02]">
-               <Building2 size={120} />
+              <Building2 size={120} />
             </div>
             <h3 className="text-lg md:text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-3">
-              <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Venue Details
+              <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Venue Info
             </h3>
-            <div className="space-y-6 md:space-y-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Venue Name</label>
-                <input 
-                  type="text" required placeholder="e.g. Smash Badminton Arena"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700"
-                  onChange={(e) => setFormData({...formData, venueName: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Complete Address</label>
-                <textarea 
-                  required placeholder="Enter the full address including city and pincode"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all h-28 resize-none placeholder:text-gray-700"
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                ></textarea>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Courts/Turfs</label>
-                  <input 
-                    type="number" required min="1"
-                    placeholder="1"
-                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 px-6 text-white font-bold focus:outline-none focus:border-[#39FF14] transition-all placeholder:text-gray-700"
-                    onChange={(e) => setFormData({...formData, courts: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Venue Photos</label>
-                  <div className="border-2 border-dashed border-white/5 rounded-2xl p-4 flex items-center justify-center gap-3 text-gray-600 cursor-pointer hover:border-[#39FF14]/50 hover:text-[#39FF14] transition-all bg-black/20 group">
-                    <Camera size={20} className="group-hover:scale-110 transition-transform" /> 
-                    <span className="text-xs font-black uppercase tracking-widest">Upload Files</span>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field label="Venue name">
+                <input required value={formData.venueName} onChange={(e) => updateField('venueName', e.target.value)} placeholder="Aruna Sports Arena" className={inputClass} />
+              </Field>
+              <Field label="City">
+                <input required value={formData.city} onChange={(e) => updateField('city', e.target.value)} placeholder="Trichy" className={inputClass} />
+              </Field>
+              <Field label="Area">
+                <input required value={formData.area} onChange={(e) => updateField('area', e.target.value)} placeholder="Thillai Nagar" className={inputClass} />
+              </Field>
+              <Field label="Landmark">
+                <input value={formData.landmark} onChange={(e) => updateField('landmark', e.target.value)} placeholder="Near main bus stand" className={inputClass} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Full address">
+                  <textarea required value={formData.address} onChange={(e) => updateField('address', e.target.value)} placeholder="Full venue address" className={`${inputClass} h-28 resize-none`} />
+                </Field>
               </div>
             </div>
-          </motion.div>
+          </motion.section>
+
+          <section className="bg-[#151b2b] border border-white/5 rounded-[2rem] p-6 md:p-10 shadow-2xl">
+            <h3 className="text-lg md:text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-3">
+              <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Operational Contact
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+              <Field label="Manager name">
+                <input value={formData.managerName} onChange={(e) => updateField('managerName', e.target.value)} placeholder="Manager name" className={inputClass} />
+              </Field>
+              <Field label="Manager phone">
+                <input value={formData.managerPhone} onChange={(e) => updateField('managerPhone', e.target.value)} placeholder="Manager phone" className={inputClass} />
+              </Field>
+              <Field label="Manager WhatsApp">
+                <input value={formData.managerWhatsapp} onChange={(e) => updateField('managerWhatsapp', e.target.value)} placeholder="WhatsApp number" className={inputClass} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Field label="Incharge name">
+                <input value={formData.inchargeName} onChange={(e) => updateField('inchargeName', e.target.value)} placeholder="Incharge name" className={inputClass} />
+              </Field>
+              <Field label="Incharge phone">
+                <input value={formData.inchargePhone} onChange={(e) => updateField('inchargePhone', e.target.value)} placeholder="Incharge phone" className={inputClass} />
+              </Field>
+              <Field label="Incharge WhatsApp">
+                <input value={formData.inchargeWhatsapp} onChange={(e) => updateField('inchargeWhatsapp', e.target.value)} placeholder="WhatsApp number" className={inputClass} />
+              </Field>
+            </div>
+          </section>
+
+          <section className="bg-[#151b2b] border border-white/5 rounded-[2rem] p-6 md:p-10 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+              <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-widest flex items-center gap-3">
+                <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Court Groups
+              </h3>
+              <button type="button" onClick={addCourtGroup} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#39FF14] px-4 py-3 text-sm font-black text-black">
+                <Plus size={16} /> Add Group
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {formData.courtGroups.map((group, index) => (
+                <div key={`court-group-${index}`} className="rounded-2xl border border-gray-800 bg-[#0a0f1c] p-5">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <p className="font-black text-white">Court Group {index + 1}</p>
+                    <button type="button" onClick={() => removeCourtGroup(index)} disabled={formData.courtGroups.length === 1} className="rounded-xl border border-red-500/30 px-3 py-2 text-red-400 disabled:opacity-40">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <Field label="Group name">
+                      <input required value={group.name} onChange={(e) => updateCourtGroup(index, 'name', e.target.value)} placeholder="Badminton Block" className={inputClass} />
+                    </Field>
+                    <Field label="Court type">
+                      <input value={group.courtType} onChange={(e) => updateCourtGroup(index, 'courtType', e.target.value)} placeholder="Indoor" className={inputClass} />
+                    </Field>
+                    <Field label="Court count">
+                      <input required type="number" min="1" value={group.courtCount} onChange={(e) => updateCourtGroup(index, 'courtCount', e.target.value)} className={inputClass} />
+                    </Field>
+                    <Field label="Price per hour">
+                      <input required type="number" min="0" value={group.pricePerHour} onChange={(e) => updateCourtGroup(index, 'pricePerHour', e.target.value)} placeholder="400" className={inputClass} />
+                    </Field>
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Supported sports</label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {sportOptions.map((sport) => (
+                          <button
+                            key={sport}
+                            type="button"
+                            onClick={() => toggleSport(index, sport)}
+                            className={`rounded-xl border px-4 py-2 text-xs font-black uppercase ${group.sports.includes(sport) ? 'border-[#39FF14] bg-[#39FF14] text-black' : 'border-gray-800 bg-black/30 text-gray-400'}`}
+                          >
+                            {sport}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {submitError && (
             <div className="bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl px-5 py-4 text-sm font-bold">
@@ -203,7 +355,7 @@ const PartnerRegister = () => {
             </div>
           )}
 
-          <button 
+          <button
             type="submit"
             disabled={isSubmitting}
             className="w-full bg-[#39FF14] text-black font-black py-5 md:py-6 rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-[#32E612] transition-all shadow-xl uppercase tracking-[0.3em] text-sm btn-touch disabled:opacity-60 disabled:cursor-not-allowed"
