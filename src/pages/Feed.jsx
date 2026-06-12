@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { normalizeSportName } from '../utils/sports';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
 const Feed = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -8,7 +10,7 @@ const Feed = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const res = await fetch('https://playnow-backend-khtk.onrender.com/api/matches');
+        const res = await fetch(`${API_BASE_URL}/api/matches`);
         const data = await res.json();
 
         setMatches(Array.isArray(data) ? data : []);
@@ -24,19 +26,19 @@ const Feed = () => {
 
   const handleJoinMatch = async (matchId) => {
     try {
-      const user = JSON.parse(localStorage.getItem('playnow_user'));
+      const token = localStorage.getItem('playnow_token');
 
-      if (!user?.token) {
+      if (!token) {
         alert('Please login to join a match');
         return;
       }
 
       const res = await fetch(
-        `https://playnow-backend-khtk.onrender.com/api/matches/${matchId}/join`,
+        `${API_BASE_URL}/api/matches/${matchId}/join`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );

@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { generateMatchId, createMatchLink } from '../utils/matchLink';
 import { normalizeSportName } from '../utils/sports';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 const HostMatch = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -21,40 +23,47 @@ const HostMatch = () => {
 
   const pricePerPlayer = formData.totalPlayers > 0 ? (formData.totalAmount / formData.totalPlayers).toFixed(0) : 0;
 
-const handleNext = async (e) => {
-      e.preventDefault();
-    if (step < 3) setStep(step + 1);
-    else {
-  try {
-    const user = JSON.parse(localStorage.getItem('playnow_user'));
+  const handleNext = async (e) => {
+    e.preventDefault();
+    if (step < 3) {
+      setStep(step + 1);
+    } else {
+      try {
+        const token = localStorage.getItem('playnow_token');
 
-    const res = await fetch('https://playnow-backend-khtk.onrender.com/api/matches', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify(formData),
-    });
+        if (!token) {
+          alert('Please log in to host a match.');
+          navigate('/login');
+          return;
+        }
 
-    const data = await res.json();
+        const res = await fetch(`${API_BASE_URL}/api/matches`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
 
-    if (!res.ok) {
-      alert(data.message || 'Failed to host match');
-      return;
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.message || 'Failed to host match');
+          return;
+        }
+
+        console.log('Match created:', data);
+
+        const matchId = generateMatchId();
+        setMatchLink(`playnow.app${createMatchLink(matchId)}`);
+
+        setStep(4);
+      } catch (err) {
+        console.error('Host Match Error:', err);
+        alert(err.message || 'Server error while hosting match');
+      }
     }
-
-    console.log('Match created:', data);
-    
-    const matchId = generateMatchId();
-    setMatchLink(`playnow.app${createMatchLink(matchId)}`);
-
-    setStep(4);
-  } catch (err) {
-    console.error(err);
-    alert('Server error while hosting match');
-  }
-}
   };
 
   if (step === 4) {

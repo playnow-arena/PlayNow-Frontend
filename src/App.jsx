@@ -54,7 +54,7 @@ function App() {
               <Route path="/partner/register" element={<PartnerRegister />} />
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
               <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
-              <Route path="/host-match" element={<HostMatch />} />
+              <Route path="/host-match" element={<ProtectedRoute><HostMatch /></ProtectedRoute>} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/cancellation" element={<Cancellation />} />
               <Route path="/properties" element={<Properties />} />
