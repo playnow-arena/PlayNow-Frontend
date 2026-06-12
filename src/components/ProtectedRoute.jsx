@@ -14,7 +14,13 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   if (!user) {
-    // Not logged in
+    // Not logged in: redirect to the appropriate portal
+    if (requiredRole === 'admin') {
+      return <Navigate to="/admin-login" replace />;
+    }
+    if (requiredRole === 'owner') {
+      return <Navigate to="/partner/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
