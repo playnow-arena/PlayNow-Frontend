@@ -7,7 +7,7 @@ import { formatSportTypes, normalizeSportTypes } from '../utils/sports';
 
 const emptyVenueForm = {
   name: '',
-  sportTypes: '',
+  sportTypes: [],
   location: '',
   city: '',
   area: '',
@@ -16,9 +16,11 @@ const emptyVenueForm = {
   coordinateLng: '',
   address: '',
   pricePerHour: '',
-  amenities: '',
+  amenities: [],
+  customAmenity: '',
   description: '',
   imageUrl: '',
+  imageFileName: '',
   contactOwnerName: '',
   contactOwnerPhone: '',
   contactManagerName: '',
@@ -27,6 +29,9 @@ const emptyVenueForm = {
   contactInchargeName: '',
   contactInchargePhone: '',
   contactInchargeWhatsapp: '',
+  contactOperationalName: '',
+  contactOperationalPhone: '',
+  contactOperationalWhatsapp: '',
   courtGroups: [],
   isActive: true,
 };
@@ -85,6 +90,37 @@ const dayOptions = [
   { value: 0, label: 'Sun' },
 ];
 
+const sportTypeOptions = [
+  'Football',
+  'Cricket',
+  'Badminton',
+  'Tennis',
+  'Basketball',
+  'Volleyball',
+  'Pickleball',
+  'Box Cricket',
+  'Other',
+];
+
+const amenityOptions = [
+  'Parking',
+  'Washroom',
+  'Drinking Water',
+  'Changing Room',
+  'Flood Lights',
+  'First Aid',
+  'Seating',
+  'Cafeteria',
+  'Equipment Rental',
+];
+
+const contactTabs = [
+  { id: 'owner', label: 'Owner Contact' },
+  { id: 'manager', label: 'Manager Contact' },
+  { id: 'incharge', label: 'Incharge Contact' },
+  { id: 'operational', label: 'Operational Contact' },
+];
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const apiUrl = (path) => `${API_BASE_URL}${path}`;
 
@@ -92,7 +128,15 @@ const toList = (value) => (Array.isArray(value) ? value : String(value || '').sp
   .map((item) => item.trim())
   .filter(Boolean);
 
-const toSportList = (value) => normalizeSportTypes(toList(value));
+const uniqueList = (items = []) => (
+  items.reduce((values, item) => {
+    const trimmed = String(item || '').trim();
+    if (!trimmed) return values;
+    return values.some((value) => value.toLowerCase() === trimmed.toLowerCase()) ? values : [...values, trimmed];
+  }, [])
+);
+
+const toSportList = (value) => uniqueList(normalizeSportTypes(toList(value)));
 const formatCourtGroupSports = (sports = []) => formatSportTypes(sports);
 
 const normalizeCourtGroupsForForm = (courtGroups = []) => (
@@ -233,6 +277,7 @@ const AdminPortal = () => {
   const [venueError, setVenueError] = useState('');
   const [venueImageUploading, setVenueImageUploading] = useState(false);
   const [venueImageMessage, setVenueImageMessage] = useState('');
+  const [activeContactTab, setActiveContactTab] = useState('owner');
   const [slotForm, setSlotForm] = useState(emptySlotForm);
   const [slotMessage, setSlotMessage] = useState('');
   const [slotLoading, setSlotLoading] = useState(false);
@@ -401,10 +446,33 @@ const AdminPortal = () => {
     setEditingVenueId(null);
     setVenueImageMessage('');
     setVenueImageUploading(false);
+    setActiveContactTab('owner');
   };
 
   const handleVenueChange = (field, value) => {
     setVenueForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleVenueListValue = (field, value) => {
+    setVenueForm((current) => {
+      const currentValues = toList(current[field]);
+      const nextValues = currentValues.some((item) => item.toLowerCase() === value.toLowerCase())
+        ? currentValues.filter((item) => item.toLowerCase() !== value.toLowerCase())
+        : uniqueList([...currentValues, value]);
+
+      return { ...current, [field]: nextValues };
+    });
+  };
+
+  const addCustomAmenity = () => {
+    const customAmenity = String(venueForm.customAmenity || '').trim();
+    if (!customAmenity) return;
+
+    setVenueForm((current) => ({
+      ...current,
+      amenities: uniqueList([...toList(current.amenities), customAmenity]),
+      customAmenity: '',
+    }));
   };
 
   const handleCourtGroupChange = (index, field, value) => {
@@ -444,6 +512,7 @@ const AdminPortal = () => {
     const formData = new FormData();
     formData.append('image', file);
     setVenueImageUploading(true);
+    setVenueForm((current) => ({ ...current, imageFileName: file.name }));
 
     try {
       const res = await fetch(apiUrl('/api/uploads/venue-image'), {
@@ -461,7 +530,7 @@ const AdminPortal = () => {
       }
 
       setVenueForm((current) => ({ ...current, imageUrl: data.url || '' }));
-      setVenueImageMessage('Image uploaded successfully.');
+      setVenueImageMessage(`${file.name} uploaded successfully.`);
     } catch (error) {
       console.error('Venue image upload error:', error);
       setVenueImageMessage(`Unable to upload image: ${error.message}`);
@@ -571,7 +640,7 @@ const AdminPortal = () => {
       }
 
       setGenerateSlotsSummary(data);
-      setGenerateSlotsMessage('Monthly slots generated successfully.');
+      setGenerateSlotsMessage('Monthly slots created successfully.');
     } catch (error) {
       console.error('Slot generation error:', error);
       setGenerateSlotsMessage(`Unable to generate slots: ${error.message}`);
@@ -590,16 +659,21 @@ const AdminPortal = () => {
       return;
     }
 
+    if (toSportList(venueForm.sportTypes).length === 0) {
+      setVenueError('Please select at least one sport type.');
+      return;
+    }
+
     const payload = {
       name: venueForm.name.trim(),
       sportTypes: toSportList(venueForm.sportTypes),
-      location: venueForm.location.trim(),
+      location: [venueForm.area, venueForm.city, venueForm.address].map((item) => item.trim()).filter(Boolean).join(', '),
       city: venueForm.city.trim(),
       area: venueForm.area.trim(),
       landmark: venueForm.landmark.trim(),
       address: venueForm.address.trim(),
       pricePerHour: Number(venueForm.pricePerHour),
-      amenities: toList(venueForm.amenities),
+      amenities: uniqueList(toList(venueForm.amenities)),
       description: venueForm.description.trim(),
       contacts: {
         owner: {
@@ -615,6 +689,11 @@ const AdminPortal = () => {
           name: venueForm.contactInchargeName.trim(),
           phone: venueForm.contactInchargePhone.trim(),
           whatsapp: venueForm.contactInchargeWhatsapp.trim(),
+        },
+        operational: {
+          name: venueForm.contactOperationalName.trim(),
+          phone: venueForm.contactOperationalPhone.trim(),
+          whatsapp: venueForm.contactOperationalWhatsapp.trim(),
         },
       },
       isActive: venueForm.isActive,
@@ -675,7 +754,7 @@ const AdminPortal = () => {
     setVenueImageUploading(false);
     setVenueForm({
       name: venue.name || '',
-      sportTypes: formatSportTypes(venue.sportTypes),
+      sportTypes: toSportList(venue.sportTypes),
       location: venue.location || '',
       city: venue.city || '',
       area: venue.area || '',
@@ -684,9 +763,11 @@ const AdminPortal = () => {
       coordinateLng: venue.coordinates?.lng ?? '',
       address: venue.address || '',
       pricePerHour: venue.pricePerHour || '',
-      amenities: (venue.amenities || []).join(', '),
+      amenities: uniqueList(venue.amenities || []),
+      customAmenity: '',
       description: venue.description || '',
       imageUrl: venue.images?.[0] || '',
+      imageFileName: '',
       contactOwnerName: venue.contacts?.owner?.name || '',
       contactOwnerPhone: venue.contacts?.owner?.phone || '',
       contactManagerName: venue.contacts?.manager?.name || '',
@@ -695,9 +776,13 @@ const AdminPortal = () => {
       contactInchargeName: venue.contacts?.incharge?.name || '',
       contactInchargePhone: venue.contacts?.incharge?.phone || '',
       contactInchargeWhatsapp: venue.contacts?.incharge?.whatsapp || '',
+      contactOperationalName: venue.contacts?.operational?.name || '',
+      contactOperationalPhone: venue.contacts?.operational?.phone || '',
+      contactOperationalWhatsapp: venue.contacts?.operational?.whatsapp || '',
       courtGroups: normalizeCourtGroupsForForm(venue.courtGroups),
       isActive: venue.isActive !== false,
     });
+    setActiveContactTab('owner');
   };
 
   const handleDeleteVenue = async (venue) => {
@@ -1418,7 +1503,7 @@ const AdminPortal = () => {
                       {editingVenueId ? 'Edit Venue' : 'Add Venue'}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Use comma-separated values for sports and amenities.
+                      Select sports and amenities, then save the venue details.
                     </p>
                   </div>
                   {editingVenueId && (
@@ -1455,25 +1540,24 @@ const AdminPortal = () => {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Sport Types
                     </label>
-                    <input
-                      required
-                      value={venueForm.sportTypes}
-                      onChange={(e) => handleVenueChange('sportTypes', e.target.value)}
-                      placeholder="Badminton, Football Turf, Cricket, Pickleball"
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                      Location
-                    </label>
-                    <input
-                      required
-                      value={venueForm.location}
-                      onChange={(e) => handleVenueChange('location', e.target.value)}
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                    />
+                    <div className="flex flex-wrap gap-2">
+                      {sportTypeOptions.map((sport) => {
+                        const selected = toList(venueForm.sportTypes).includes(sport);
+                        return (
+                          <button
+                            key={sport}
+                            type="button"
+                            onClick={() => toggleVenueListValue('sportTypes', sport)}
+                            className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${selected ? 'border-[#39FF14] bg-[#39FF14] text-black' : 'border-gray-800 bg-[#0a0f1c] text-gray-300 hover:border-gray-600'}`}
+                          >
+                            {sport}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {toList(venueForm.sportTypes).length === 0 && (
+                      <p className="mt-2 text-xs text-red-400">Select at least one sport.</p>
+                    )}
                   </div>
 
                   <div>
@@ -1566,12 +1650,42 @@ const AdminPortal = () => {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Amenities
                     </label>
-                    <input
-                      value={venueForm.amenities}
-                      onChange={(e) => handleVenueChange('amenities', e.target.value)}
-                      placeholder="Parking, Washroom, Lights"
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                    />
+                    <div className="flex flex-wrap gap-2">
+                      {amenityOptions.map((amenity) => {
+                        const selected = toList(venueForm.amenities).some((item) => item.toLowerCase() === amenity.toLowerCase());
+                        return (
+                          <button
+                            key={amenity}
+                            type="button"
+                            onClick={() => toggleVenueListValue('amenities', amenity)}
+                            className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${selected ? 'border-[#39FF14] bg-[#39FF14] text-black' : 'border-gray-800 bg-[#0a0f1c] text-gray-300 hover:border-gray-600'}`}
+                          >
+                            {amenity}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                      <input
+                        value={venueForm.customAmenity}
+                        onChange={(e) => handleVenueChange('customAmenity', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomAmenity();
+                          }
+                        }}
+                        placeholder="Custom amenity"
+                        className="min-w-0 flex-1 bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomAmenity}
+                        className="bg-white/10 text-white font-bold px-4 py-3 rounded-xl text-sm hover:bg-white/20"
+                      >
+                        + Other
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -1604,6 +1718,9 @@ const AdminPortal = () => {
                     )}
                     {venueImageUploading && (
                       <p className="mt-2 text-xs font-bold text-gray-400">Uploading image...</p>
+                    )}
+                    {venueForm.imageFileName && !venueImageMessage && (
+                      <p className="mt-2 text-xs font-bold text-gray-400">Selected: {venueForm.imageFileName}</p>
                     )}
                   </div>
 
@@ -1731,7 +1848,21 @@ const AdminPortal = () => {
                     <h4 className="text-sm font-black text-gray-300 uppercase tracking-widest mb-3">
                       Operational Contacts
                     </h4>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {contactTabs.map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveContactTab(tab.id)}
+                          className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${activeContactTab === tab.id ? 'border-[#39FF14] bg-[#39FF14] text-black' : 'border-gray-800 bg-[#0a0f1c] text-gray-300 hover:border-gray-600'}`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {activeContactTab === 'owner' && (
+                        <>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                           Owner Name
@@ -1752,6 +1883,10 @@ const AdminPortal = () => {
                           className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                         />
                       </div>
+                        </>
+                      )}
+                      {activeContactTab === 'manager' && (
+                        <>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                           Manager Name
@@ -1782,6 +1917,10 @@ const AdminPortal = () => {
                           className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                         />
                       </div>
+                        </>
+                      )}
+                      {activeContactTab === 'incharge' && (
+                        <>
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                           Incharge Name
@@ -1812,6 +1951,42 @@ const AdminPortal = () => {
                           className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                         />
                       </div>
+                        </>
+                      )}
+                      {activeContactTab === 'operational' && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                              Operational Name
+                            </label>
+                            <input
+                              value={venueForm.contactOperationalName}
+                              onChange={(e) => handleVenueChange('contactOperationalName', e.target.value)}
+                              className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                              Operational Phone
+                            </label>
+                            <input
+                              value={venueForm.contactOperationalPhone}
+                              onChange={(e) => handleVenueChange('contactOperationalPhone', e.target.value)}
+                              className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                              Operational WhatsApp
+                            </label>
+                            <input
+                              value={venueForm.contactOperationalWhatsapp}
+                              onChange={(e) => handleVenueChange('contactOperationalWhatsapp', e.target.value)}
+                              className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1872,8 +2047,8 @@ const AdminPortal = () => {
                           </p>
                           {getVenueCourtGroups(venue).length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {getVenueCourtGroups(venue).map((group) => (
-                                <span key={group.courtCode} className="text-[10px] bg-black/30 text-gray-400 border border-gray-800 px-2 py-1 rounded-lg font-bold uppercase">
+                              {getVenueCourtGroups(venue).map((group, groupIndex) => (
+                                <span key={group.courtCode || `${group.name || 'court'}-${groupIndex}`} className="text-[10px] bg-black/30 text-gray-400 border border-gray-800 px-2 py-1 rounded-lg font-bold uppercase">
                                   {group.name}: {group.courtCount || 1} court{Number(group.courtCount || 1) === 1 ? '' : 's'} | Rs {group.pricePerHour}/hr{group.bookingMode && group.bookingMode !== 'independent' ? ` | ${group.bookingMode}` : ''}
                                 </span>
                               ))}
@@ -1911,7 +2086,7 @@ const AdminPortal = () => {
                 <div>
                   <h3 className="text-xl font-bold">Create Slots</h3>
                   <p className="text-sm text-gray-500">
-                    Add playable slots for an existing venue.
+                    Create Slots = create slots for a specific date/day.
                   </p>
                 </div>
 
@@ -1954,8 +2129,8 @@ const AdminPortal = () => {
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     >
                       <option value="">Default court group</option>
-                      {getVenueCourtGroups(venues.find((venue) => venue._id === slotForm.venueId)).map((group) => (
-                        <option key={group.courtCode} value={group.courtCode}>
+                      {getVenueCourtGroups(venues.find((venue) => venue._id === slotForm.venueId)).map((group, groupIndex) => (
+                        <option key={group.courtCode || `${group.name || 'court'}-${groupIndex}`} value={group.courtCode}>
                           {group.name} ({formatCourtGroupSports(group.sports)})
                         </option>
                       ))}
@@ -2033,9 +2208,9 @@ const AdminPortal = () => {
                 className="bg-[#151b2b] border border-gray-800 rounded-3xl p-4 md:p-6 space-y-4"
               >
                 <div>
-                  <h3 className="text-xl font-bold">Generate Monthly Slots</h3>
+                  <h3 className="text-xl font-bold">Create Monthly Slots</h3>
                   <p className="text-sm text-gray-500">
-                    Generate hourly slots for the next 30 days.
+                    Create Monthly Slots = bulk create slots for a full month using repeated timing pattern.
                   </p>
                 </div>
 
@@ -2095,8 +2270,8 @@ const AdminPortal = () => {
                       className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                     >
                       <option value="">Default court group</option>
-                      {getVenueCourtGroups(venues.find((venue) => venue._id === generateSlotsForm.venueId)).map((group) => (
-                        <option key={group.courtCode} value={group.courtCode}>
+                      {getVenueCourtGroups(venues.find((venue) => venue._id === generateSlotsForm.venueId)).map((group, groupIndex) => (
+                        <option key={group.courtCode || `${group.name || 'court'}-${groupIndex}`} value={group.courtCode}>
                           {group.name} ({formatCourtGroupSports(group.sports)})
                         </option>
                       ))}
@@ -2192,7 +2367,7 @@ const AdminPortal = () => {
                     disabled={generateSlotsLoading || venues.length === 0}
                     className="w-full sm:w-auto bg-[#39FF14] text-black font-bold px-6 py-3 rounded-xl hover:bg-[#32E612] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {generateSlotsLoading ? 'Generating Slots...' : 'Generate Monthly Slots'}
+                    {generateSlotsLoading ? 'Creating Monthly Slots...' : 'Create Monthly Slots'}
                   </button>
                 </div>
               </form>
