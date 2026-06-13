@@ -44,7 +44,7 @@ const Home = () => {
         <motion.div 
           animate={{ scale: [1, 1.05, 1], opacity: [0.1, 0.15, 0.1] }} 
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[900px] md:h-[900px] bg-[#39FF14] rounded-full blur-[120px] md:blur-[180px] pointer-events-none" 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] aspect-square md:max-w-[900px] bg-[#39FF14] rounded-full blur-[120px] md:blur-[180px] pointer-events-none" 
         />
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
@@ -93,7 +93,7 @@ const Home = () => {
               <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
                 The advanced Way to
               </span>
-              <div className="relative h-16 md:h-20 w-[200px] sm:w-[250px] md:w-[350px] flex items-center justify-start overflow-hidden">
+              <div className="relative h-16 md:h-20 w-full max-w-[200px] sm:max-w-[250px] md:max-w-[350px] flex items-center justify-start overflow-hidden">
                 <AnimatePresence mode="wait">
                   <motion.h2
                     key={currentPhrase}
