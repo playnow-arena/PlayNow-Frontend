@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   if (!user) {
     // Not logged in: redirect to the appropriate portal
     if (requiredRole === 'admin') {
-      return <Navigate to="/admin-login" replace />;
+      return <Navigate to="/login" replace />;
     }
     if (requiredRole === 'owner') {
       return <Navigate to="/partner/login" replace />;

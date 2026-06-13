@@ -222,7 +222,7 @@ const AdminPortal = () => {
   
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const [activeSection, setActiveSection] = useState('venues');
