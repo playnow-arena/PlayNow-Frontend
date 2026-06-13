@@ -8,6 +8,7 @@ const BottomNav = () => {
   const { user } = useAuth();
   const location = useLocation();
   const path = location.pathname;
+  const isOwner = user?.role === 'owner' || (Array.isArray(user?.roles) && user.roles.includes('owner'));
 
   const isAuthPage = path === '/login';
   const isAdminPage = path === '/super-admin-portal-2026';
@@ -20,7 +21,7 @@ const BottomNav = () => {
     { name: 'Venues', path: '/venues', icon: MapPin },
     { name: 'Host', path: '/host-match', icon: Users },
     { name: 'Open', path: '/feed', icon: Trophy },
-    { name: 'Profile', path: user?.role === 'owner' ? '/owner' : '/dashboard', icon: User },
+    { name: 'Profile', path: isOwner ? '/owner' : '/dashboard', icon: User },
   ];
 
   return (

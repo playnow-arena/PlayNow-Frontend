@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
-import { LogOut, Calendar, MapPin, XCircle, CreditCard, ChevronRight, AlertTriangle } from 'lucide-react';
+import { LogOut, Calendar, MapPin, XCircle, CreditCard, ChevronRight, AlertTriangle, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -78,6 +78,7 @@ const getCancelState = (booking) => {
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
+  const isOwner = user?.role === 'owner' || (Array.isArray(user?.roles) && user.roles.includes('owner'));
   
   const [activeTab, setActiveTab] = useState('bookings');
   const [cancelModal, setCancelModal] = useState(null);
@@ -190,6 +191,15 @@ const Dashboard = () => {
               <span className="text-xs text-gray-400 block mb-1">PlayNow ID</span>
               <span className="font-mono text-[#39FF14] font-bold tracking-wider break-all">{user.playNowId}</span>
             </div>
+
+            {isOwner && (
+              <Link
+                to="/owner"
+                className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl bg-[#39FF14] px-4 py-3 text-sm font-black text-black hover:bg-[#32E612] transition"
+              >
+                <Building2 size={18} /> Owner Dashboard
+              </Link>
+            )}
             
             <div className="w-full space-y-2 mb-6">
               <button 

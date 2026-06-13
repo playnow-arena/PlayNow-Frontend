@@ -12,6 +12,7 @@ const Navbar = () => {
   const socket = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
+  const isOwner = user?.role === 'owner' || (Array.isArray(user?.roles) && user.roles.includes('owner'));
 
   const isAuthPage = location.pathname === '/login';
   const isAdminPage = location.pathname === '/super-admin-portal-2026' || location.pathname === '/admin';
@@ -202,6 +203,14 @@ const Navbar = () => {
 
               {user ? (
                 <div className="flex items-center gap-4 relative" ref={dropdownRef}>
+                  {isOwner && (
+                    <Link
+                      to="/owner"
+                      className="bg-[#39FF14]/10 border border-[#39FF14]/40 text-[#39FF14] px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider hover:bg-[#39FF14] hover:text-black transition"
+                    >
+                      Owner Dashboard
+                    </Link>
+                  )}
                   {/* Notification Bell */}
                   <div className="relative">
                     <button 
@@ -296,7 +305,7 @@ const Navbar = () => {
                     </AnimatePresence>
                   </div>
 
-                  <Link to={user.role === 'owner' ? '/owner' : '/dashboard'} className="flex items-center gap-2 hover:opacity-80 transition">
+                  <Link to={isOwner ? '/owner' : '/dashboard'} className="flex items-center gap-2 hover:opacity-80 transition">
                     <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-gray-600">
                       {user.avatar ? <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <UserCircle size={32} className="text-gray-400" />}
                     </div>
