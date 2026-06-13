@@ -51,7 +51,7 @@ const Auth = () => {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword }),
+        body: JSON.stringify({ loginId: loginEmail.trim(), password: loginPassword }),
       });
 
       const data = await res.json();
@@ -216,17 +216,17 @@ const Auth = () => {
               onSubmit={handleLogin}
               className="space-y-5"
             >
-              {/* Email */}
+              {/* Email or Phone */}
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
                   <Mail size={20} />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="Email Address"
+                  placeholder="Email or Phone Number"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
               </div>
