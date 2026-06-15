@@ -7,13 +7,16 @@ import { normalizeSportTypes } from '../utils/sports';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 const sportOptions = ['Badminton', 'Pickleball', 'Cricket', 'Football', 'Tennis', 'Basketball', 'Table Tennis'];
+const courtTypeOptions = ['Badminton', 'Football Turf', 'Cricket Nets', 'Box Cricket', 'Tennis', 'Pickleball', 'Basketball', 'Volleyball', 'Table Tennis', 'Other'];
+const indianMobileRegex = /^(?:\+91)?[6-9]\d{9}$/;
 
 const emptyCourtGroup = {
   name: '',
   sports: [],
   courtCount: '1',
   pricePerHour: '',
-  courtType: 'Indoor',
+  courtType: 'Badminton',
+  customCourtType: '',
   isActive: true,
 };
 
@@ -35,6 +38,19 @@ const initialFormData = {
   courtGroups: [{ ...emptyCourtGroup }],
 };
 
+const normalizeIndianMobile = (value) => {
+  const trimmedValue = String(value || '').trim().replace(/\s+/g, '');
+  if (!trimmedValue) return '';
+  const digits = trimmedValue.replace(/\D/g, '');
+  const mobileDigits = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+  return mobileDigits.length === 10 ? `+91${mobileDigits}` : trimmedValue;
+};
+
+const isValidIndianMobile = (value) => {
+  const trimmedValue = String(value || '').trim().replace(/\s+/g, '');
+  return indianMobileRegex.test(trimmedValue);
+};
+
 const Field = ({ label, children }) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">{label}</label>
@@ -48,6 +64,7 @@ const PartnerRegister = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [submittedVenueName, setSubmittedVenueName] = useState('');
   const [formData, setFormData] = useState(initialFormData);
 
   const updateField = (field, value) => {
@@ -99,14 +116,14 @@ const PartnerRegister = () => {
         sports: normalizeSportTypes(group.sports),
         courtCount: Number(group.courtCount) || 1,
         pricePerHour: Number(group.pricePerHour) || 0,
-        courtType: group.courtType.trim() || 'Standard',
+        courtType: (group.courtType === 'Other' ? group.customCourtType : group.courtType).trim() || 'Standard',
         isActive: true,
       }))
       .filter((group) => group.name && group.sports.length && group.pricePerHour > 0);
 
     return {
       ownerName: formData.ownerName,
-      phone: formData.phone,
+      phone: normalizeIndianMobile(formData.phone),
       email: formData.email,
       venueName: formData.venueName,
       address: formData.address,
@@ -118,18 +135,18 @@ const PartnerRegister = () => {
       contacts: {
         owner: {
           name: formData.ownerName,
-          phone: formData.phone,
+          phone: normalizeIndianMobile(formData.phone),
           email: formData.email,
         },
         manager: {
           name: formData.managerName,
-          phone: formData.managerPhone,
-          whatsapp: formData.managerWhatsapp,
+          phone: normalizeIndianMobile(formData.managerPhone),
+          whatsapp: normalizeIndianMobile(formData.managerWhatsapp),
         },
         incharge: {
           name: formData.inchargeName,
-          phone: formData.inchargePhone,
-          whatsapp: formData.inchargeWhatsapp,
+          phone: normalizeIndianMobile(formData.inchargePhone),
+          whatsapp: normalizeIndianMobile(formData.inchargeWhatsapp),
         },
       },
       courtGroups,
@@ -139,6 +156,27 @@ const PartnerRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
+
+    const phoneFields = [
+      formData.phone,
+      formData.managerPhone,
+      formData.managerWhatsapp,
+      formData.inchargePhone,
+      formData.inchargeWhatsapp,
+    ].filter(Boolean);
+
+    if (!isValidIndianMobile(formData.phone) || phoneFields.some((phone) => !isValidIndianMobile(phone))) {
+      setSubmitError('Enter valid Indian mobile number');
+      return;
+    }
+
+    const missingCustomCourtType = formData.courtGroups.some((group) => (
+      group.courtType === 'Other' && !group.customCourtType.trim()
+    ));
+    if (missingCustomCourtType) {
+      setSubmitError('Please enter custom court type for Other.');
+      return;
+    }
 
     const payload = buildPayload();
     if (!payload.courtGroups.length) {
@@ -162,6 +200,8 @@ const PartnerRegister = () => {
         return;
       }
 
+      setSubmittedVenueName(formData.venueName);
+      setFormData(initialFormData);
       setIsSubmitted(true);
     } catch (error) {
       console.error('Owner request submit failed:', error);
@@ -184,7 +224,7 @@ const PartnerRegister = () => {
           </div>
           <h1 className="text-3xl font-extrabold text-white mb-4">Request Submitted!</h1>
           <p className="text-gray-400 mb-8 leading-relaxed">
-            Thank you for registering <span className="text-white font-bold">{formData.venueName}</span>. Our admin team will review your venue details.
+            Thank you for registering <span className="text-white font-bold">{submittedVenueName}</span>. Our admin team will review your venue details.
           </p>
           <button
             onClick={() => window.location.href = '/'}
@@ -320,8 +360,21 @@ const PartnerRegister = () => {
                       <input required value={group.name} onChange={(e) => updateCourtGroup(index, 'name', e.target.value)} placeholder="Badminton Block" className={inputClass} />
                     </Field>
                     <Field label="Court type">
-                      <input value={group.courtType} onChange={(e) => updateCourtGroup(index, 'courtType', e.target.value)} placeholder="Indoor" className={inputClass} />
+                      <select
+                        value={group.courtType}
+                        onChange={(e) => updateCourtGroup(index, 'courtType', e.target.value)}
+                        className={inputClass}
+                      >
+                        {courtTypeOptions.map((courtType) => (
+                          <option key={courtType} value={courtType}>{courtType}</option>
+                        ))}
+                      </select>
                     </Field>
+                    {group.courtType === 'Other' && (
+                      <Field label="Custom court type">
+                        <input required value={group.customCourtType} onChange={(e) => updateCourtGroup(index, 'customCourtType', e.target.value)} placeholder="Enter court type" className={inputClass} />
+                      </Field>
+                    )}
                     <Field label="Court count">
                       <input required type="number" min="1" value={group.courtCount} onChange={(e) => updateCourtGroup(index, 'courtCount', e.target.value)} className={inputClass} />
                     </Field>
