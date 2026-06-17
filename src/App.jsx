@@ -49,10 +49,10 @@ function App() {
               <Route path="/book/:id" element={<Booking />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
-              <Route path="/owner" element={<ProtectedRoute requiredRole="owner"><OwnerDashboard /></ProtectedRoute>} />
+              <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
               <Route path="/partner/login" element={<AdminOwnerAuth portalType="owner" />} />
               <Route path="/admin-login" element={<Navigate to="/login" replace />} />
-              <Route path="/partner/register" element={<PartnerRegister />} />
+              <Route path="/partner/register" element={<ProtectedRoute requiredRole="player"><PartnerRegister /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
               <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
               <Route path="/host-match" element={<ProtectedRoute><HostMatch /></ProtectedRoute>} />

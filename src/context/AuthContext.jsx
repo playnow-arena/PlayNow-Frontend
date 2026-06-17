@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -26,27 +27,46 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user on load
-    const savedUser = localStorage.getItem('playnow_user');
-    const legacyToken = localStorage.getItem('token');
-    const savedToken = localStorage.getItem('playnow_token') || legacyToken;
-    if (savedUser && savedToken) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        const normalizedUser = normalizeUser(parsedUser);
-        setUser(normalizedUser);
-        localStorage.setItem('playnow_user', JSON.stringify(normalizedUser));
-        if (!localStorage.getItem('playnow_token') && legacyToken) {
-          localStorage.setItem('playnow_token', legacyToken);
+    const loadSavedUser = async () => {
+      // Check for saved user on load
+      const savedUser = localStorage.getItem('playnow_user');
+      const legacyToken = localStorage.getItem('token');
+      const savedToken = localStorage.getItem('playnow_token') || legacyToken;
+      if (savedUser && savedToken) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          const normalizedUser = normalizeUser(parsedUser);
+          setUser(normalizedUser);
+          localStorage.setItem('playnow_user', JSON.stringify(normalizedUser));
+          if (!localStorage.getItem('playnow_token') && legacyToken) {
+            localStorage.setItem('playnow_token', legacyToken);
+          }
+        } catch (e) {
+          console.error('Failed to parse saved user');
+          localStorage.removeItem('playnow_user');
+          setLoading(false);
+          return;
         }
-      } catch (e) {
-        console.error('Failed to parse saved user');
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${savedToken}` },
+          });
+          if (res.ok) {
+            const refreshedUser = normalizeUser(await res.json());
+            setUser(refreshedUser);
+            localStorage.setItem('playnow_user', JSON.stringify(refreshedUser));
+          }
+        } catch (e) {
+          console.error('Failed to refresh saved user');
+        }
+      } else if (savedUser && !savedToken) {
         localStorage.removeItem('playnow_user');
       }
-    } else if (savedUser && !savedToken) {
-      localStorage.removeItem('playnow_user');
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    loadSavedUser();
   }, []);
 
   const login = async (userData) => {

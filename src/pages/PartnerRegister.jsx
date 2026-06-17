@@ -187,9 +187,13 @@ const PartnerRegister = () => {
     setIsSubmitting(true);
 
     try {
+      const token = localStorage.getItem('playnow_token');
       const res = await fetch(`${API_BASE_URL}/api/owner-requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
 

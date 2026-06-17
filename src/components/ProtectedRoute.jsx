@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
+  const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole].filter(Boolean);
 
   if (loading) {
     return (
@@ -15,18 +16,18 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   if (!user) {
     // Not logged in: redirect to the appropriate portal
-    if (requiredRole === 'admin') {
+    if (requiredRoles.includes('admin')) {
       return <Navigate to="/login" replace />;
     }
-    if (requiredRole === 'owner') {
+    if (requiredRoles.includes('owner')) {
       return <Navigate to="/partner/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
 
-  const hasRequiredRole = !requiredRole ||
-    user.role === requiredRole ||
-    (Array.isArray(user.roles) && user.roles.includes(requiredRole));
+  const hasRequiredRole = requiredRoles.length === 0 ||
+    requiredRoles.includes(user.role) ||
+    (Array.isArray(user.roles) && user.roles.some((role) => requiredRoles.includes(role)));
 
   if (!hasRequiredRole) {
     // Logged in but wrong role

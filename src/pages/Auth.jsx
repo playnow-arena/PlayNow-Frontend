@@ -14,6 +14,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
+const normalizeSignupPhone = (phone) => {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const mobileDigits = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+  return mobileDigits.length === 10 ? mobileDigits : '';
+};
+
 const Auth = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -21,6 +27,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const showLoginPrompt = error.includes('already registered');
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -89,7 +96,8 @@ const Auth = () => {
       return;
     }
 
-    if (regPhone.length !== 10) {
+    const normalizedPhone = normalizeSignupPhone(regPhone);
+    if (!normalizedPhone) {
       setError('Please enter a valid 10-digit mobile number');
       return;
     }
@@ -112,7 +120,7 @@ const Auth = () => {
         body: JSON.stringify({
           name: regName.trim(),
           email: regEmail.trim(),
-          phone: regPhone,
+          phone: normalizedPhone,
           password: regPassword,
           confirmPassword: regConfirmPassword,
         }),
@@ -198,7 +206,16 @@ const Auth = () => {
               exit={{ height: 0, opacity: 0 }}
               className="bg-red-500/10 border border-red-500/50 text-red-400 text-xs py-3 px-4 rounded-xl mb-6 text-center"
             >
-              {error}
+              <p>{error}</p>
+              {showLoginPrompt && (
+                <button
+                  type="button"
+                  onClick={() => switchTab('login')}
+                  className="mt-3 rounded-xl border border-[#39FF14]/40 px-4 py-2 text-[#39FF14] hover:bg-[#39FF14] hover:text-black transition-colors"
+                >
+                  Go to Login
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -336,17 +353,13 @@ const Auth = () => {
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
                   <Phone size={20} />
                 </div>
-                <div className="absolute left-12 top-1/2 -translate-y-1/2 text-gray-400 font-bold select-none">
-                  +91
-                </div>
                 <input
                   type="tel"
                   required
-                  maxLength={10}
                   value={regPhone}
-                  onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Mobile Number"
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-24 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                  onChange={(e) => setRegPhone(e.target.value.replace(/[^\d+]/g, ''))}
+                  placeholder="9876543210 or +919876543210"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
               </div>
 
