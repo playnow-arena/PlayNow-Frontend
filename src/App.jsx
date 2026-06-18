@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Navbar from './components/Navbar';
@@ -56,7 +56,8 @@ function App() {
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
               <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
               <Route path="/host-match" element={<ProtectedRoute><HostMatch /></ProtectedRoute>} />
-              <Route path="/feed" element={<Feed />} />
+              <Route path="/open-matches" element={<Feed />} />
+              <Route path="/feed" element={<Navigate to="/open-matches" replace />} />
               <Route path="/cancellation" element={<Cancellation />} />
               <Route path="/properties" element={<Properties />} />
               <Route path="/about" element={<AboutUs />} />

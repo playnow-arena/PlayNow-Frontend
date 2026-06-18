@@ -20,7 +20,7 @@ const BottomNav = () => {
     { name: 'Home', path: '/', icon: Home },
     { name: 'Venues', path: '/venues', icon: MapPin },
     { name: 'Host', path: '/host-match', icon: Users },
-    { name: 'Open', path: '/feed', icon: Trophy },
+    { name: 'Open', path: '/open-matches', icon: Trophy },
     { name: 'Profile', path: isOwner ? '/owner' : '/dashboard', icon: User },
   ];
 
