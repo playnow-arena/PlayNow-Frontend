@@ -16,15 +16,20 @@ export const SocketProvider = ({ children }) => {
     const newSocket = io(API_BASE_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      auth: {
+        token: localStorage.getItem('playnow_token')
+      }
     });
 
     setSocket(newSocket);
+    let healthInterval;
 
     newSocket.on('connect', () => {
       console.log('🔌 [SOCKET] Connected:', newSocket.id);
       
       // Heartbeat / Health Check
-      const healthInterval = setInterval(() => {
+      clearInterval(healthInterval);
+      healthInterval = setInterval(() => {
         newSocket.emit('ping_health');
       }, 30000); // Check every 30s
 
@@ -42,7 +47,6 @@ export const SocketProvider = ({ children }) => {
         newSocket.emit('join_user_room', user.id || user._id);
       }
 
-      return () => clearInterval(healthInterval);
     });
 
     newSocket.on('connect_error', (error) => {
@@ -50,6 +54,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     return () => {
+      clearInterval(healthInterval);
       newSocket.off('pong_health');
       newSocket.close();
     };

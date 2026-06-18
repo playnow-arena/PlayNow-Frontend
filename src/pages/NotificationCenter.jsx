@@ -113,6 +113,7 @@ const NotificationCenter = () => {
           prev.map(n => (selectedIds.includes(n._id) ? { ...n, isRead: true } : n))
         );
         setSelectedIds([]);
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
         setSuccessMsg('Selected notifications marked as read');
         setTimeout(() => setSuccessMsg(''), 3000);
       }
@@ -135,8 +136,9 @@ const NotificationCenter = () => {
         body: JSON.stringify({ ids: selectedIds })
       });
       if (res.ok) {
-        fetchNotifications();
+        await fetchNotifications();
         setSelectedIds([]);
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
         setSuccessMsg('Selected notifications deleted');
         setTimeout(() => setSuccessMsg(''), 3000);
       }

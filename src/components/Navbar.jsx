@@ -25,6 +25,7 @@ const Navbar = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationIdsRef = useRef(new Set());
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -65,8 +66,14 @@ const Navbar = () => {
       if (res.ok) {
         const data = await res.json();
         if (append) {
-          setNotifications(prev => [...prev, ...data.notifications]);
+          setNotifications(prev => {
+            const merged = [...prev, ...data.notifications]
+              .filter((item, index, list) => list.findIndex(n => n._id === item._id) === index);
+            notificationIdsRef.current = new Set(merged.map(item => item._id));
+            return merged;
+          });
         } else {
+          notificationIdsRef.current = new Set(data.notifications.map(item => item._id));
           setNotifications(data.notifications);
         }
         setHasMore(data.page < data.pages);
@@ -83,13 +90,29 @@ const Navbar = () => {
       fetchUnreadCount();
       fetchNotifications(1, false);
       setPage(1);
+    } else {
+      notificationIdsRef.current.clear();
+      setNotifications([]);
+      setUnreadCount(0);
     }
   }, [user]);
+
+  useEffect(() => {
+    const refreshNotifications = () => {
+      fetchUnreadCount();
+      fetchNotifications(1, false);
+      setPage(1);
+    };
+    window.addEventListener('playnow:notifications-changed', refreshNotifications);
+    return () => window.removeEventListener('playnow:notifications-changed', refreshNotifications);
+  }, []);
 
   // Real-time notification socket handler
   useEffect(() => {
     if (socket) {
       const handleNewNotification = (notification) => {
+        if (notificationIdsRef.current.has(notification._id)) return;
+        notificationIdsRef.current.add(notification._id);
         setNotifications(prev => [notification, ...prev]);
         setUnreadCount(prev => prev + 1);
       };
@@ -147,6 +170,7 @@ const Navbar = () => {
       });
       if (res.ok) {
         const deleted = notifications.find(n => n._id === id);
+        notificationIdsRef.current.delete(id);
         setNotifications(prev => prev.filter(n => n._id !== id));
         if (deleted && !deleted.isRead) {
           setUnreadCount(prev => Math.max(0, prev - 1));
