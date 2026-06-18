@@ -188,7 +188,7 @@ const Navbar = () => {
                   alt="PlayNow" 
                   className="h-9 w-9 object-cover rounded-xl transition-all duration-300 group-hover:brightness-110 border border-white/10" 
                 />
-                <span className="text-xl font-black tracking-tighter text-white group-hover:text-[#39FF14] transition-colors">
+                <span className="brand-font text-xl font-black tracking-tighter text-white group-hover:text-[#39FF14] transition-colors">
                   Play<span className="text-[#39FF14] group-hover:text-white transition-colors">Now</span>
                 </span>
               </Link>
@@ -330,7 +330,7 @@ const Navbar = () => {
             alt="PlayNow" 
             className="h-8 w-8 object-cover rounded-lg border border-white/10" 
           />
-          <span className="text-lg font-black tracking-tighter text-white">
+          <span className="brand-font text-lg font-black tracking-tighter text-white">
             Play<span className="text-[#39FF14]">Now</span>
           </span>
         </Link>

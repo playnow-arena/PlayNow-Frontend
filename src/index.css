@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Ethnocentric';
+  src: url('./assets/Ethnocentric-Regular.otf') format('opentype');
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+}
+
 @theme {
   --color-primary: #39FF14;
   --color-primary-hover: #32E612;
@@ -43,6 +51,10 @@
   
   .btn-touch {
     @apply active:scale-95 transition-transform duration-100 cursor-pointer;
+  }
+
+  .brand-font {
+    font-family: 'Ethnocentric', 'Poppins', sans-serif;
   }
 
   .hide-scrollbar {

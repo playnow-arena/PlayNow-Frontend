@@ -53,7 +53,7 @@ const Footer = () => {
           {/* Brand & Socials */}
           <div className="flex flex-col items-center md:items-start space-y-4 text-center md:text-left">
             <div>
-              <h2 className="text-3xl font-black tracking-tighter text-white">
+              <h2 className="brand-font text-3xl font-black tracking-tighter text-white">
                 Play<span className="text-[#39FF14]">Now</span>
               </h2>
               <p className="text-sm text-gray-400 font-medium mt-2 max-w-xs">
