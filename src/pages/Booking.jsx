@@ -1,9 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, ShieldCheck, CreditCard, Wallet, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+const RAZORPAY_CHECKOUT_URL = 'https://checkout.razorpay.com/v1/checkout.js';
+
+const loadRazorpayCheckout = () => new Promise((resolve, reject) => {
+  if (window.Razorpay) {
+    resolve();
+    return;
+  }
+
+  const existingScript = document.querySelector(`script[src="${RAZORPAY_CHECKOUT_URL}"]`);
+  if (existingScript) {
+    existingScript.addEventListener('load', resolve, { once: true });
+    existingScript.addEventListener('error', reject, { once: true });
+    return;
+  }
+
+  const script = document.createElement('script');
+  script.src = RAZORPAY_CHECKOUT_URL;
+  script.async = true;
+  script.onload = resolve;
+  script.onerror = () => reject(new Error('Unable to load Razorpay Checkout'));
+  document.body.appendChild(script);
+});
 
 const formatTime = (time) => {
   if (!time) return '';
@@ -65,6 +87,7 @@ const Booking = () => {
   const [paymentType, setPaymentType] = useState('full'); // full or advance
   const [paymentStep, setPaymentStep] = useState(1); // 1: summary, 2: processing, 3: success
   const [bookingDetails, setBookingDetails] = useState(null);
+  const bookingConfirmedRef = useRef(false);
 
   const slotTotal = selectedSlots.reduce((sum, slot) => sum + Number(slot.price || venue?.pricePerHour || 400), 0);
   const totalAmount = slotTotal || (venue?.pricePerHour || 400) * selectedSlots.length;
@@ -104,7 +127,7 @@ const Booking = () => {
     return () => {
       const unlock = async () => {
         // Only unlock if booking not confirmed
-        if (paymentStep !== 3) {
+        if (!bookingConfirmedRef.current) {
           const token = localStorage.getItem('playnow_token');
           await fetch(`${API_BASE_URL}/api/slots/unlock`, {
             method: 'POST',
@@ -121,14 +144,14 @@ const Booking = () => {
       };
       unlock();
     };
-  }, [selectedSlots, venue, navigate, paymentStep]);
+  }, [selectedSlots, venue, navigate]);
 
   const handlePayment = async () => {
     setPaymentStep(2);
     
     try {
       const token = localStorage.getItem('playnow_token');
-      const res = await fetch(`${API_BASE_URL}/api/bookings`, {
+      const orderRes = await fetch(`${API_BASE_URL}/api/bookings/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,21 +161,77 @@ const Booking = () => {
           venueId: venue._id || venue.id,
           slotIds: selectedSlots.map(s => s._id),
           selectedSport,
-          paymentType,
-          paidAmount: amountToPay
+          paymentType
         })
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        setBookingDetails(data);
-        setPaymentStep(3);
-      } else {
-        alert(data.message || 'Payment failed');
+      const order = await orderRes.json();
+      if (!orderRes.ok) {
+        alert(order.message || 'Unable to start payment');
         setPaymentStep(1);
+        return;
       }
+
+      await loadRazorpayCheckout();
+
+      const razorpay = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+        name: 'PlayNow',
+        description: `${paymentType === 'advance' ? 'Advance' : 'Full'} payment for ${venue.name}`,
+        prefill: {
+          name: storedUser?.name || '',
+          email: storedUser?.email || '',
+          contact: storedUser?.phone || ''
+        },
+        theme: {
+          color: '#39FF14'
+        },
+        modal: {
+          ondismiss: () => setPaymentStep(1)
+        },
+        handler: async (paymentResponse) => {
+          try {
+            const verifyRes = await fetch(`${API_BASE_URL}/api/bookings/verify-payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpaySignature: paymentResponse.razorpay_signature
+              })
+            });
+            const booking = await verifyRes.json();
+            if (!verifyRes.ok) {
+              throw new Error(booking.message || 'Payment verification failed');
+            }
+
+            bookingConfirmedRef.current = true;
+            setBookingDetails(booking);
+            setPaymentStep(3);
+          } catch (verificationError) {
+            console.error('Payment verification failed:', verificationError);
+            alert(verificationError.message || 'Payment verification failed');
+            setPaymentStep(1);
+          }
+        }
+      });
+
+      razorpay.on('payment.failed', (response) => {
+        console.error('Razorpay payment failed:', response.error);
+        alert(response.error?.description || 'Payment failed. No booking was created.');
+        setPaymentStep(1);
+      });
+
+      razorpay.open();
     } catch (error) {
       console.error('Payment processing failed:', error);
+      alert(error.message || 'Unable to process payment');
       setPaymentStep(1);
     }
   };
