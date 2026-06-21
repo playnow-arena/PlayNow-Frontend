@@ -100,3 +100,22 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(57, 255, 20, 0.6);
 }
+
+@keyframes quotes-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.quotes-marquee {
+  animation: quotes-marquee-scroll 70s linear infinite;
+}
+
+.quotes-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quotes-marquee {
+    animation-play-state: paused;
+  }
+}

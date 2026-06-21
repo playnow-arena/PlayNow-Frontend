@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sportsList, mockHostedMatches } from '../data/mockData';
+import NeverRunShortOfPlayers from '../components/NeverRunShortOfPlayers';
+import QuotesSlider from '../components/QuotesSlider';
 import VenueCard from '../components/VenueCard';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -115,8 +117,6 @@ const Home = () => {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20 w-full overflow-x-hidden">
-        
-
         {/* Featured Venues */}
         <section>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
@@ -135,6 +135,8 @@ const Home = () => {
             ))}
           </div>
         </section>
+
+        <NeverRunShortOfPlayers />
 
         {/* Hosted Matches */}
         <section>
@@ -225,6 +227,8 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+        <QuotesSlider />
 
       </div>
     </div>

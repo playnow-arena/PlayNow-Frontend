@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 const quotes = [
   {
@@ -94,48 +93,56 @@ const quotes = [
   },
 ];
 
+const championQuotes = [
+  { author: 'Sachin Tendulkar', text: 'Greatness starts with showing up every day.' },
+  { author: 'P. V. Sindhu', text: 'Discipline turns practice into progress.' },
+  { author: 'M. S. Dhoni', text: 'Stay calm, trust the game, finish strong.' },
+  { author: 'Virat Kohli', text: 'Fitness, focus, and fire build champions.' },
+  { author: 'Mary Kom', text: 'Courage grows when you refuse to quit.' },
+  { author: 'Neeraj Chopra', text: 'One strong throw begins with daily effort.' },
+];
+
 const QuotesSlider = () => {
   // Duplicate for seamless infinite loop
-  const loopQuotes = [...quotes, ...quotes];
+  const loopQuotes = [...championQuotes, ...championQuotes];
 
   return (
     <section
-      className="relative overflow-hidden py-14 bg-[#0a0f1c] border-y border-white/5"
+      className="relative overflow-hidden rounded-3xl border border-white/5 bg-[#0a0f1c] py-10 md:py-14"
       aria-label="Inspirational quotes slider"
     >
-      {/* Fade edges */}
-      <div className="absolute left-0 top-0 h-full w-24 bg-gradient-to-r from-[#0a0f1c] to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-[#0a0f1c] to-transparent z-10 pointer-events-none" />
+      <div className="relative z-20 px-5 text-center sm:px-8">
+        <h2 className="text-2xl font-black uppercase md:text-3xl">Inspired by Champions</h2>
+        <p className="mt-2 text-sm font-medium text-gray-400 md:text-base">
+          Small words. Big motivation to play today.
+        </p>
+      </div>
 
-      <motion.div
-        className="flex"
-        animate={{ x: ['0%', '-50%'] }}
-        transition={{ repeat: Infinity, duration: 150, ease: 'linear' }}
-        style={{ width: 'max-content' }}
-      >
+      <div className="absolute bottom-0 left-0 top-24 z-10 w-12 bg-gradient-to-r from-[#0a0f1c] to-transparent pointer-events-none sm:w-24" />
+      <div className="absolute bottom-0 right-0 top-24 z-10 w-12 bg-gradient-to-l from-[#0a0f1c] to-transparent pointer-events-none sm:w-24" />
+
+      <div className="quotes-marquee mt-8 flex w-max">
         {loopQuotes.map((q, idx) => (
           <div
             key={idx}
-            className="flex-shrink-0 mx-4"
-            style={{ width: '320px' }}
+            className="flex-shrink-0 mx-2.5 w-[280px] sm:w-[320px]"
           >
-            <div className="h-full bg-[#151b2b] border border-[#39FF14]/20 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
-              {/* Sport tag */}
-              <span className="text-xs font-bold uppercase tracking-widest text-[#39FF14] mb-3 block">
-                {q.sport}
-              </span>
+            <div className="h-full min-h-44 bg-[#151b2b] border border-[#39FF14]/20 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
               {/* Quote text */}
               <p className="text-white font-semibold text-base leading-relaxed flex-1">
                 &ldquo;{q.text}&rdquo;
               </p>
               {/* Attribution */}
-              <p className="text-gray-500 text-xs mt-4 italic">
+              <p className="text-[#39FF14] text-xs mt-5 font-black uppercase tracking-widest">
+                {q.author}
+              </p>
+              <p className="hidden">
                 — {q.author}
               </p>
             </div>
           </div>
         ))}
-      </motion.div>
+      </div>
     </section>
   );
 };
