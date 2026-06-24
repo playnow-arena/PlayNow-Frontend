@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
-import { LogOut, Calendar, MapPin, XCircle, CreditCard, ChevronRight, AlertTriangle, Building2 } from 'lucide-react';
+import { LogOut, Calendar, MapPin, XCircle, CreditCard, ChevronRight, AlertTriangle, Building2, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -186,11 +186,21 @@ const Dashboard = () => {
               )}
             </div>
             <h2 className="text-xl font-bold break-words max-w-full">{user.name}</h2>
+            {user.username && (
+              <p className="text-[#39FF14] text-sm font-bold mb-1 break-words max-w-full">@{user.username}</p>
+            )}
             <p className="text-gray-400 mb-2 break-words max-w-full">{user.phone}</p>
             <div className="bg-[#0a0f1c] border border-[#39FF14]/50 px-4 py-2 rounded-xl mb-6 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
               <span className="text-xs text-gray-400 block mb-1">PlayNow ID</span>
               <span className="font-mono text-[#39FF14] font-bold tracking-wider break-all">{user.playNowId}</span>
             </div>
+
+            <Link
+              to="/edit-profile"
+              className="w-full mb-3 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#0a0f1c] px-4 py-3 text-sm font-bold text-white hover:border-[#39FF14]/60 hover:text-[#39FF14] transition"
+            >
+              <Pencil size={16} /> Edit Profile
+            </Link>
 
             {isOwner && (
               <Link

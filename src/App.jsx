@@ -15,6 +15,7 @@ import Venues from './pages/Venues';
 import VenueDetail from './pages/VenueDetail';
 import Booking from './pages/Booking';
 import Dashboard from './pages/Dashboard';
+import EditProfile from './pages/EditProfile';
 import HostMatch from './pages/HostMatch';
 import Feed from './pages/Feed';
 import OwnerDashboard from './pages/OwnerDashboard';
@@ -48,6 +49,7 @@ function App() {
               <Route path="/venues/:id" element={<VenueDetail />} />
               <Route path="/book/:id" element={<Booking />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
               <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
               <Route path="/partner/login" element={<AdminOwnerAuth portalType="owner" />} />

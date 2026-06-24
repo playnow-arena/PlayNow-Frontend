@@ -329,11 +329,16 @@ const Navbar = () => {
                     </AnimatePresence>
                   </div>
 
-                  <Link to={isOwner ? '/owner' : '/dashboard'} className="flex items-center gap-2 hover:opacity-80 transition">
+                  <Link to={isOwner ? '/owner' : '/dashboard'} className="flex items-center gap-2 hover:opacity-80 transition min-w-0">
                     <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-gray-600">
                       {user.avatar ? <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" /> : <UserCircle size={32} className="text-gray-400" />}
                     </div>
-                    <span className="text-sm font-semibold text-white">{user.name}</span>
+                    <div className="min-w-0">
+                      <span className="block text-sm font-semibold text-white truncate max-w-32">{user.name}</span>
+                      {user.username && (
+                        <span className="block text-[10px] font-bold text-[#39FF14] truncate max-w-32">@{user.username}</span>
+                      )}
+                    </div>
                   </Link>
                 </div>
               ) : (

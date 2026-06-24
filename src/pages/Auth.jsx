@@ -36,6 +36,7 @@ const Auth = () => {
 
   // Register state
   const [regName, setRegName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -91,8 +92,13 @@ const Auth = () => {
     e.preventDefault();
     setError('');
 
-    if (!regName.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword) {
+    if (!regName.trim() || !regUsername.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (!/^[a-z0-9_.]{3,20}$/.test(regUsername.trim())) {
+      setError('Username must be 3-20 characters and use lowercase letters, numbers, underscore, or dot only');
       return;
     }
 
@@ -119,6 +125,7 @@ const Auth = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: regName.trim(),
+          username: regUsername.trim(),
           email: regEmail.trim(),
           phone: normalizedPhone,
           password: regPassword,
@@ -333,6 +340,21 @@ const Auth = () => {
                 />
               </div>
 
+              {/* Username */}
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
+                  <User size={20} />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={regUsername}
+                  onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
+                  placeholder="Username"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
+                />
+              </div>
+
               {/* Email */}
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors">
@@ -409,7 +431,7 @@ const Auth = () => {
 
               {/* Submit */}
               <button
-                disabled={loading || !regName.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword}
+                disabled={loading || !regName.trim() || !regUsername.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword}
                 type="submit"
                 className="w-full bg-[#39FF14] disabled:bg-gray-700 disabled:text-gray-400 text-black font-black rounded-2xl py-4 hover:shadow-[0_0_30px_rgba(57,255,20,0.4)] transition-all flex justify-center items-center"
               >
