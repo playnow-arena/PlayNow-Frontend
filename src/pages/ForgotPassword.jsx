@@ -26,7 +26,7 @@ const ForgotPassword = () => (
       </div>
 
       <div className="bg-[#39FF14]/10 border border-[#39FF14]/40 text-[#39FF14] rounded-2xl px-5 py-5 text-sm font-bold leading-relaxed mb-6">
-        Password reset is not available yet. Please contact PlayNow support.
+        Password reset is not automated yet. Contact PlayNow support to reset your account.
       </div>
 
       <div className="bg-black/30 border border-white/10 rounded-2xl p-4 text-left mb-8">

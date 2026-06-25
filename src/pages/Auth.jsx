@@ -13,11 +13,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const usernameRegex = /^[a-z0-9._]{3,20}$/;
 
 const normalizeSignupPhone = (phone) => {
   const digits = String(phone || '').replace(/\D/g, '');
   const mobileDigits = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
-  return mobileDigits.length === 10 ? mobileDigits : '';
+  return /^[6-9]\d{9}$/.test(mobileDigits) ? mobileDigits : '';
 };
 
 const Auth = () => {
@@ -27,6 +29,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const showLoginPrompt = error.includes('already registered');
 
   // Login state
@@ -48,6 +51,7 @@ const Auth = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
     if (!loginEmail.trim() || !loginPassword) {
       setError('Please fill in all fields');
@@ -91,20 +95,30 @@ const Auth = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
     if (!regName.trim() || !regUsername.trim() || !regEmail.trim() || !regPhone || !regPassword || !regConfirmPassword) {
       setError('Please fill in all fields');
       return;
     }
 
-    if (!/^[a-z0-9_.]{3,20}$/.test(regUsername.trim())) {
-      setError('Username must be 3-20 characters and use lowercase letters, numbers, underscore, or dot only');
-      return;
+    const nextFieldErrors = {};
+    if (!usernameRegex.test(regUsername.trim())) {
+      nextFieldErrors.username = 'Username can use lowercase letters, numbers, dot and underscore only';
+    }
+
+    if (!emailRegex.test(regEmail.trim().toLowerCase())) {
+      nextFieldErrors.email = 'Enter a valid email address';
     }
 
     const normalizedPhone = normalizeSignupPhone(regPhone);
     if (!normalizedPhone) {
-      setError('Please enter a valid 10-digit mobile number');
+      nextFieldErrors.phone = 'Enter a valid Indian mobile number';
+    }
+
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors);
+      setError('Please fix the highlighted fields');
       return;
     }
 
@@ -126,7 +140,7 @@ const Auth = () => {
         body: JSON.stringify({
           name: regName.trim(),
           username: regUsername.trim(),
-          email: regEmail.trim(),
+          email: regEmail.trim().toLowerCase(),
           phone: normalizedPhone,
           password: regPassword,
           confirmPassword: regConfirmPassword,
@@ -153,6 +167,7 @@ const Auth = () => {
   const switchTab = (tab) => {
     setActiveTab(tab);
     setError('');
+    setFieldErrors({});
   };
 
   // ── Render ──
@@ -349,10 +364,11 @@ const Auth = () => {
                   type="text"
                   required
                   value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
+                  onChange={(e) => setRegUsername(e.target.value.toLowerCase())}
                   placeholder="Username"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
+                {fieldErrors.username && <p className="mt-2 text-xs font-bold text-red-400">{fieldErrors.username}</p>}
               </div>
 
               {/* Email */}
@@ -361,13 +377,14 @@ const Auth = () => {
                   <Mail size={20} />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="Email Address"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
+                {fieldErrors.email && <p className="mt-2 text-xs font-bold text-red-400">{fieldErrors.email}</p>}
               </div>
 
               {/* Phone */}
@@ -383,6 +400,7 @@ const Auth = () => {
                   placeholder="9876543210 or +919876543210"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white font-bold text-lg focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/10 transition-all placeholder:text-gray-600"
                 />
+                {fieldErrors.phone && <p className="mt-2 text-xs font-bold text-red-400">{fieldErrors.phone}</p>}
               </div>
 
               {/* Password */}
