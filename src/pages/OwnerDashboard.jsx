@@ -135,7 +135,8 @@ const emptyVenueSettings = {
 };
 
 const OwnerDashboard = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isManager = user?.role === 'manager';
   const [activeTab, setActiveTab] = useState('venues');
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -235,6 +236,12 @@ const OwnerDashboard = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (isManager && activeTab === 'settings') {
+      setActiveTab('venues');
+    }
+  }, [isManager, activeTab]);
 
   useEffect(() => {
     if (!venues.length) return;
@@ -860,8 +867,10 @@ const OwnerDashboard = () => {
     <div className="pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Owner Dashboard</h1>
-          <p className="text-gray-400">Manage venues, bookings, slots, and balances.</p>
+          <h1 className="text-3xl font-bold">{isManager ? 'Manager Dashboard' : 'Owner Dashboard'}</h1>
+          <p className="text-gray-400">
+            {isManager ? 'Manage assigned venues, bookings, slots, and recurring blocks.' : 'Manage venues, bookings, slots, and balances.'}
+          </p>
         </div>
         <div className="flex gap-3">
           <button
@@ -906,7 +915,7 @@ const OwnerDashboard = () => {
           ['slots', 'Manage Slots'],
           ['generate-slots', 'Generate Slots'],
           ['recurring-blocks', 'Recurring Blocks'],
-          ['settings', 'Venue Settings'],
+          ...(!isManager ? [['settings', 'Venue Settings']] : []),
         ].map(([id, label]) => (
           <button
             key={id}
@@ -922,7 +931,7 @@ const OwnerDashboard = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {venues.length === 0 ? (
             <div className="md:col-span-2 bg-[#151b2b] border border-gray-800 rounded-2xl p-10 text-center text-gray-500">
-              No venues assigned to this owner yet.
+              {isManager ? 'No venues assigned to this manager yet.' : 'No venues assigned to this owner yet.'}
             </div>
           ) : venues.map((venue) => (
             <div key={venue._id} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
