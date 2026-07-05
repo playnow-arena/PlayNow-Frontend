@@ -15,8 +15,29 @@ const formatTime = (time) => {
   const hour = Number(hourValue);
   if (Number.isNaN(hour)) return time;
   const period = hour >= 12 ? 'PM' : 'AM';
-  return `${hour % 12 || 12}:${minute} ${period}`;
+  return `${String(hour % 12 || 12).padStart(2, '0')}:${minute} ${period}`;
 };
+
+const timeOptions = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? '00' : '30';
+  const value = `${String(hour).padStart(2, '0')}:${minute}`;
+  return { value, label: formatTime(value) };
+});
+
+const TimeSelect = ({ value, onChange, required = true }) => (
+  <select
+    required={required}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white"
+  >
+    <option value="">Select time</option>
+    {timeOptions.map((option) => (
+      <option key={option.value} value={option.value}>{option.label}</option>
+    ))}
+  </select>
+);
 
 const formatDate = (date) => {
   if (!date) return 'Date unavailable';
@@ -1200,14 +1221,21 @@ const OwnerDashboard = () => {
             ].map(([field, label, type]) => (
               <div key={field}>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{label}</label>
-                <input
-                  type={type}
-                  min={type === 'number' ? '1' : undefined}
-                  value={generateForm[field]}
-                  onChange={(e) => setGenerateForm((current) => ({ ...current, [field]: e.target.value }))}
-                  className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]"
-                  required={field !== 'price'}
-                />
+                {type === 'time' ? (
+                  <TimeSelect
+                    value={generateForm[field]}
+                    onChange={(value) => setGenerateForm((current) => ({ ...current, [field]: value }))}
+                  />
+                ) : (
+                  <input
+                    type={type}
+                    min={type === 'number' ? '1' : undefined}
+                    value={generateForm[field]}
+                    onChange={(e) => setGenerateForm((current) => ({ ...current, [field]: e.target.value }))}
+                    className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]"
+                    required={field !== 'price'}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -1310,11 +1338,11 @@ const OwnerDashboard = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Start Time</label>
-                <input required type="time" value={recurringRuleForm.startTime} onChange={(e) => handleRecurringRuleChange('startTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                <TimeSelect value={recurringRuleForm.startTime} onChange={(value) => handleRecurringRuleChange('startTime', value)} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">End Time</label>
-                <input required type="time" value={recurringRuleForm.endTime} onChange={(e) => handleRecurringRuleChange('endTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                <TimeSelect value={recurringRuleForm.endTime} onChange={(value) => handleRecurringRuleChange('endTime', value)} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Start Date</label>

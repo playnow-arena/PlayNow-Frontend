@@ -21,6 +21,9 @@ const emptyVenueForm = {
   description: '',
   imageUrl: '',
   imageFileName: '',
+  ownerAccountUserId: '',
+  ownerAccountPhone: '',
+  ownerAccountEmail: '',
   contactOwnerName: '',
   contactOwnerPhone: '',
   contactManagerName: '',
@@ -226,8 +229,29 @@ const formatTime = (time) => {
   if (Number.isNaN(hour)) return time;
 
   const period = hour >= 12 ? 'PM' : 'AM';
-  return `${hour % 12 || 12}:${minute} ${period}`;
+  return `${String(hour % 12 || 12).padStart(2, '0')}:${minute} ${period}`;
 };
+
+const timeOptions = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? '00' : '30';
+  const value = `${String(hour).padStart(2, '0')}:${minute}`;
+  return { value, label: formatTime(value) };
+});
+
+const TimeSelect = ({ value, onChange, required = true }) => (
+  <select
+    required={required}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+  >
+    <option value="">Select time</option>
+    {timeOptions.map((option) => (
+      <option key={option.value} value={option.value}>{option.label}</option>
+    ))}
+  </select>
+);
 
 const formatSlotTimes = (slots = []) => {
   if (!slots.length) return 'Time unavailable';
@@ -675,6 +699,9 @@ const AdminPortal = () => {
       pricePerHour: Number(venueForm.pricePerHour),
       amenities: uniqueList(toList(venueForm.amenities)),
       description: venueForm.description.trim(),
+      ownerUserId: venueForm.ownerAccountUserId.trim(),
+      ownerPhone: venueForm.ownerAccountPhone.trim(),
+      ownerEmail: venueForm.ownerAccountEmail.trim(),
       contacts: {
         owner: {
           name: venueForm.contactOwnerName.trim(),
@@ -770,6 +797,9 @@ const AdminPortal = () => {
       imageFileName: '',
       contactOwnerName: venue.contacts?.owner?.name || '',
       contactOwnerPhone: venue.contacts?.owner?.phone || '',
+      ownerAccountUserId: venue.ownerId?._id || venue.ownerId || '',
+      ownerAccountPhone: '',
+      ownerAccountEmail: '',
       contactManagerName: venue.contacts?.manager?.name || '',
       contactManagerPhone: venue.contacts?.manager?.phone || '',
       contactManagerWhatsapp: venue.contacts?.manager?.whatsapp || '',
@@ -1846,6 +1876,33 @@ const AdminPortal = () => {
 
                   <div className="md:col-span-2 border-t border-gray-800 pt-4">
                     <h4 className="text-sm font-black text-gray-300 uppercase tracking-widest mb-3">
+                      Owner Login Account
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-3">
+                      Use an existing PlayNow user. This controls venue ownership and owner dashboard access.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                      <input
+                        value={venueForm.ownerAccountUserId}
+                        onChange={(e) => handleVenueChange('ownerAccountUserId', e.target.value)}
+                        placeholder="User Mongo ID optional"
+                        className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                      <input
+                        value={venueForm.ownerAccountPhone}
+                        onChange={(e) => handleVenueChange('ownerAccountPhone', e.target.value)}
+                        placeholder="Owner login phone"
+                        className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                      <input
+                        value={venueForm.ownerAccountEmail}
+                        onChange={(e) => handleVenueChange('ownerAccountEmail', e.target.value)}
+                        placeholder="Owner login email"
+                        className="w-full bg-[#151b2b] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
+                      />
+                    </div>
+
+                    <h4 className="text-sm font-black text-gray-300 uppercase tracking-widest mb-3">
                       Operational Contacts
                     </h4>
                     <div className="mb-4 flex flex-wrap gap-2">
@@ -2154,26 +2211,14 @@ const AdminPortal = () => {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Start Time
                     </label>
-                    <input
-                      required
-                      type="time"
-                      value={slotForm.startTime}
-                      onChange={(e) => handleSlotChange('startTime', e.target.value)}
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
-                    />
+                    <TimeSelect value={slotForm.startTime} onChange={(value) => handleSlotChange('startTime', value)} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       End Time
                     </label>
-                    <input
-                      required
-                      type="time"
-                      value={slotForm.endTime}
-                      onChange={(e) => handleSlotChange('endTime', e.target.value)}
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
-                    />
+                    <TimeSelect value={slotForm.endTime} onChange={(value) => handleSlotChange('endTime', value)} />
                   </div>
                 </div>
 
@@ -2309,26 +2354,14 @@ const AdminPortal = () => {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Opening Time
                     </label>
-                    <input
-                      required
-                      type="time"
-                      value={generateSlotsForm.openingTime}
-                      onChange={(e) => handleGenerateSlotsChange('openingTime', e.target.value)}
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
-                    />
+                    <TimeSelect value={generateSlotsForm.openingTime} onChange={(value) => handleGenerateSlotsChange('openingTime', value)} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                       Closing Time
                     </label>
-                    <input
-                      required
-                      type="time"
-                      value={generateSlotsForm.closingTime}
-                      onChange={(e) => handleGenerateSlotsChange('closingTime', e.target.value)}
-                      className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14] [color-scheme:dark]"
-                    />
+                    <TimeSelect value={generateSlotsForm.closingTime} onChange={(value) => handleGenerateSlotsChange('closingTime', value)} />
                   </div>
 
                   <div>
@@ -2448,11 +2481,11 @@ const AdminPortal = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Time</label>
-                    <input required type="time" value={recurringRuleForm.startTime} onChange={(e) => handleRecurringRuleChange('startTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                    <TimeSelect value={recurringRuleForm.startTime} onChange={(value) => handleRecurringRuleChange('startTime', value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">End Time</label>
-                    <input required type="time" value={recurringRuleForm.endTime} onChange={(e) => handleRecurringRuleChange('endTime', e.target.value)} className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white [color-scheme:dark]" />
+                    <TimeSelect value={recurringRuleForm.endTime} onChange={(value) => handleRecurringRuleChange('endTime', value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Start Date</label>
