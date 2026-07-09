@@ -26,9 +26,6 @@ const emptyVenueForm = {
   ownerAccountEmail: '',
   contactOwnerName: '',
   contactOwnerPhone: '',
-  contactManagerName: '',
-  contactManagerPhone: '',
-  contactManagerWhatsapp: '',
   contactInchargeName: '',
   contactInchargePhone: '',
   contactInchargeWhatsapp: '',
@@ -119,7 +116,6 @@ const amenityOptions = [
 
 const contactTabs = [
   { id: 'owner', label: 'Owner Contact' },
-  { id: 'manager', label: 'Manager Contact' },
   { id: 'incharge', label: 'Incharge Contact' },
   { id: 'operational', label: 'Operational Contact' },
 ];
@@ -707,11 +703,6 @@ const AdminPortal = () => {
           name: venueForm.contactOwnerName.trim(),
           phone: venueForm.contactOwnerPhone.trim(),
         },
-        manager: {
-          name: venueForm.contactManagerName.trim(),
-          phone: venueForm.contactManagerPhone.trim(),
-          whatsapp: venueForm.contactManagerWhatsapp.trim(),
-        },
         incharge: {
           name: venueForm.contactInchargeName.trim(),
           phone: venueForm.contactInchargePhone.trim(),
@@ -800,9 +791,6 @@ const AdminPortal = () => {
       ownerAccountUserId: venue.ownerId?._id || venue.ownerId || '',
       ownerAccountPhone: '',
       ownerAccountEmail: '',
-      contactManagerName: venue.contacts?.manager?.name || '',
-      contactManagerPhone: venue.contacts?.manager?.phone || '',
-      contactManagerWhatsapp: venue.contacts?.manager?.whatsapp || '',
       contactInchargeName: venue.contacts?.incharge?.name || '',
       contactInchargePhone: venue.contacts?.incharge?.phone || '',
       contactInchargeWhatsapp: venue.contacts?.incharge?.whatsapp || '',
@@ -1295,8 +1283,6 @@ const AdminPortal = () => {
                             <span><strong className="text-gray-300">Applicant Phone:</strong> {request.phone}</span>
                             <span><strong className="text-gray-300">Applicant Email:</strong> {request.email || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Location:</strong> {formatRequestLocation(request)}</span>
-                            <span><strong className="text-gray-300">Manager:</strong> {request.contacts?.manager?.name || 'Not provided'}</span>
-                            <span><strong className="text-gray-300">Manager Phone:</strong> {request.contacts?.manager?.phone || request.contacts?.manager?.whatsapp || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Incharge:</strong> {request.contacts?.incharge?.name || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Incharge Phone:</strong> {request.contacts?.incharge?.phone || request.contacts?.incharge?.whatsapp || 'Not provided'}</span>
                             <span><strong className="text-gray-300">Sports:</strong> {formatSportTypes(request.sportTypes) || 'Not provided'}</span>
@@ -1937,40 +1923,6 @@ const AdminPortal = () => {
                         <input
                           value={venueForm.contactOwnerPhone}
                           onChange={(e) => handleVenueChange('contactOwnerPhone', e.target.value)}
-                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                        />
-                      </div>
-                        </>
-                      )}
-                      {activeContactTab === 'manager' && (
-                        <>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                          Manager Name
-                        </label>
-                        <input
-                          value={venueForm.contactManagerName}
-                          onChange={(e) => handleVenueChange('contactManagerName', e.target.value)}
-                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                          Manager Phone
-                        </label>
-                        <input
-                          value={venueForm.contactManagerPhone}
-                          onChange={(e) => handleVenueChange('contactManagerPhone', e.target.value)}
-                          className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                          Manager WhatsApp
-                        </label>
-                        <input
-                          value={venueForm.contactManagerWhatsapp}
-                          onChange={(e) => handleVenueChange('contactManagerWhatsapp', e.target.value)}
                           className="w-full bg-[#0a0f1c] border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#39FF14]"
                         />
                       </div>

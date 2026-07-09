@@ -42,10 +42,10 @@ const formatVenueLocation = (venue) => (
 );
 
 const getVenueSupportPhone = (venue) => (
-  venue?.contacts?.manager?.phone ||
-  venue?.contacts?.manager?.whatsapp ||
   venue?.contacts?.incharge?.phone ||
   venue?.contacts?.incharge?.whatsapp ||
+  venue?.contacts?.operational?.phone ||
+  venue?.contacts?.operational?.whatsapp ||
   venue?.contacts?.owner?.phone ||
   ''
 );

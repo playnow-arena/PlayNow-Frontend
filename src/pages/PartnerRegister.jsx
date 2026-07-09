@@ -29,9 +29,6 @@ const initialFormData = {
   city: '',
   area: '',
   landmark: '',
-  managerName: '',
-  managerPhone: '',
-  managerWhatsapp: '',
   inchargeName: '',
   inchargePhone: '',
   inchargeWhatsapp: '',
@@ -138,11 +135,6 @@ const PartnerRegister = () => {
           phone: normalizeIndianMobile(formData.phone),
           email: formData.email,
         },
-        manager: {
-          name: formData.managerName,
-          phone: normalizeIndianMobile(formData.managerPhone),
-          whatsapp: normalizeIndianMobile(formData.managerWhatsapp),
-        },
         incharge: {
           name: formData.inchargeName,
           phone: normalizeIndianMobile(formData.inchargePhone),
@@ -159,8 +151,6 @@ const PartnerRegister = () => {
 
     const phoneFields = [
       formData.phone,
-      formData.managerPhone,
-      formData.managerWhatsapp,
       formData.inchargePhone,
       formData.inchargeWhatsapp,
     ].filter(Boolean);
@@ -316,17 +306,6 @@ const PartnerRegister = () => {
             <h3 className="text-lg md:text-xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-3">
               <span className="w-2 h-2 bg-[#39FF14] rounded-full" /> Operational Contact
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-              <Field label="Manager name">
-                <input value={formData.managerName} onChange={(e) => updateField('managerName', e.target.value)} placeholder="Manager name" className={inputClass} />
-              </Field>
-              <Field label="Manager phone">
-                <input value={formData.managerPhone} onChange={(e) => updateField('managerPhone', e.target.value)} placeholder="Manager phone" className={inputClass} />
-              </Field>
-              <Field label="Manager WhatsApp">
-                <input value={formData.managerWhatsapp} onChange={(e) => updateField('managerWhatsapp', e.target.value)} placeholder="WhatsApp number" className={inputClass} />
-              </Field>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <Field label="Incharge name">
                 <input value={formData.inchargeName} onChange={(e) => updateField('inchargeName', e.target.value)} placeholder="Incharge name" className={inputClass} />

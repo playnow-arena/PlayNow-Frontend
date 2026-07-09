@@ -13,10 +13,10 @@ const formatVenueLocation = (venue) => (
   [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
 );
 const getVenueSupportPhone = (venue) => (
-  venue?.contacts?.manager?.phone ||
-  venue?.contacts?.manager?.whatsapp ||
   venue?.contacts?.incharge?.phone ||
   venue?.contacts?.incharge?.whatsapp ||
+  venue?.contacts?.operational?.phone ||
+  venue?.contacts?.operational?.whatsapp ||
   venue?.contacts?.owner?.phone ||
   ''
 );

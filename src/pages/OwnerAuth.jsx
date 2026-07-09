@@ -60,12 +60,6 @@ const OwnerAuth = () => {
     } catch (err) {
       setError('Connection error. Please try again later.');
       console.error('Login error:', err);
-      
-      // Fallback for demo purposes if backend is down
-      if (formData.ownerId === 'OWN-1234' && formData.password === 'password') {
-        login({ name: 'Demo Owner', role: 'owner', venueName: 'Elite Arena', id: 'OWN-1234' });
-        navigate('/owner');
-      }
     } finally {
       setLoading(false);
     }

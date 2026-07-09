@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import {
   Lock,
   Eye,
@@ -17,7 +16,6 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-k
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -48,10 +46,10 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/reset-password/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password, confirmPassword }),
+        body: JSON.stringify({ password, confirmPassword }),
       });
 
       const data = await res.json();
@@ -63,12 +61,8 @@ const ResetPassword = () => {
 
       setSuccess(true);
 
-      // Auto-login with response data
-      login(data);
-
-      // Navigate to home after a short delay
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 2000);
     } catch (err) {
       console.error('Reset Password Error:', err);
@@ -180,7 +174,7 @@ const ResetPassword = () => {
               </div>
 
               <p className="text-gray-400 text-sm font-medium">
-                Redirecting you to the app...
+                Redirecting you to login...
               </p>
             </motion.div>
           ) : (

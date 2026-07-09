@@ -51,7 +51,7 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
-              <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'manager', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
+              <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
               <Route path="/partner/login" element={<AdminOwnerAuth portalType="owner" />} />
               <Route path="/admin-login" element={<Navigate to="/login" replace />} />
               <Route path="/partner/register" element={<ProtectedRoute requiredRole="player"><PartnerRegister /></ProtectedRoute>} />

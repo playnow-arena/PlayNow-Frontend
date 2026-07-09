@@ -149,7 +149,6 @@ const emptyVenueSettings = {
   isActive: true,
   contacts: {
     owner: { name: '', phone: '', email: '' },
-    manager: { name: '', phone: '', email: '', whatsapp: '' },
     incharge: { name: '', phone: '', email: '', whatsapp: '' },
   },
   courtGroups: [{ ...emptyCourtGroup }],
@@ -157,7 +156,6 @@ const emptyVenueSettings = {
 
 const OwnerDashboard = () => {
   const { user, logout } = useAuth();
-  const isManager = user?.role === 'manager';
   const [activeTab, setActiveTab] = useState('venues');
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -257,12 +255,6 @@ const OwnerDashboard = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
-
-  useEffect(() => {
-    if (isManager && activeTab === 'settings') {
-      setActiveTab('venues');
-    }
-  }, [isManager, activeTab]);
 
   useEffect(() => {
     if (!venues.length) return;
@@ -704,12 +696,6 @@ const OwnerDashboard = () => {
           phone: venue?.contacts?.owner?.phone || '',
           email: venue?.contacts?.owner?.email || '',
         },
-        manager: {
-          name: venue?.contacts?.manager?.name || '',
-          phone: venue?.contacts?.manager?.phone || '',
-          email: venue?.contacts?.manager?.email || '',
-          whatsapp: venue?.contacts?.manager?.whatsapp || '',
-        },
         incharge: {
           name: venue?.contacts?.incharge?.name || '',
           phone: venue?.contacts?.incharge?.phone || '',
@@ -888,9 +874,9 @@ const OwnerDashboard = () => {
     <div className="pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{isManager ? 'Manager Dashboard' : 'Owner Dashboard'}</h1>
+          <h1 className="text-3xl font-bold">Owner Dashboard</h1>
           <p className="text-gray-400">
-            {isManager ? 'Manage assigned venues, bookings, slots, and recurring blocks.' : 'Manage venues, bookings, slots, and balances.'}
+            Manage venues, bookings, slots, and balances.
           </p>
         </div>
         <div className="flex gap-3">
@@ -936,7 +922,7 @@ const OwnerDashboard = () => {
           ['slots', 'Manage Slots'],
           ['generate-slots', 'Generate Slots'],
           ['recurring-blocks', 'Recurring Blocks'],
-          ...(!isManager ? [['settings', 'Venue Settings']] : []),
+          ['settings', 'Venue Settings'],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -952,7 +938,7 @@ const OwnerDashboard = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {venues.length === 0 ? (
             <div className="md:col-span-2 bg-[#151b2b] border border-gray-800 rounded-2xl p-10 text-center text-gray-500">
-              {isManager ? 'No venues assigned to this manager yet.' : 'No venues assigned to this owner yet.'}
+              No venues assigned to this owner yet.
             </div>
           ) : venues.map((venue) => (
             <div key={venue._id} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
@@ -1505,7 +1491,7 @@ const OwnerDashboard = () => {
             ))}
           </div>
 
-          {['owner', 'manager', 'incharge'].map((role) => (
+          {['owner', 'incharge'].map((role) => (
             <div key={role} className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-4">
               <h3 className="font-black text-white capitalize mb-3">{role} Contact</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

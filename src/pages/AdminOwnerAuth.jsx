@@ -129,12 +129,12 @@ const AdminOwnerAuth = ({ portalType = 'owner' }) => {
         return;
       }
 
-      if (portalType === 'owner' && !['owner', 'manager'].includes(role)) {
-        setError('Access denied. This portal is for Venue Partners and Managers only.');
+      if (portalType === 'owner' && role !== 'owner') {
+        setError('Access denied. This portal is for Venue Partners only.');
         return;
       }
 
-      if (!role || (role !== 'admin' && role !== 'owner' && role !== 'manager')) {
+      if (!role || (role !== 'admin' && role !== 'owner')) {
         setError('Access denied.');
         return;
       }
@@ -144,7 +144,7 @@ const AdminOwnerAuth = ({ portalType = 'owner' }) => {
 
       if (role === 'admin') {
         navigate('/admin');
-      } else if (role === 'owner' || role === 'manager') {
+      } else if (role === 'owner') {
         navigate('/owner');
       }
     } catch (err) {
