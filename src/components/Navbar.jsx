@@ -136,6 +136,7 @@ const Navbar = () => {
           prev.map(n => (n._id === id ? { ...n, isRead: true } : n))
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
       }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
@@ -153,6 +154,7 @@ const Navbar = () => {
       if (res.ok) {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setUnreadCount(0);
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
       }
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -175,6 +177,7 @@ const Navbar = () => {
         if (deleted && !deleted.isRead) {
           setUnreadCount(prev => Math.max(0, prev - 1));
         }
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
       }
     } catch (err) {
       console.error('Failed to delete notification:', err);

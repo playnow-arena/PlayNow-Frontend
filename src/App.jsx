@@ -6,6 +6,8 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import BookingRealtimeAlerts from './components/BookingRealtimeAlerts';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 import Home from './pages/Home';
 import Auth from './pages/Auth';
@@ -39,6 +41,8 @@ function App() {
         <Router>
         <div className="min-h-screen w-full overflow-x-hidden pb-24 md:pb-0 bg-[#0a0f1c] text-white flex flex-col justify-between">
           <Navbar />
+          <BookingRealtimeAlerts />
+          <PWAInstallPrompt />
           <div className="flex-grow flex flex-col">
             <Routes>
               <Route path="/" element={<Home />} />

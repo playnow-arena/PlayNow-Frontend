@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { Bell, Trash2, Check, Filter, Search, Settings, Calendar, Award, MessageSquare, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -7,6 +8,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-k
 
 const NotificationCenter = () => {
   const { user, updateProfile } = useAuth();
+  const socket = useSocket();
   
   // Settings & Center state
   const [activeTab, setActiveTab] = useState('center'); // 'center' or 'preferences'
@@ -81,6 +83,21 @@ const NotificationCenter = () => {
     }
   }, [page, filterType, debouncedSearch, activeTab]);
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleNewNotification = (notification) => {
+      setNotifications(prev => {
+        if (prev.some(item => item._id === notification._id)) return prev;
+        return [notification, ...prev];
+      });
+      setTotal(prev => prev + 1);
+    };
+
+    socket.on('new_notification', handleNewNotification);
+    return () => socket.off('new_notification', handleNewNotification);
+  }, [socket]);
+
   const handleToggleSelect = (id) => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -115,6 +132,44 @@ const NotificationCenter = () => {
         setSelectedIds([]);
         window.dispatchEvent(new Event('playnow:notifications-changed'));
         setSuccessMsg('Selected notifications marked as read');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkRead = async (id) => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setNotifications(prev =>
+          prev.map(n => (n._id === id ? { ...n, isRead: true } : n))
+        );
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        window.dispatchEvent(new Event('playnow:notifications-changed'));
+        setSuccessMsg('All notifications marked as read');
         setTimeout(() => setSuccessMsg(''), 3000);
       }
     } catch (err) {
@@ -271,8 +326,15 @@ const NotificationCenter = () => {
                   <span className="text-xs text-gray-400 font-bold uppercase">Select All</span>
                 </div>
                 
-                {selectedIds.length > 0 && (
-                  <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg transition"
+                  >
+                    <Check size={12} /> Mark All Read
+                  </button>
+                  {selectedIds.length > 0 && (
+                    <>
                     <button
                       onClick={handleMarkSelectedRead}
                       className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg transition"
@@ -285,8 +347,9 @@ const NotificationCenter = () => {
                     >
                       <Trash2 size={12} /> Delete
                     </button>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -334,6 +397,15 @@ const NotificationCenter = () => {
                           day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </span>
+                      {!n.isRead && (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkRead(n._id)}
+                          className="mt-3 inline-flex items-center gap-1.5 bg-[#39FF14]/10 hover:bg-[#39FF14]/20 text-[#39FF14] font-black text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg transition"
+                        >
+                          <Check size={12} /> Mark Read
+                        </button>
+                      )}
                     </div>
 
                   </motion.div>
