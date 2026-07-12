@@ -23,8 +23,14 @@ export const SocketProvider = ({ children }) => {
 
     setSocket(newSocket);
     let healthInterval;
+    const emitVisibility = () => {
+      newSocket.emit('app_visibility', {
+        visible: document.visibilityState === 'visible' && document.hasFocus()
+      });
+    };
 
     newSocket.on('connect', () => {
+      emitVisibility();
       console.log('🔌 [SOCKET] Connected:', newSocket.id);
       
       // Heartbeat / Health Check
@@ -53,9 +59,17 @@ export const SocketProvider = ({ children }) => {
       console.error('🔌 [SOCKET] Connection error:', error.message);
     });
 
+    document.addEventListener('visibilitychange', emitVisibility);
+    window.addEventListener('focus', emitVisibility);
+    window.addEventListener('blur', emitVisibility);
+
     return () => {
+      newSocket.emit('app_visibility', { visible: false });
       clearInterval(healthInterval);
       newSocket.off('pong_health');
+      document.removeEventListener('visibilitychange', emitVisibility);
+      window.removeEventListener('focus', emitVisibility);
+      window.removeEventListener('blur', emitVisibility);
       newSocket.close();
     };
   }, [user]);

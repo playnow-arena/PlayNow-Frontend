@@ -3,6 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { Bell, Trash2, Check, Filter, Search, Settings, Calendar, Award, MessageSquare, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  getAskedState,
+  getPermissionState,
+  getStoredFcmToken,
+  hasFirebaseConfig,
+  requestNotificationPermissionAndToken,
+} from '../services/firebaseMessaging';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -22,6 +29,10 @@ const NotificationCenter = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [successMsg, setSuccessMsg] = useState('');
+  const [pushPermission, setPushPermission] = useState('default');
+  const [pushToken, setPushToken] = useState('');
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushMessage, setPushMessage] = useState('');
 
   // Preference Settings State
   const [prefForm, setPrefForm] = useState({
@@ -50,6 +61,19 @@ const NotificationCenter = () => {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    setPushPermission(getPermissionState());
+    setPushToken(getStoredFcmToken());
+
+    const handleTokenUpdate = (event) => {
+      setPushToken(event.detail?.token || getStoredFcmToken());
+      setPushPermission(getPermissionState());
+    };
+
+    window.addEventListener('playnow:fcm-token', handleTokenUpdate);
+    return () => window.removeEventListener('playnow:fcm-token', handleTokenUpdate);
+  }, []);
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -228,6 +252,34 @@ const NotificationCenter = () => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleEnablePushNotifications = async () => {
+    setPushLoading(true);
+    setPushMessage('');
+
+    try {
+      const result = await requestNotificationPermissionAndToken();
+      setPushPermission(result.permission);
+      setPushToken(result.token || getStoredFcmToken());
+
+      if (result.token) {
+        setPushMessage('Push notification permission is ready. FCM token generated.');
+      } else if (result.permission === 'denied') {
+        setPushMessage('Notifications are blocked in this browser. Enable them from browser settings.');
+      } else if (result.alreadyAsked) {
+        setPushMessage('Notification permission was already asked once. It will not be requested again automatically.');
+      } else if (result.reason === 'missing-config') {
+        setPushMessage('Firebase web push environment variables are missing.');
+      } else {
+        setPushMessage('Push notifications are not available in this browser.');
+      }
+    } catch (error) {
+      console.error('[FCM] Permission flow failed:', error);
+      setPushMessage('Unable to prepare push notifications right now.');
+    } finally {
+      setPushLoading(false);
     }
   };
 
@@ -450,6 +502,60 @@ const NotificationCenter = () => {
             <p className="text-xs text-gray-400 leading-relaxed font-semibold mb-6">
               Turn off channels to restrict alerts. You will still be able to complete bookings and join games seamlessly.
             </p>
+
+            <div className="mb-6 rounded-2xl border border-white/5 bg-black/20 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <Bell size={16} className="text-[#39FF14]" /> Push Notifications
+                  </h3>
+                  <p className="text-[10px] text-gray-500 font-semibold mt-1">
+                    Prepare this device for Firebase Cloud Messaging. Notifications are not sent through FCM yet.
+                  </p>
+                </div>
+                <span className={`self-start sm:self-auto rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
+                  pushPermission === 'granted'
+                    ? 'bg-[#39FF14]/10 text-[#39FF14]'
+                    : pushPermission === 'denied'
+                      ? 'bg-red-500/10 text-red-400'
+                      : 'bg-white/5 text-gray-300'
+                }`}>
+                  {pushPermission}
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleEnablePushNotifications}
+                  disabled={
+                    pushLoading
+                    || !hasFirebaseConfig()
+                    || pushPermission === 'granted'
+                    || pushPermission === 'denied'
+                    || (pushPermission === 'default' && getAskedState())
+                  }
+                  className="rounded-xl bg-[#39FF14] disabled:bg-gray-800 disabled:text-gray-500 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-black transition"
+                >
+                  {pushLoading ? 'Preparing...' : pushPermission === 'granted' ? 'Enabled' : 'Enable Push'}
+                </button>
+                {pushToken && (
+                  <div className="min-w-0 flex-1 rounded-xl border border-white/5 bg-[#0a0f1c] px-3 py-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-600">FCM Token</p>
+                    <p className="truncate text-[10px] font-semibold text-gray-400">{pushToken}</p>
+                  </div>
+                )}
+              </div>
+
+              {pushMessage && (
+                <p className="mt-3 text-[10px] font-semibold text-gray-400">{pushMessage}</p>
+              )}
+              {!hasFirebaseConfig() && (
+                <p className="mt-3 text-[10px] font-semibold text-yellow-400">
+                  Add Firebase web push environment variables to enable token generation.
+                </p>
+              )}
+            </div>
 
             <form onSubmit={handleSavePreferences} className="space-y-5">
               {[

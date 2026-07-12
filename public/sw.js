@@ -8,6 +8,48 @@ const APP_SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
+let firebaseMessagingInitialized = false;
+
+const initFirebaseMessaging = (firebaseConfig) => {
+  if (firebaseMessagingInitialized || !firebaseConfig?.apiKey) return;
+
+  try {
+    importScripts('https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js');
+    importScripts('https://www.gstatic.com/firebasejs/12.16.0/firebase-messaging-compat.js');
+
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    messaging.onBackgroundMessage((payload) => {
+      // If the payload already has a notification property, Firebase might have already shown it
+      // or will show it. Only show a custom one if it's a data-only message.
+      if (payload.notification) return;
+
+      const title = payload.data?.title || 'PlayNow';
+      const options = {
+        body: payload.data?.body || 'You have a new PlayNow notification.',
+        icon: payload.data?.icon || '/icons/icon-192.png',
+        badge: '/icons/icon-96.png',
+        data: {
+          url: payload.data?.url || '/',
+          ...payload.data,
+        },
+      };
+
+      self.registration.showNotification(title, options);
+    });
+
+    firebaseMessagingInitialized = true;
+  } catch (error) {
+    console.error('[PlayNow SW] Firebase messaging init failed:', error);
+  }
+};
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'PLAYNOW_FIREBASE_CONFIG') {
+    initFirebaseMessaging(event.data.firebaseConfig);
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -60,6 +102,23 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match('/offline.html'));
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const existingClient = clientList.find(client => client.url.includes(self.location.origin));
+      if (existingClient) {
+        existingClient.focus();
+        existingClient.navigate(targetUrl);
+        return;
+      }
+      return self.clients.openWindow(targetUrl);
     })
   );
 });

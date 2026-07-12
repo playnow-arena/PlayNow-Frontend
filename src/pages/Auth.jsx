@@ -60,10 +60,15 @@ const Auth = () => {
 
     setLoading(true);
     try {
+      const fcmToken = localStorage.getItem('playnow_fcm_token');
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loginId: loginEmail.trim(), password: loginPassword }),
+        body: JSON.stringify({ 
+          loginId: loginEmail.trim(), 
+          password: loginPassword,
+          fcmToken: fcmToken || undefined
+        }),
       });
 
       const data = await res.json();
@@ -134,6 +139,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
+      const fcmToken = localStorage.getItem('playnow_fcm_token');
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,6 +150,7 @@ const Auth = () => {
           phone: normalizedPhone,
           password: regPassword,
           confirmPassword: regConfirmPassword,
+          fcmToken: fcmToken || undefined
         }),
       });
 

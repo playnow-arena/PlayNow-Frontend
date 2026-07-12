@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import BookingRealtimeAlerts from './components/BookingRealtimeAlerts';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import FCMNotificationManager from './components/FCMNotificationManager';
 
 import Home from './pages/Home';
 import Auth from './pages/Auth';
@@ -43,6 +44,7 @@ function App() {
           <Navbar />
           <BookingRealtimeAlerts />
           <PWAInstallPrompt />
+          <FCMNotificationManager />
           <div className="flex-grow flex flex-col">
             <Routes>
               <Route path="/" element={<Home />} />

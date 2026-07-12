@@ -32,12 +32,14 @@ const AdminOwnerAuth = () => {
     setLoading(true);
 
     try {
+      const fcmToken = localStorage.getItem('playnow_fcm_token');
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           loginId: loginId.trim(),
           password,
+          fcmToken: fcmToken || undefined
         }),
       });
 
