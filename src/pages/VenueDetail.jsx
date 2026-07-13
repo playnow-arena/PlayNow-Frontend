@@ -506,9 +506,9 @@ const VenueDetail = () => {
   return (
       <div className="pb-32 md:pb-24 overflow-x-hidden">
       {/* Hero Image & Overlay */}
-      <div className="w-full h-[35vh] sm:h-[45vh] md:h-[60vh] relative overflow-hidden">
+      <div className="w-full h-[30vh] md:h-[40vh] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#182033] via-[#101827] to-[#0a0f1c] flex items-center justify-center">
-          <span className="text-[#39FF14] text-xs md:text-sm font-black uppercase tracking-[0.35em]">PlayNow Venue</span>
+          <span className="text-[#39FF14] text-xs font-black uppercase tracking-[0.2em]">Venue View</span>
         </div>
         {venueImage && (
           <img
@@ -524,19 +524,11 @@ const VenueDetail = () => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-2 md:gap-4"
+            className="flex flex-col gap-1 md:gap-4"
           >
-            <div className="flex flex-wrap gap-2 max-w-full">
-              <span className="bg-[#39FF14] text-black px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest shadow-lg max-w-full truncate">
-                {formatSportTypes(venue.sportTypes) || 'Sport'}
-              </span>
-              <span className={`px-3 py-1 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wider md:tracking-widest border backdrop-blur-md ${venue.isActive ? 'bg-[#0a0f1c]/60 text-white border-white/10' : 'bg-red-500/20 text-red-500 border-red-500/50'}`}>
-                {venue.isActive ? 'Open' : 'Maintenance'}
-              </span>
-            </div>
-            <h1 className="text-3xl md:text-6xl font-black text-white leading-tight uppercase tracking-tighter break-words">{venue.name}</h1>
-            <p className="text-gray-300 flex items-start text-xs md:text-lg font-medium opacity-90">
-              <MapPin size={18} className="mr-2 mt-0.5 text-[#39FF14] shrink-0" /> <span className="break-words">{formatVenueLocation(venue)}</span>
+            <h1 className="text-xl sm:text-2xl md:text-6xl font-black text-white leading-tight uppercase tracking-tighter break-words">{venue.name}</h1>
+            <p className="text-gray-300 flex items-start text-[10px] md:text-lg font-medium opacity-90">
+              <MapPin size={14} className="mr-1 mt-0.5 text-[#39FF14] shrink-0" /> <span className="break-words">{formatVenueLocation(venue)}</span>
             </p>
           </motion.div>
         </div>

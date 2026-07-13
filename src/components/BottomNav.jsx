@@ -35,8 +35,9 @@ const BottomNav = () => {
             <Link 
               key={item.name} 
               to={item.path}
+              aria-label={item.name}
               className={clsx(
-                "flex flex-col items-center justify-center w-full h-full transition-all btn-touch relative",
+                "flex flex-col items-center justify-center w-full h-full transition-all btn-touch relative animate-fast-fade",
                 isActive ? "text-[#39FF14]" : "text-gray-500 hover:text-gray-300"
               )}
             >
@@ -64,4 +65,4 @@ const BottomNav = () => {
   );
 };
 
-export default BottomNav;
+export default React.memo(BottomNav);

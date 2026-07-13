@@ -241,9 +241,11 @@ const Navbar = () => {
                   {/* Notification Bell */}
                   <div className="relative">
                     <button 
+                      aria-label="Toggle notifications"
                       onClick={() => setShowDropdown(!showDropdown)} 
                       className="text-gray-300 hover:text-white cursor-pointer transition p-1 relative"
                     >
+
                       <Bell size={20} />
                       {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 bg-[#39FF14] text-black text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
@@ -432,7 +434,7 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
           )}
-          <button className="text-gray-400 hover:text-white transition p-1">
+          <button aria-label="Search" className="text-gray-400 hover:text-white transition p-1">
             <Search size={20} />
           </button>
         </div>
@@ -441,4 +443,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

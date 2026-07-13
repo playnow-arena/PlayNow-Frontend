@@ -12,15 +12,14 @@ const formatVenueLocation = (venue) => (
 const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05, isCompact = false }) => {
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: isCompact ? 0.6 : 0.5, delay: index * delayMultiplier, ease: "easeOut" }}
-      whileHover={{ y: -6, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.15, delay: index * 0.03, ease: "easeOut" }}
+      whileHover={{ y: -3, scale: 1.01 }}
       className={`w-full min-w-0 bg-[#151b2b] overflow-hidden border border-white/5 hover:border-[#39FF14]/50 transition-colors group cursor-pointer shadow-xl ${isCompact ? 'rounded-3xl' : 'rounded-[2rem] shadow-2xl'}`}
     >
       <div className={`relative overflow-hidden ${isCompact ? 'h-48 md:h-52' : 'h-52 md:h-56'}`}>
-        <img src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+        <img loading="lazy" src={venue.images?.[0] || '/default-venue.jpg'} alt={venue.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
         
         {/* Rating Badge */}
         <div className={`absolute bg-black/70 backdrop-blur-md rounded-full text-xs font-black flex items-center border border-white/10 shadow-lg ${isCompact ? 'top-3 right-3 px-3 py-1' : 'top-4 right-4 px-3 py-1.5'}`}>
@@ -41,28 +40,28 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
       </div>
       
       <div className={isCompact ? 'p-4 sm:p-5 md:p-6' : 'p-4 sm:p-6 md:p-8'}>
-        <div className="flex justify-between items-start gap-3 mb-3 md:mb-4 min-w-0">
-          <h3 className={`${isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'} font-black leading-tight min-w-0 break-words line-clamp-2 pr-1 md:pr-4`}>{venue.name}</h3>
+        <div className="flex justify-between items-start gap-2 mb-3 md:mb-4 min-w-0">
+          <h3 className={`${isCompact ? 'text-lg md:text-xl' : 'text-xl md:text-2xl'} font-black leading-tight min-w-0 break-words line-clamp-2 pr-2`}>{venue.name}</h3>
           <div className="text-right shrink-0">
-            <span className={`text-[#39FF14] font-black ${isCompact ? 'text-lg' : 'text-2xl'}`}>₹{venue.pricePerHour}</span>
-            <span className="text-[10px] text-gray-500 block font-bold uppercase tracking-tighter">/ hour</span>
+            <span className={`text-[#39FF14] font-black ${isCompact ? 'text-lg' : 'text-xl md:text-2xl'}`}>₹{venue.pricePerHour}</span>
+            <span className="text-[9px] text-gray-500 block font-bold uppercase tracking-tighter">/ hr</span>
           </div>
         </div>
-        <p className={`text-gray-400 text-sm flex items-start font-medium min-w-0 ${isCompact ? 'mb-5 text-xs md:text-sm' : 'mb-6'}`}>
-          <MapPin size={isCompact ? 14 : 16} className={`text-gray-600 shrink-0 mt-0.5 ${isCompact ? 'mr-1' : 'mr-2'}`} />
-          <span className="min-w-0 break-words">{formatVenueLocation(venue)}</span>
+        <p className={`text-gray-400 text-xs md:text-sm flex items-start font-medium min-w-0 ${isCompact ? 'mb-5' : 'mb-6'}`}>
+          <MapPin size={isCompact ? 12 : 14} className={`text-gray-600 shrink-0 mt-0.5 ${isCompact ? 'mr-1' : 'mr-2'}`} />
+          <span className="min-w-0 truncate">{formatVenueLocation(venue)}</span>
         </p>
 
         {/* Amenities (Only visible if showAmenities is true) */}
         {showAmenities && venue.amenities && venue.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex flex-wrap gap-2 mb-6">
             {venue.amenities.slice(0, 3).map((amenity, i) => (
-              <span key={i} className="text-[10px] bg-black/40 text-gray-400 px-3 py-1.5 rounded-lg border border-white/5 font-bold uppercase tracking-wider">
+              <span key={i} className="text-[9px] bg-black/40 text-gray-400 px-3 py-1 rounded-lg border border-white/5 font-bold uppercase tracking-wider whitespace-nowrap">
                 {amenity}
               </span>
             ))}
             {venue.amenities.length > 3 && (
-              <span className="text-[10px] bg-black/40 text-gray-400 px-3 py-1.5 rounded-lg border border-white/5 font-bold uppercase">
+              <span className="text-[9px] bg-black/40 text-gray-400 px-2 py-1 rounded-lg border border-white/5 font-bold uppercase">
                 +{venue.amenities.length - 3}
               </span>
             )}
@@ -83,4 +82,4 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
   );
 };
 
-export default VenueCard;
+export default React.memo(VenueCard);

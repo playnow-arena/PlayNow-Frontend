@@ -30,12 +30,15 @@
     scroll-behavior: smooth;
     max-width: 100vw;
     overflow-x: hidden;
+    /* Ensure minimum touch target size */
+    font-size: 16px; 
   }
 
   body {
     @apply bg-[var(--color-dark-bg)] text-white font-sans antialiased overflow-x-hidden;
-    font-size: clamp(14px, 2vw, 16px); /* Fluid typography */
+    font-size: clamp(14px, 4vw, 16px); /* Adjusted fluid typography */
     max-width: 100vw;
+    min-height: 100vh;
   }
 
   /* Responsive Headings */
@@ -101,21 +104,36 @@
   background: rgba(57, 255, 20, 0.6);
 }
 
-@keyframes quotes-marquee-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.quotes-marquee {
-  animation: quotes-marquee-scroll 70s linear infinite;
-}
-
-.quotes-marquee:hover {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .quotes-marquee {
-    animation-play-state: paused;
+/* Mobile Animation Utilities (< 200ms) */
+@layer utilities {
+  .animate-fast-fade {
+    animation: fade-in 150ms ease-out forwards;
   }
+  .animate-fast-slide-up {
+    animation: slide-up 150ms ease-out forwards;
+  }
+  .animate-fast-scale {
+    animation: scale-up 100ms ease-out forwards;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Global accessible focus state */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Improved contrast for text */
+.text-gray-500 {
+  color: #a0aec0; /* Increased contrast slightly */
 }

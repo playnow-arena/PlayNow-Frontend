@@ -366,98 +366,59 @@ const Booking = () => {
         <span className="text-xs font-black uppercase tracking-widest">Back to Slots</span>
       </button>
 
-      <h1 className="text-2xl md:text-4xl font-black uppercase tracking-wider sm:tracking-widest mb-8">Checkout</h1>
+      <h1 className="text-2xl font-black uppercase tracking-wider sm:tracking-widest mb-6">Checkout</h1>
 
-      <div className="bg-[#151b2b] rounded-[2rem] border border-white/5 p-6 md:p-10 mb-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
-           <CheckCircle2 size={120} />
-        </div>
-        <h2 className="text-lg font-black uppercase tracking-widest mb-6 flex items-center">
-           <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Booking Summary
+      <div className="bg-[#151b2b] rounded-[1.5rem] border border-white/5 p-5 mb-5 shadow-lg">
+        <h2 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center">
+           <span className="w-1.5 h-1.5 bg-[#39FF14] rounded-full mr-2" /> Booking Summary
         </h2>
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-            <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Arena</span>
-            <span className="font-black text-white uppercase break-words sm:text-right">{venue.name}</span>
+        <div className="space-y-3 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 font-bold uppercase">Arena</span>
+            <span className="font-bold text-white uppercase">{venue.name}</span>
           </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
-            <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Selected Slots</span>
-            <span className="font-black text-[#39FF14] sm:text-right text-sm max-w-full sm:max-w-none break-words">
+          <div className="flex justify-between items-start gap-4 border-t border-white/5 pt-3">
+            <span className="text-gray-500 font-bold uppercase">Slots</span>
+            <div className="font-bold text-[#39FF14] text-right">
               {selectedSlots.map(formatSlotRange).join(', ')}
-              {selectedSport && <span className="block text-xs text-gray-500 mt-1">Sport: {selectedSport}</span>}
-              <span className="block text-xs text-gray-500 mt-1">
-                {selectedSlots.map((slot) => `${slot.courtName || 'Court'}${slot.courtNumber ? ` #${slot.courtNumber}` : ''}`).join(', ')}
-              </span>
-            </span>
+              <span className="block text-[10px] text-gray-500 mt-1 uppercase">{selectedSlots.map((slot) => `${slot.courtName || 'Court'}`).join(', ')}</span>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-            <span className="text-gray-500 text-xs font-black uppercase tracking-widest">Price per slot</span>
-            <span className="font-black text-white">₹{selectedSlots[0]?.price || venue.pricePerHour}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 font-black text-xl sm:text-2xl mt-8 border-t border-white/5 pt-6">
-            <span className="uppercase tracking-tighter">Total Amount</span>
-            <span className="text-[#39FF14] tracking-tighter">₹{totalAmount}</span>
+          <div className="flex justify-between items-center border-t border-white/5 pt-3 font-black text-lg">
+            <span>Total</span>
+            <span className="text-[#39FF14]">₹{totalAmount}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-[#151b2b] rounded-[2rem] border border-white/5 p-6 md:p-10 mb-8 shadow-2xl">
-        <h2 className="text-lg font-black uppercase tracking-widest mb-8 flex items-center">
-           <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Payment Options
+      <div className="bg-[#151b2b] rounded-[1.5rem] border border-white/5 p-5 mb-8 shadow-lg">
+        <h2 className="text-sm font-black uppercase tracking-widest mb-6 flex items-center">
+           <span className="w-1.5 h-1.5 bg-[#39FF14] rounded-full mr-2" /> Select Payment
         </h2>
         
-        <div className="space-y-4">
-          <label className={`flex items-center p-4 sm:p-5 rounded-[1.5rem] border transition-all cursor-pointer group min-w-0 ${paymentType === 'full' ? 'border-[#39FF14] bg-[#39FF14]/5 shadow-[0_0_20px_rgba(57,255,20,0.1)]' : 'border-white/5 bg-black/40 hover:border-white/10'}`}>
-            <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-all ${paymentType === 'full' ? 'border-[#39FF14]' : 'border-gray-700'}`}>
-               {paymentType === 'full' && <div className="w-3 h-3 bg-[#39FF14] rounded-full" />}
-            </div>
+        <div className="space-y-3">
+          <label className={`flex items-center p-4 rounded-2xl border transition-all cursor-pointer ${paymentType === 'full' ? 'border-[#39FF14] bg-[#39FF14]/5' : 'border-white/5 bg-black/30'}`}>
             <input type="radio" name="paymentType" value="full" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} className="hidden" />
-            <div className="flex-1 min-w-0">
-              <div className="font-black text-sm uppercase tracking-wider sm:tracking-widest text-white">Pay in Full</div>
-              <div className="text-[10px] text-gray-500 font-bold uppercase mt-1">Settle complete balance now</div>
+            <div className="flex-1">
+              <div className="font-black text-xs uppercase tracking-wider text-white">Pay in Full</div>
             </div>
-            <div className="font-black text-xl text-[#39FF14] tracking-tighter">₹{totalAmount}</div>
+            <div className="font-black text-sm text-[#39FF14]">₹{totalAmount}</div>
           </label>
 
-          <label className={`flex items-center p-4 sm:p-5 rounded-[1.5rem] border transition-all cursor-pointer group min-w-0 ${paymentType === 'advance' ? 'border-[#39FF14] bg-[#39FF14]/5 shadow-[0_0_20px_rgba(57,255,20,0.1)]' : 'border-white/5 bg-black/40 hover:border-white/10'}`}>
-            <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-all ${paymentType === 'advance' ? 'border-[#39FF14]' : 'border-gray-700'}`}>
-               {paymentType === 'advance' && <div className="w-3 h-3 bg-[#39FF14] rounded-full" />}
-            </div>
+          <label className={`flex items-center p-4 rounded-2xl border transition-all cursor-pointer ${paymentType === 'advance' ? 'border-[#39FF14] bg-[#39FF14]/5' : 'border-white/5 bg-black/30'}`}>
             <input type="radio" name="paymentType" value="advance" checked={paymentType === 'advance'} onChange={() => setPaymentType('advance')} className="hidden" />
-            <div className="flex-1 min-w-0">
-              <div className="font-black text-sm uppercase tracking-wider sm:tracking-widest text-white">Pay Advance</div>
-              <div className="text-[10px] text-gray-500 font-bold uppercase mt-1">₹100/slot to lock booking</div>
+            <div className="flex-1">
+              <div className="font-black text-xs uppercase tracking-wider text-white">Pay Advance</div>
+              <div className="text-[9px] text-gray-500 font-bold mt-0.5">₹100/slot to lock</div>
             </div>
-            <div className="font-black text-xl text-[#39FF14] tracking-tighter">₹{advanceAmount}</div>
+            <div className="font-black text-sm text-[#39FF14]">₹{advanceAmount}</div>
           </label>
         </div>
-      </div>
-
-      {/* Payment Methods */}
-      <div className="bg-[#151b2b] rounded-[2rem] border border-white/5 p-6 md:p-10 mb-8 shadow-2xl">
-        <h2 className="text-lg font-black uppercase tracking-widest mb-8 flex items-center">
-           <span className="w-2 h-2 bg-[#39FF14] rounded-full mr-3" /> Select Method
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          <button className="flex flex-col items-center justify-center p-6 rounded-[1.5rem] border border-[#39FF14]/30 bg-[#39FF14]/5 text-white transition-all group hover:border-[#39FF14]">
-            <Wallet size={28} className="mb-3 text-[#39FF14] group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em]">UPI / QR</span>
-          </button>
-          <button className="flex flex-col items-center justify-center p-6 rounded-[1.5rem] border border-white/5 bg-black/40 text-gray-500 hover:text-white hover:border-white/20 transition-all group">
-            <CreditCard size={28} className="mb-3 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em]">Card</span>
-          </button>
-        </div>
-        
-        {/* Desktop Button */}
-        <button onClick={handlePayment} className="hidden md:flex w-full bg-[#39FF14] text-black font-black py-5 rounded-2xl text-sm uppercase tracking-[0.3em] hover:bg-[#32E612] transition shadow-xl items-center justify-center group btn-touch">
-          <ShieldCheck size={20} className="mr-3 group-hover:rotate-12 transition-transform" /> Pay ₹{amountToPay} Securely
-        </button>
       </div>
 
       {/* Mobile Sticky Pay Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-[#0a0f1c]/90 backdrop-blur-lg border-t border-white/10 px-4 py-5 z-40 pb-safe">
-         <button onClick={handlePayment} className="w-full bg-[#39FF14] text-black font-black py-4 rounded-2xl text-xs uppercase tracking-wider shadow-xl flex items-center justify-center btn-touch">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 w-full bg-[#0a0f1c]/95 backdrop-blur-md border-t border-white/10 px-4 py-4 z-40 pb-safe">
+         <button onClick={handlePayment} className="w-full bg-[#39FF14] text-black font-black py-4 rounded-xl text-xs uppercase tracking-wider shadow-xl flex items-center justify-center btn-touch active:scale-[0.98]">
             <ShieldCheck size={18} className="mr-2" /> Pay ₹{amountToPay} Securely
          </button>
       </div>

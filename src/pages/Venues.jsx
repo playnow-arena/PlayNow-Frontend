@@ -99,7 +99,7 @@ const Venues = () => {
   };
 
   return (
-    <div className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-7xl mx-auto min-h-screen w-full overflow-x-hidden">
+    <div className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-7xl mx-auto w-full min-h-screen">
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-12">
         <motion.div
@@ -122,7 +122,7 @@ const Venues = () => {
             placeholder="Search venue name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#151b2b] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/5 transition-all"
+            className="w-full bg-[#151b2b] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/5 transition-all"
           />
         </motion.div>
       </div>
@@ -133,12 +133,12 @@ const Venues = () => {
           value={areaFilter}
           onChange={(event) => setAreaFilter(event.target.value)}
           placeholder="Area or location"
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#39FF14]/60 transition"
+          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#39FF14]/60 transition"
         />
         <select
           value={priceFilter}
           onChange={(event) => setPriceFilter(event.target.value)}
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
+          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
           aria-label="Filter venues by price"
         >
           {PRICE_OPTIONS.map(option => (
@@ -148,7 +148,7 @@ const Venues = () => {
         <select
           value={ratingFilter}
           onChange={(event) => setRatingFilter(event.target.value)}
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
+          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
           aria-label="Filter venues by rating"
         >
           <option value="">Any rating</option>
@@ -160,7 +160,7 @@ const Venues = () => {
           type="button"
           onClick={clearFilters}
           disabled={!hasActiveFilters}
-          className="flex items-center justify-center gap-2 bg-[#151b2b] border border-white/5 rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider text-gray-300 hover:border-[#39FF14]/40 hover:text-[#39FF14] transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 bg-[#151b2b] border border-white/5 rounded-xl px-5 py-4 text-xs font-black uppercase tracking-wider text-gray-300 hover:border-[#39FF14]/40 hover:text-[#39FF14] transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <RotateCcw size={15} />
           Clear
