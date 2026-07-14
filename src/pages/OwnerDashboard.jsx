@@ -53,7 +53,7 @@ const formatSlotRange = (slot) => (
 );
 
 const formatVenueLocation = (venue) => (
-  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' • ') || venue?.location || 'Location unavailable'
+  [venue?.area, venue?.city, venue?.landmark].filter(Boolean).join(' â€¢ ') || venue?.location || 'Location unavailable'
 );
 
 const emptyCourtGroup = {
