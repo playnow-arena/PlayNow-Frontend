@@ -441,12 +441,12 @@ const VenueDetail = () => {
             onClick={() => selectDate(dateKey)}
             className={`min-w-[118px] rounded-2xl border px-4 py-3 text-left transition ${
               isActive
-                ? 'bg-[#39FF14] text-black border-[#39FF14]'
-                : 'bg-black/40 text-gray-400 border-white/5 hover:border-[#39FF14]/50'
+                ? 'bg-transparent border-2 border-primary text-primary'
+                : 'bg-black/40 text-gray-400 border-white/5 hover:border-primary/50'
             }`}
           >
             <span className="block text-xs font-black uppercase tracking-widest">{formatDateLabel(dateKey)}</span>
-            <span className={`block text-[10px] font-bold uppercase mt-1 ${isActive ? 'text-black/60' : 'text-gray-600'}`}>
+            <span className={`block text-[10px] font-bold uppercase mt-1 ${isActive ? 'text-primary' : 'text-gray-600'}`}>
               {availableCount} available
             </span>
           </button>

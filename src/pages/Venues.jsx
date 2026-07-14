@@ -116,13 +116,13 @@ const Venues = () => {
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
           className="relative group w-full md:w-80"
         >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-[#39FF14] transition-colors" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-sub group-focus-within:text-primary transition-colors" size={18} />
           <input 
             type="text" 
             placeholder="Search venue name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#151b2b] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#39FF14] focus:ring-4 focus:ring-[#39FF14]/5 transition-all"
+            className="input-base py-4 pl-12 pr-4 text-sm"
           />
         </motion.div>
       </div>
@@ -133,12 +133,12 @@ const Venues = () => {
           value={areaFilter}
           onChange={(event) => setAreaFilter(event.target.value)}
           placeholder="Area or location"
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#39FF14]/60 transition"
+          className="input-base"
         />
         <select
           value={priceFilter}
           onChange={(event) => setPriceFilter(event.target.value)}
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
+          className="input-base appearance-none cursor-pointer text-gray-300"
           aria-label="Filter venues by price"
         >
           {PRICE_OPTIONS.map(option => (
@@ -148,7 +148,7 @@ const Venues = () => {
         <select
           value={ratingFilter}
           onChange={(event) => setRatingFilter(event.target.value)}
-          className="w-full bg-[#151b2b] border border-white/5 rounded-xl px-4 py-4 text-sm text-gray-300 focus:outline-none focus:border-[#39FF14]/60 transition appearance-none cursor-pointer"
+          className="input-base appearance-none cursor-pointer text-gray-300"
           aria-label="Filter venues by rating"
         >
           <option value="">Any rating</option>
@@ -160,10 +160,9 @@ const Venues = () => {
           type="button"
           onClick={clearFilters}
           disabled={!hasActiveFilters}
-          className="flex items-center justify-center gap-2 bg-[#151b2b] border border-white/5 rounded-xl px-5 py-4 text-xs font-black uppercase tracking-wider text-gray-300 hover:border-[#39FF14]/40 hover:text-[#39FF14] transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn-secondary py-4 text-xs font-black uppercase tracking-wider text-text-sub disabled:opacity-40"
         >
           <RotateCcw size={15} />
-          Clear
         </button>
       </div>
 

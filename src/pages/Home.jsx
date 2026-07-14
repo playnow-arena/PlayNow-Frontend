@@ -64,7 +64,7 @@ const Home = () => {
               className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter mb-6 leading-[1.05] drop-shadow-2xl"
             >
               Book Courts. <br className="hidden sm:block" />
-              <span className="text-[#39FF14]">Host Matches.</span><br />
+              <span className="text-primary">Host Matches.</span><br />
               PlayNow.
             </motion.h1>
             <motion.p 
@@ -78,7 +78,7 @@ const Home = () => {
               variants={{ hidden: { opacity: 0, scale: 0.95 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: "easeOut" } } }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4 sm:px-0"
             >
-              <Link to="/venues" className="w-full sm:w-auto bg-[#39FF14] text-black font-black text-lg md:text-xl rounded-full py-4 px-10 hover:bg-[#32E612] transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(57,255,20,0.5)] btn-touch flex items-center justify-center">
+              <Link to="/venues" className="w-full sm:w-auto btn-primary text-lg md:text-xl flex items-center justify-center">
                 Find a Court
               </Link>
               <Link to="/host-match" className="w-full sm:w-auto bg-white/10 text-white font-bold text-lg md:text-xl rounded-full py-4 px-10 hover:bg-white/20 border border-white/20 backdrop-blur-md transition-all transform hover:scale-105 btn-touch flex items-center justify-center">
@@ -121,7 +121,7 @@ const Home = () => {
         <section>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
             <h2 className="text-2xl md:text-3xl font-black uppercase">Featured Venues</h2>
-            <Link to="/venues" className="text-[#39FF14] text-sm font-black flex items-center hover:underline uppercase tracking-tighter">
+            <Link to="/venues" className="text-primary text-sm font-black flex items-center hover:underline uppercase tracking-tighter">
               View All <ArrowRight size={14} className="ml-1" />
             </Link>
           </div>
@@ -153,7 +153,7 @@ const Home = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-gradient-to-r from-[#151b2b] to-[#1a233a] p-4 sm:p-6 rounded-2xl border border-gray-800 flex flex-col md:flex-row gap-5 md:gap-6 items-center min-w-0"
+                className="card p-4 sm:p-6 border border-border flex flex-col md:flex-row gap-5 md:gap-6 items-center min-w-0"
               >
                 <div className="w-full md:w-1/3 flex flex-col items-center justify-center p-4 bg-[#0a0f1c] rounded-xl border border-gray-800">
                   <div className="w-16 h-16 bg-gray-800 rounded-full mb-2 flex items-center justify-center">
@@ -187,7 +187,7 @@ const Home = () => {
                       </div>
                       <span className="text-xs text-[#39FF14] font-medium">{match.playersNeeded} more needed</span>
                     </div>
-                    <button className="w-full sm:w-auto bg-white text-black px-6 py-2 rounded-xl font-bold hover:bg-gray-200 transition">
+                    <button className="w-full sm:w-auto btn-secondary text-sm px-6 py-2">
                       Join Now
                     </button>
                   </div>
@@ -198,32 +198,32 @@ const Home = () => {
         </section>
 
         {/* How It Works */}
-        <section className="bg-gradient-energetic rounded-3xl p-8 md:p-12 border border-[#39FF14]/20 relative overflow-hidden">
+        <section className="card p-8 md:p-12 border border-primary/20 relative overflow-hidden">
           <div className="absolute right-0 bottom-0 opacity-5 w-64 h-64">
              <Trophy size={256} />
           </div>
           <h2 className="text-3xl font-bold mb-10 text-center relative z-10">How PlayNow Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-[#39FF14]/20 rounded-2xl flex items-center justify-center mb-6">
-                <Search size={32} className="text-[#39FF14]" />
+              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Search size={32} className="text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-3">Find & Book</h3>
-              <p className="text-gray-400">Discover premium venues around you and book your slot instantly.</p>
+              <p className="text-text-sub">Discover premium venues around you and book your slot instantly.</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-[#39FF14]/20 rounded-2xl flex items-center justify-center mb-6">
-                <Users size={32} className="text-[#39FF14]" />
+              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <Users size={32} className="text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-3">Host & Join</h3>
-              <p className="text-gray-400">Short on players? Host a match and let strangers join and split the cost.</p>
+              <p className="text-text-sub">Short on players? Host a match and let strangers join and split the cost.</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-[#39FF14]/20 rounded-2xl flex items-center justify-center mb-6">
-                <ShieldCheck size={32} className="text-[#39FF14]" />
+              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                <ShieldCheck size={32} className="text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-3">Verified Players</h3>
-              <p className="text-gray-400">No fake bookings. 100% verified players with PlayNow IDs ensuring safe games.</p>
+              <p className="text-text-sub">No fake bookings. 100% verified players with PlayNow IDs ensuring safe games.</p>
             </div>
           </div>
         </section>

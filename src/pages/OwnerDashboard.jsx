@@ -154,6 +154,17 @@ const emptyVenueSettings = {
   courtGroups: [{ ...emptyCourtGroup }],
 };
 
+const KpiCard = ({ title, value, icon, description }) => (
+  <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition duration-300">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="p-2 bg-[#0a0f1c] rounded-lg text-[#39FF14]">{icon}</div>
+      <h3 className="text-sm font-bold text-gray-400">{title}</h3>
+    </div>
+    <p className="text-3xl font-black text-white">{value}</p>
+    {description && <p className="text-xs text-gray-500 mt-2">{description}</p>}
+  </div>
+);
+
 const OwnerDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('venues');
@@ -898,20 +909,14 @@ const OwnerDashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
-        {[
-          ['Total Bookings', revenueSummary.totalBookings],
-          ['Today', revenueSummary.todayBookings],
-          ['Upcoming', revenueSummary.upcomingBookings],
-          ['Cancelled', revenueSummary.cancelledBookings],
-          ['Total Revenue', formatCurrency(revenueSummary.totalRevenue)],
-          ['Today Revenue', formatCurrency(revenueSummary.todayRevenue)],
-        ].map(([label, value]) => (
-          <div key={label} className="bg-[#151b2b] border border-gray-800 rounded-2xl p-4">
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black">{label}</p>
-            <p className="text-xl font-black text-white mt-2">{loading ? '...' : value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <KpiCard title="Today's Revenue" value={loading ? '...' : formatCurrency(revenueSummary.todayRevenue)} icon={<RefreshCw size={20} />} />
+        <KpiCard title="Today's Bookings" value={loading ? '...' : revenueSummary.todayBookings} icon={<RefreshCw size={20} />} />
+        <KpiCard title="Upcoming Bookings" value={loading ? '...' : revenueSummary.upcomingBookings} icon={<MapPin size={20} />} />
+        <KpiCard title="Active Venues" value={loading ? '...' : venues.length} icon={<MapPin size={20} />} />
+        <KpiCard title="Total Revenue" value={loading ? '...' : formatCurrency(revenueSummary.totalRevenue)} icon={<RefreshCw size={20} />} />
+        <KpiCard title="Total Bookings" value={loading ? '...' : revenueSummary.totalBookings} icon={<MapPin size={20} />} />
+        <KpiCard title="Pending Balance" value={loading ? '...' : pendingBalanceBookings.length} icon={<RefreshCw size={20} />} />
       </div>
 
       <div className="flex gap-3 mb-8 overflow-x-auto pb-2 hide-scrollbar">
