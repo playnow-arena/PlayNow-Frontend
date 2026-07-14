@@ -13,32 +13,46 @@ const FCMNotificationManager = () => {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    if (!user || getPermissionState() !== 'granted') return undefined;
+    if (!user) return undefined;
 
     let unsubscribe = () => {};
     let isMounted = true;
 
-    refreshFcmToken().catch((error) => {
-      console.error('[FCM] Unable to refresh token:', error);
-    });
-
-    subscribeToForegroundMessages((payload) => {
-      // Dispatch custom event for other components
-      window.dispatchEvent(new CustomEvent('playnow:fcm-message', { detail: payload }));
+    const initNotifications = async () => {
+      const permission = getPermissionState();
       
-      // Show local toast
-      const title = payload.notification?.title || payload.data?.title || 'Notification';
-      const body = payload.notification?.body || payload.data?.body || '';
-      
-      setToast({ title, body, id: Date.now() });
-      setTimeout(() => setToast(null), 6000);
-    }).then((cleanup) => {
-      if (isMounted) {
-        unsubscribe = cleanup;
-      } else {
-        cleanup();
+      if (permission === 'granted') {
+        refreshFcmToken().catch((error) => {
+          console.error('[FCM] Unable to refresh token:', error);
+        });
+      } else if (permission === 'default') {
+        await requestNotificationPermissionAndToken().catch((error) => {
+          console.error('[FCM] Unable to request permission and register token:', error);
+        });
       }
-    });
+
+      if (getPermissionState() === 'granted') {
+        subscribeToForegroundMessages((payload) => {
+          // Dispatch custom event for other components
+          window.dispatchEvent(new CustomEvent('playnow:fcm-message', { detail: payload }));
+          
+          // Show local toast
+          const title = payload.notification?.title || payload.data?.title || 'Notification';
+          const body = payload.notification?.body || payload.data?.body || '';
+          
+          setToast({ title, body, id: Date.now() });
+          setTimeout(() => setToast(null), 6000);
+        }).then((cleanup) => {
+          if (isMounted) {
+            unsubscribe = cleanup;
+          } else {
+            cleanup();
+          }
+        });
+      }
+    };
+
+    initNotifications();
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && getPermissionState() === 'granted') {
