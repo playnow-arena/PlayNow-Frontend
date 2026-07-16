@@ -20,6 +20,7 @@ const EditProfile = () => {
     playNowId: '',
     phone: '',
     email: '',
+    profilePhoto: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +56,7 @@ const EditProfile = () => {
           playNowId: data.playNowId || '',
           phone: data.phone || '',
           email: data.email || '',
+          profilePhoto: data.profilePhoto || '',
         });
       } catch (err) {
         console.error('Profile load error:', err);
@@ -103,6 +105,7 @@ const EditProfile = () => {
           preferredSports: form.preferredSports,
           city: form.city,
           area: form.area,
+          profilePhoto: form.profilePhoto,
         }),
       });
       const data = await res.json();
@@ -145,6 +148,11 @@ const EditProfile = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && <div className="bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl px-4 py-3 text-sm font-bold">{error}</div>}
             {success && <div className="bg-[#39FF14]/10 border border-[#39FF14]/40 text-[#39FF14] rounded-2xl px-4 py-3 text-sm font-bold">{success}</div>}
+
+            <label className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-widest text-gray-500">Profile Photo URL</span>
+                <input value={form.profilePhoto} onChange={(e) => handleChange('profilePhoto', e.target.value)} className={inputClass} />
+            </label>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <label className="space-y-2">

@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { LocationProvider } from './context/LocationContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -41,50 +42,52 @@ function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <Router>
-        <ScrollToTop />
-        <div className="min-h-screen w-full overflow-x-hidden pb-24 md:pb-0 bg-[#0a0f1c] text-white flex flex-col justify-between">
-          <Navbar />
-          <BookingRealtimeAlerts />
-          <PWAInstallPrompt />
-          <FCMNotificationManager />
-          <div className="flex-grow flex flex-col">
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Auth />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
-                <Route path="/venues" element={<Venues />} />
-                <Route path="/venues/:id" element={<VenueDetail />} />
-                <Route path="/book/:id" element={<Booking />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
-                <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
-                <Route path="/partner/login" element={<AdminOwnerAuth />} />
-                <Route path="/admin-login" element={<AdminOwnerAuth />} />
-                <Route path="/partner/register" element={<ProtectedRoute requiredRole="player"><PartnerRegister /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
-                <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
-                <Route path="/host-match" element={<ProtectedRoute><HostMatch /></ProtectedRoute>} />
-                <Route path="/open-matches" element={<Feed />} />
-                <Route path="/feed" element={<Navigate to="/open-matches" replace />} />
-                <Route path="/cancellation" element={<Cancellation />} />
-                <Route path="/properties" element={<Properties />} />
-                <Route path="/about" element={<AboutUs />} />
-                <Route path="/contact" element={<ContactUs />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsAndConditions />} />
-                <Route path="/match/:id" element={<MatchDetails />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </div>
-          <Footer />
-          <BottomNav />
-        </div>
-        </Router>
+        <LocationProvider>
+          <Router>
+            <ScrollToTop />
+            <div className="min-h-screen w-full overflow-x-hidden pb-24 md:pb-0 bg-[#0a0f1c] text-white flex flex-col justify-between">
+              <Navbar />
+              <BookingRealtimeAlerts />
+              <PWAInstallPrompt />
+              <FCMNotificationManager />
+              <div className="flex-grow flex flex-col">
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Auth />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                    <Route path="/venues" element={<Venues />} />
+                    <Route path="/venues/:id" element={<VenueDetail />} />
+                    <Route path="/book/:id" element={<Booking />} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
+                    <Route path="/owner" element={<ProtectedRoute requiredRole={['owner', 'admin']}><OwnerDashboard /></ProtectedRoute>} />
+                    <Route path="/partner/login" element={<AdminOwnerAuth />} />
+                    <Route path="/admin-login" element={<AdminOwnerAuth />} />
+                    <Route path="/partner/register" element={<ProtectedRoute requiredRole="player"><PartnerRegister /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Navigate to="/super-admin-portal-2026" replace /></ProtectedRoute>} />
+                    <Route path="/super-admin-portal-2026" element={<ProtectedRoute requiredRole="admin"><AdminPortal /></ProtectedRoute>} />
+                    <Route path="/host-match" element={<ProtectedRoute><HostMatch /></ProtectedRoute>} />
+                    <Route path="/open-matches" element={<Feed />} />
+                    <Route path="/feed" element={<Navigate to="/open-matches" replace />} />
+                    <Route path="/cancellation" element={<Cancellation />} />
+                    <Route path="/properties" element={<Properties />} />
+                    <Route path="/about" element={<AboutUs />} />
+                    <Route path="/contact" element={<ContactUs />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsAndConditions />} />
+                    <Route path="/match/:id" element={<MatchDetails />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </div>
+              <Footer />
+              <BottomNav />
+            </div>
+          </Router>
+        </LocationProvider>
       </SocketProvider>
     </AuthProvider>
   );

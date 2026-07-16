@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users } from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sportsList, mockHostedMatches } from '../data/mockData';
+import { sportsList } from '../data/mockData';
+import { useLocation } from '../context/LocationContext';
 import NeverRunShortOfPlayers from '../components/NeverRunShortOfPlayers';
 import QuotesSlider from '../components/QuotesSlider';
 import VenueCard from '../components/VenueCard';
@@ -11,7 +12,9 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-k
 
 const Home = () => {
   const [venues, setVenues] = useState([]);
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { location, requestLocation, loading: locationLoading } = useLocation();
 
   const phrases = ["book courts.", "host matches.", "find players.", "playsports."];
   const [currentPhrase, setCurrentPhrase] = useState(0);
@@ -24,19 +27,30 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    const fetchVenues = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/venues`);
-        const data = await res.json();
-        setVenues(Array.isArray(data) ? data.slice(0, 3) : []); // Get top 3 for home
+        let venuesUrl = `${API_BASE_URL}/api/venues`;
+        if (location) {
+          venuesUrl = `${API_BASE_URL}/api/venues/nearby?lat=${location.lat}&lng=${location.lng}&maxDistanceKm=20`;
+        }
+        
+        const [venuesRes, matchesRes] = await Promise.all([
+          fetch(venuesUrl),
+          fetch(`${API_BASE_URL}/api/matches`)
+        ]);
+        const venuesData = await venuesRes.json();
+        const matchesData = await matchesRes.json();
+        setVenues(Array.isArray(venuesData) ? venuesData.slice(0, 6) : []);
+        setMatches(Array.isArray(matchesData) ? matchesData.slice(0, 4) : []);
       } catch (error) {
-        console.error('Error fetching venues:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchVenues();
-  }, []);
+    fetchData();
+  }, [location]);
 
   return (
     <div className="pb-24 md:pb-10">
@@ -50,6 +64,16 @@ const Home = () => {
         />
         
         <div className="max-w-7xl mx-auto relative z-10 w-full">
+          <div className="text-right px-4 mb-4">
+            <button 
+              onClick={requestLocation}
+              disabled={locationLoading}
+              className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-all"
+            >
+              <Navigation size={14} />
+              {location ? 'Location Set' : 'Use Current Location'}
+            </button>
+          </div>
           <motion.div 
             initial="hidden"
             animate="visible"
@@ -147,9 +171,9 @@ const Home = () => {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockHostedMatches.map((match, index) => (
+            {matches.map((match, index) => (
               <motion.div 
-                key={match.id}
+                key={match._id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -174,18 +198,18 @@ const Home = () => {
                       <MapPin size={14} className="mr-2 mt-0.5 text-gray-500 shrink-0" /> <span className="break-words">{match.venue}</span>
                     </p>
                     <p className="text-gray-400 text-sm flex items-start">
-                      <Clock size={14} className="mr-2 mt-0.5 text-gray-500 shrink-0" /> <span className="break-words">{match.date}, {match.time}</span>
+                      <Clock size={14} className="mr-2 mt-0.5 text-gray-500 shrink-0" /> <span className="break-words">{new Date(match.date).toLocaleDateString()}, {match.time}</span>
                     </p>
                   </div>
                   
                   <div className="mt-4 pt-4 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                       <div className="flex -space-x-2 mb-1">
-                        {[...Array(match.joinedPlayers)].map((_, i) => (
+                        {[...Array(match.joinedPlayers || 0)].map((_, i) => (
                           <div key={i} className="w-6 h-6 rounded-full bg-gray-600 border border-[#151b2b]"></div>
                         ))}
                       </div>
-                      <span className="text-xs text-[#39FF14] font-medium">{match.playersNeeded} more needed</span>
+                      <span className="text-xs text-[#39FF14] font-medium">{(match.playersNeeded || 0)} more needed</span>
                     </div>
                     <button className="w-full sm:w-auto btn-secondary text-sm px-6 py-2">
                       Join Now

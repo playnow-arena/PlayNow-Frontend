@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, RefreshCw } from 'lucide-react';
+import { MapPin, RefreshCw, BarChart3, CalendarDays, Wallet, TrendingUp } from 'lucide-react';
 import { formatSportTypes } from '../utils/sports';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -919,24 +923,29 @@ const OwnerDashboard = () => {
         <KpiCard title="Pending Balance" value={loading ? '...' : pendingBalanceBookings.length} icon={<RefreshCw size={20} />} />
       </div>
 
-      <div className="flex gap-3 mb-8 overflow-x-auto pb-2 hide-scrollbar">
-        {[
-          ['venues', 'My Venues'],
-          ['bookings', 'My Bookings'],
-          ['pending-balance', 'Pending Balance'],
-          ['slots', 'Manage Slots'],
-          ['generate-slots', 'Generate Slots'],
-          ['recurring-blocks', 'Recurring Blocks'],
-          ['settings', 'Venue Settings'],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`whitespace-nowrap px-5 py-3 rounded-xl font-bold transition ${activeTab === id ? 'bg-[#39FF14] text-black' : 'bg-[#151b2b] text-gray-400 hover:text-white'}`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-[#39FF14]" /> Revenue Overview</h3>
+          <Bar data={{
+            labels: ['Total', 'Today', 'Cancelled'],
+            datasets: [{
+              label: 'Amount (Rs)',
+              data: [revenueSummary.totalRevenue, revenueSummary.todayRevenue, 0],
+              backgroundColor: ['#39FF14', '#10B981', '#EF4444'],
+            }]
+          }} />
+        </div>
+        <div className="bg-[#151b2b] border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><CalendarDays size={20} className="text-[#39FF14]" /> Bookings Overview</h3>
+          <Bar data={{
+            labels: ['Total', 'Today', 'Upcoming', 'Cancelled'],
+            datasets: [{
+              label: 'Bookings',
+              data: [revenueSummary.totalBookings, revenueSummary.todayBookings, revenueSummary.upcomingBookings, revenueSummary.cancelledBookings],
+              backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'],
+            }]
+          }} />
+        </div>
       </div>
 
       {activeTab === 'venues' && (

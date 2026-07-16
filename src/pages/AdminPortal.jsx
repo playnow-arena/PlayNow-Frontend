@@ -1159,20 +1159,22 @@ const AdminPortal = () => {
 
       {/* Sidebar */}
       <div className={`
-        fixed md:relative z-[120] h-full w-64 bg-[#151b2b] border-r border-gray-800 p-6 flex flex-col shrink-0 transition-transform duration-300 ease-in-out
+        fixed md:relative z-[120] h-full w-64 bg-[#151b2b] p-6 flex flex-col shrink-0 transition-transform duration-300 ease-in-out border-r border-gray-800
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex items-center justify-between mb-10 px-2">
           <div className="flex items-center gap-2">
-            <Shield className="text-[#39FF14]" size={24} />
-            <span className="font-extrabold text-xl tracking-tighter">ADMIN PANEL</span>
+            <div className="w-8 h-8 rounded-lg bg-[#39FF14] flex items-center justify-center">
+              <Shield className="text-black" size={18} />
+            </div>
+            <span className="font-extrabold text-lg tracking-tighter">ADMIN</span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">
             <X size={20} />
           </button>
         </div>
         
-        <nav className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <nav className="space-y-1 flex-1">
           {navItems.map(item => (
             <button 
               key={item.id}
@@ -1180,11 +1182,11 @@ const AdminPortal = () => {
                 setActiveSection(item.id);
                 setIsSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${activeSection === item.id ? 'bg-[#39FF14] text-black' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition duration-200 ${activeSection === item.id ? 'bg-[#39FF14] text-black shadow-lg shadow-[#39FF14]/20' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
             >
               <item.icon size={18} /> {item.label}
               {item.comingSoon && (
-                <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] uppercase ${activeSection === item.id ? 'bg-black text-[#39FF14]' : 'bg-gray-800 text-gray-500'}`}>
+                <span className={`ml-auto rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${activeSection === item.id ? 'bg-black text-[#39FF14]' : 'bg-gray-800 text-gray-500'}`}>
                   Soon
                 </span>
               )}
@@ -1197,7 +1199,7 @@ const AdminPortal = () => {
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition"
           >
-            <XCircle size={18} /> Logout Admin
+            <XCircle size={18} /> Logout
           </button>
         </div>
       </div>

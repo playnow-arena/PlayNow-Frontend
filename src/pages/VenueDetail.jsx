@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '../context/SocketContext';
 import { formatSportTypes } from '../utils/sports';
 import { useAuth } from '../context/AuthContext';
+import ReviewSection from '../components/ReviewSection';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 const UPCOMING_SLOT_DAYS = 30;
@@ -612,6 +613,8 @@ const VenueDetail = () => {
                 </div>
               </section>
             )}
+
+            <ReviewSection venueId={id} user={user} onReviewAdded={() => fetchReviews()} />
 
             {/* Reviews Section */}
             <section className="bg-[#151b2b] p-6 md:p-10 rounded-[2rem] border border-white/5">

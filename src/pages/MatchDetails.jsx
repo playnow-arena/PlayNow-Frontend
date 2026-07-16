@@ -1,24 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, MapPin, Calendar, Clock, CheckCircle, Copy, ArrowRight } from 'lucide-react';
 
-// Mock data for demonstration purposes
-const mockMatch = {
-  id: 'ABC123XY',
-  sport: 'Football Turf',
-  venue: 'Central Sports Arena',
-  date: '2024-12-01',
-  time: '18:30',
-  players: ['Alice', 'Bob', 'Charlie', 'David'],
-};
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 const MatchDetails = () => {
-  const { id, sport, venue, date, time, players } = mockMatch;
+  const { id } = useParams();
+  const [match, setMatch] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMatch = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/matches/${id}`);
+        const data = await res.json();
+        setMatch(data);
+      } catch (error) {
+        console.error('Error fetching match:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMatch();
+  }, [id]);
 
   const handleJoin = () => {
-    // Placeholder UI action – in a real app this would call an API
+    // API call to join would go here
     alert('You have joined the match!');
   };
+
+  if (loading) return <div className="min-h-screen pt-24 pb-12 px-4 text-center text-white">Loading...</div>;
+  if (!match) return <div className="min-h-screen pt-24 pb-12 px-4 text-center text-white">Match not found.</div>;
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 flex flex-col items-center bg-[#0a0f1c]">
@@ -35,7 +48,7 @@ const MatchDetails = () => {
         {/* Match ID */}
         <div className="flex justify-between items-center mb-4 text-gray-400">
           <span className="font-medium">Match ID:</span>
-          <span className="text-[#39FF14] font-mono">{id}</span>
+          <span className="text-[#39FF14] font-mono">{match._id}</span>
         </div>
 
         {/* Sport & Venue */}
@@ -44,14 +57,14 @@ const MatchDetails = () => {
             <Users className="text-[#39FF14]" size={24} />
             <div>
               <p className="text-gray-500 text-sm">Sport</p>
-              <p className="text-white font-medium text-lg">{sport}</p>
+              <p className="text-white font-medium text-lg">{match.sport}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <MapPin className="text-[#39FF14]" size={24} />
             <div>
               <p className="text-gray-500 text-sm">Venue</p>
-              <p className="text-white font-medium text-lg">{venue}</p>
+              <p className="text-white font-medium text-lg">{match.venue}</p>
             </div>
           </div>
         </div>
@@ -60,25 +73,25 @@ const MatchDetails = () => {
         <div className="flex space-x-8 mb-6 text-gray-400">
           <div className="flex items-center space-x-2">
             <Calendar className="text-[#39FF14]" size={20} />
-            <span>{date}</span>
+            <span>{new Date(match.date).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Clock className="text-[#39FF14]" size={20} />
-            <span>{time}</span>
+            <span>{match.time}</span>
           </div>
         </div>
 
         {/* Players Joined */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-white mb-3">Players Joined ({players.length})</h2>
+          <h2 className="text-xl font-bold text-white mb-3">Players Joined ({match.players?.length || 0})</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {players.map((player, idx) => (
+            {match.players?.map((player, idx) => (
               <div
                 key={idx}
                 className="bg-[#0a0f1c] border border-[#39FF14]/20 rounded-xl p-4 text-center"
               >
                 <Users className="mx-auto text-[#39FF14]" size={28} />
-                <p className="mt-2 text-gray-300 text-sm">{player}</p>
+                <p className="mt-2 text-gray-300 text-sm">{player.name || player}</p>
               </div>
             ))}
           </div>

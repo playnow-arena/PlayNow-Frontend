@@ -84,6 +84,7 @@ const Dashboard = () => {
   const [cancelModal, setCancelModal] = useState(null);
 
   const [bookings, setBookings] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [bookingsError, setBookingsError] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -91,43 +92,48 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchBookings = async () => {
+    const fetchDashboardData = async () => {
       setBookingsLoading(true);
       setBookingsError('');
 
       try {
         const token = localStorage.getItem('playnow_token');
-        const res = await fetch(`${API_BASE_URL}/api/bookings/my`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const data = await res.json();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const [bookingsRes, profileRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/bookings/my`, { headers }),
+          fetch(`${API_BASE_URL}/api/users/me`, { headers })
+        ]);
+        
+        const bookingsData = await bookingsRes.json();
+        const profileData = await profileRes.json();
 
-        if (!res.ok) {
-          setBookingsError(data.message || 'Failed to load bookings');
-          setBookings([]);
-          return;
-        }
-
-        setBookings(Array.isArray(data) ? data : []);
+        if (bookingsRes.ok) setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+        else setBookingsError(bookingsData.message || 'Failed to load bookings');
+        
+        if (profileRes.ok) setProfile(profileData);
       } catch (error) {
-        console.error('Bookings fetch error:', error);
-        setBookingsError('Unable to load bookings');
-        setBookings([]);
+        console.error('Dashboard fetch error:', error);
+        setBookingsError('Unable to load dashboard data');
       } finally {
         setBookingsLoading(false);
       }
     };
 
-    fetchBookings();
+    fetchDashboardData();
   }, [user]);
 
   if (!user) {
     return <Navigate to="/login" />;
   }
 
+  // Use local profile state if available
+  const displayUser = profile || user;
+
   const handleCancelClick = (booking) => {
     setCancelModal(booking);
   };
+
 
   const calculateRefund = (booking) => {
     // Mock logic based on cancellation rules: 
@@ -175,12 +181,12 @@ const Dashboard = () => {
     <div className="pt-20 md:pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen w-full overflow-x-hidden">
       <div className="flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
         
-        {/* Profile Sidebar */}
+          {/* Profile Sidebar */}
         <div className="w-full md:w-1/3 lg:w-1/4 min-w-0">
           <div className="bg-[#151b2b] p-6 rounded-2xl border border-gray-800 flex flex-col items-center text-center sticky top-24">
             <div className="w-24 h-24 bg-gradient-energetic rounded-full border-2 border-[#39FF14] flex items-center justify-center mb-4 text-3xl font-bold overflow-hidden">
-              {user.avatar ? (
-                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              {user.profilePhoto && user.profilePhoto !== 'default.jpg' ? (
+                <img src={user.profilePhoto} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 user.name.charAt(0)
               )}
@@ -189,11 +195,39 @@ const Dashboard = () => {
             {user.username && (
               <p className="text-[#39FF14] text-sm font-bold mb-1 break-words max-w-full">@{user.username}</p>
             )}
-            <p className="text-gray-400 mb-2 break-words max-w-full">{user.phone}</p>
+            <p className="text-gray-400 mb-2 break-words max-w-full">{user.bio}</p>
             <div className="bg-[#0a0f1c] border border-[#39FF14]/50 px-4 py-2 rounded-xl mb-6 shadow-[0_0_10px_rgba(57,255,20,0.1)]">
               <span className="text-xs text-gray-400 block mb-1">PlayNow ID</span>
               <span className="font-mono text-[#39FF14] font-bold tracking-wider break-all">{user.playNowId}</span>
             </div>
+
+            {/* Stats Section */}
+            <div className="w-full mb-6 grid grid-cols-2 gap-2">
+                <div className="bg-[#0a0f1c] border border-gray-800 p-2 rounded-lg text-center">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase">Matches</p>
+                    <p className="font-black text-sm">{displayUser.statistics?.matchesPlayed || 0}</p>
+                </div>
+                <div className="bg-[#0a0f1c] border border-gray-800 p-2 rounded-lg text-center">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase">Rating</p>
+                    <p className="font-black text-sm">{displayUser.statistics?.rating || 0}</p>
+                </div>
+            </div>
+
+            {/* Favourites Section */}
+            {displayUser.favouriteVenues?.length > 0 && (
+              <div className="w-full mb-6">
+                <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Favourite Venues</p>
+                <div className="space-y-2">
+                    {displayUser.favouriteVenues.map((v) => (
+                        <Link key={v._id} to={`/venues/${v._id}`} className="block text-xs text-left bg-[#0a0f1c] p-2 rounded-lg border border-gray-800 hover:border-[#39FF14]/50 transition">
+                            <span className="font-bold text-white block truncate">{v.name}</span>
+                            <span className="text-[10px] text-gray-500 truncate block">{v.address}</span>
+                        </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+
 
             <Link
               to="/edit-profile"
@@ -307,30 +341,6 @@ const Dashboard = () => {
                           <p className="text-gray-400 text-sm flex items-start min-w-0">
                             <CreditCard size={14} className="mr-2 mt-0.5 shrink-0" /> <span className="break-words">Paid {formatCurrency(booking.paidAmount)} of {formatCurrency(booking.totalAmount)}</span>
                           </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 text-xs">
-                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
-                              <p className="text-gray-500 font-bold uppercase">Slots</p>
-                              <p className="text-white font-black mt-1">{booking.slotIds?.length || 0}</p>
-                            </div>
-                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
-                              <p className="text-gray-500 font-bold uppercase">Total</p>
-                              <p className="text-white font-black mt-1">{formatCurrency(booking.totalAmount)}</p>
-                            </div>
-                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
-                              <p className="text-gray-500 font-bold uppercase">Paid Online</p>
-                              <p className="text-[#39FF14] font-black mt-1">{formatCurrency(booking.paidAmount)}</p>
-                            </div>
-                            <div className="bg-[#0a0f1c] border border-gray-800 rounded-xl p-3">
-                              <p className="text-gray-500 font-bold uppercase">Venue Balance</p>
-                              <p className="text-yellow-400 font-black mt-1">{formatCurrency(booking.remainingAmount)}</p>
-                            </div>
-                          </div>
-                          <div className="mt-4 rounded-xl border border-white/10 bg-[#0a0f1c] p-3 text-xs text-gray-400 space-y-1">
-                            <p><span className="text-white font-bold">Player:</span> {user?.name || 'Player'} {user?.phone ? `- ${user.phone}` : ''}</p>
-                            <p>Show this booking at the venue. Pay remaining balance before play.</p>
-                            <p>Need help? +91 93637 56533 | playnowsupport@gmail.com</p>
-                            <p>Cancellation allowed up to 4 hours before slot time.</p>
-                          </div>
                         </div>
                         
                         <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
@@ -340,18 +350,6 @@ const Dashboard = () => {
                           >
                             <MapPin size={14} /> Directions
                           </button>
-                          {cancelState.canCancel ? (
-                            <button 
-                              onClick={() => handleCancelClick(booking)}
-                              className="flex-1 md:flex-none flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 px-4 py-2 rounded-xl transition font-medium text-sm text-center"
-                            >
-                              <XCircle size={14} className="mr-1" /> Cancel
-                            </button>
-                          ) : (
-                            <div className="flex-1 md:flex-none flex items-center justify-center text-gray-500 border border-gray-800 bg-[#0a0f1c] px-4 py-2 rounded-xl font-medium text-xs uppercase tracking-wider sm:tracking-widest text-center">
-                              {cancelState.label}
-                            </div>
-                          )}
                         </div>
                       </motion.div>
                       );
@@ -373,60 +371,25 @@ const Dashboard = () => {
                   <CreditCard size={24} className="mr-2 text-[#39FF14]" /> Payment History
                 </h2>
                 
-                {/* Desktop Table / Mobile Cards */}
                 <div className="bg-[#151b2b] rounded-2xl border border-gray-800 overflow-hidden">
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="bg-[#0a0f1c] border-b border-gray-800">
-                        <tr>
-                          <th className="p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Transaction</th>
-                          <th className="p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Date</th>
-                          <th className="p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Venue</th>
-                          <th className="p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Amount</th>
-                          <th className="p-4 text-sm font-bold uppercase tracking-widest text-gray-500">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { id: 'TXN-99281', date: 'Today', venue: 'Smash Arena', amount: 400, status: 'Successful' },
-                          { id: 'TXN-88219', date: 'Yesterday', venue: 'Kickoff Turf', amount: 200, status: 'Successful' },
-                          { id: 'TXN-77342', date: 'Oct 12, 2026', venue: 'Greenfield Turf', amount: 800, status: 'Failed' }
-                        ].map((txn) => (
-                          <tr key={txn.id} className="border-b border-gray-800 hover:bg-[#0a0f1c]/30 transition group">
-                            <td className="p-4 font-mono text-sm group-hover:text-[#39FF14] transition-colors">{txn.id}</td>
-                            <td className="p-4 text-sm text-gray-300">{txn.date}</td>
-                            <td className="p-4 text-sm font-bold">{txn.venue}</td>
-                            <td className="p-4 text-[#39FF14] font-black">₹{txn.amount}</td>
-                            <td className={`p-4 text-sm font-black uppercase tracking-tighter ${txn.status === 'Successful' ? 'text-green-500' : 'text-red-500'}`}>{txn.status}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile Cards */}
-                  <div className="md:hidden divide-y divide-gray-800">
-                    {[
-                      { id: 'TXN-99281', date: 'Today', venue: 'Smash Arena', amount: 400, status: 'Successful' },
-                      { id: 'TXN-88219', date: 'Yesterday', venue: 'Kickoff Turf', amount: 200, status: 'Successful' },
-                      { id: 'TXN-77342', date: 'Oct 12, 2026', venue: 'Greenfield Turf', amount: 800, status: 'Failed' }
-                    ].map((txn) => (
-                      <div key={txn.id} className="p-5 space-y-3">
+                  <div className="divide-y divide-gray-800">
+                    {bookings.map((booking) => (
+                      <div key={booking._id} className="p-5 space-y-3">
                         <div className="flex justify-between items-start gap-3">
                           <div>
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Transaction ID</p>
-                            <p className="font-mono text-sm text-white break-all">{txn.id}</p>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Booking Code</p>
+                            <p className="font-mono text-sm text-white break-all">#{booking.bookingCode}</p>
                           </div>
-                          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${txn.status === 'Successful' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                            {txn.status}
+                          <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${booking.paymentStatus === 'completed' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                            {booking.paymentStatus}
                           </span>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
                           <div>
-                            <p className="text-sm font-bold text-white mb-0.5">{txn.venue}</p>
-                            <p className="text-xs text-gray-500">{txn.date}</p>
+                            <p className="text-sm font-bold text-white mb-0.5">{booking.venueId?.name}</p>
+                            <p className="text-xs text-gray-500">{formatSlotDate(booking.slotIds?.[0])}</p>
                           </div>
-                          <p className="text-xl font-black text-[#39FF14]">₹{txn.amount}</p>
+                          <p className="text-xl font-black text-[#39FF14]">₹{booking.paidAmount}</p>
                         </div>
                       </div>
                     ))}
