@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { normalizeSportName } from '../utils/sports';
+import { useLocation } from '../context/LocationContext';
+import { calculateDistance } from '../utils/location';
 
 const MotionLink = motion(Link);
 const formatVenueLocation = (venue) => (
@@ -10,6 +12,13 @@ const formatVenueLocation = (venue) => (
 );
 
 const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05, isCompact = false }) => {
+  const { location: userLocation } = useLocation();
+  
+  const distance = userLocation && venue.geo?.coordinates ? calculateDistance(
+    userLocation.lat, userLocation.lng,
+    venue.geo.coordinates[1], venue.geo.coordinates[0]
+  ) : null;
+
   return (
       <motion.div 
       initial={{ opacity: 0, y: 15 }}
@@ -52,6 +61,14 @@ const VenueCard = ({ venue, index, showAmenities = false, delayMultiplier = 0.05
           <MapPin size={14} className="text-text-sub shrink-0 mr-2 mt-0.5" />
           <span className="min-w-0 truncate">{formatVenueLocation(venue)}</span>
         </p>
+
+        {/* Distance Display */}
+        {distance !== null && (
+          <p className="text-primary text-xs font-bold mb-4 flex items-center">
+            <MapPin size={12} className="mr-1" />
+            {distance.toFixed(1)} km away
+          </p>
+        )}
 
         {/* Amenities */}
         {showAmenities && venue.amenities && venue.amenities.length > 0 && (

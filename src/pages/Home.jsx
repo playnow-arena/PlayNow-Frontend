@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users, Navigation } from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Trophy, Users, Navigation, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sportsList } from '../data/mockData';
 import { useLocation } from '../context/LocationContext';
+import VenueCard from '../components/VenueCard';
 import NeverRunShortOfPlayers from '../components/NeverRunShortOfPlayers';
 import QuotesSlider from '../components/QuotesSlider';
-import VenueCard from '../components/VenueCard';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
@@ -14,7 +13,8 @@ const Home = () => {
   const [venues, setVenues] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { location, requestLocation, loading: locationLoading } = useLocation();
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const { location, requestLocation, setLocation } = useLocation();
 
   const phrases = ["book courts.", "host matches.", "find players.", "playsports."];
   const [currentPhrase, setCurrentPhrase] = useState(0);
@@ -30,9 +30,9 @@ const Home = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        let venuesUrl = `${API_BASE_URL}/api/venues`;
+        let venuesUrl = `${API_BASE_URL}/api/venues/featured`;
         if (location) {
-          venuesUrl = `${API_BASE_URL}/api/venues/nearby?lat=${location.lat}&lng=${location.lng}&maxDistanceKm=20`;
+          venuesUrl += `?lat=${location.lat}&lng=${location.lng}`;
         }
         
         const [venuesRes, matchesRes] = await Promise.all([
@@ -41,7 +41,8 @@ const Home = () => {
         ]);
         const venuesData = await venuesRes.json();
         const matchesData = await matchesRes.json();
-        setVenues(Array.isArray(venuesData) ? venuesData.slice(0, 6) : []);
+        
+        setVenues(Array.isArray(venuesData) ? venuesData : []);
         setMatches(Array.isArray(matchesData) ? matchesData.slice(0, 4) : []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -52,9 +53,12 @@ const Home = () => {
     fetchData();
   }, [location]);
 
+  const locationDisplay = location 
+    ? (location.area ? `📍 ${location.city} • ${location.area}` : `📍 ${location.city}`)
+    : '📍 Set Location';
+
   return (
     <div className="pb-24 md:pb-10">
-      {/* Hero Section */}
       <section className="relative pt-24 pb-16 px-4 md:pt-40 md:pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[85vh]">
         <div className="absolute inset-0 z-0 bg-gradient-energetic opacity-90" />
         <motion.div 
@@ -66,14 +70,41 @@ const Home = () => {
         <div className="max-w-7xl mx-auto relative z-10 w-full">
           <div className="text-right px-4 mb-4">
             <button 
-              onClick={requestLocation}
-              disabled={locationLoading}
+              onClick={() => setShowLocationModal(true)}
               className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-all"
             >
-              <Navigation size={14} />
-              {location ? 'Location Set' : 'Use Current Location'}
+              <MapPin size={14} />
+              {locationDisplay}
             </button>
           </div>
+
+          {!location && (
+            <div className="px-4 mb-8 text-center">
+              <button onClick={requestLocation} className="btn-primary text-sm px-6 py-2">
+                Enable Location for Better Results
+              </button>
+            </div>
+          )}
+
+          {/* Location Modal */}
+          {showLocationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-[#151b2b] card p-6 w-full max-w-sm rounded-2xl border border-border">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold">Select Location</h3>
+                  <button onClick={() => setShowLocationModal(false)}><X /></button>
+                </div>
+                <button onClick={() => { requestLocation(); setShowLocationModal(false); }} className="w-full btn-secondary mb-4 flex items-center justify-center gap-2">
+                  <Navigation size={16} /> Use Current GPS
+                </button>
+                <div className="border-t border-border pt-4">
+                   <p className="text-xs text-text-sub mb-2">Search City (Coming Soon)</p>
+                   {/* Manual search implementation */}
+                </div>
+              </div>
+            </div>
+          )}
+          
           <motion.div 
             initial="hidden"
             animate="visible"

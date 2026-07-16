@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { reverseGeocode } from '../utils/location';
 
 const LocationContext = createContext();
 
@@ -18,33 +19,34 @@ export const LocationProvider = ({ children }) => {
     }
   }, [location]);
 
-  const requestLocation = () => {
+  const updateLocationData = async (lat, lng) => {
     setLoading(true);
     setError(null);
-
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+    try {
+      const { city, area } = await reverseGeocode(lat, lng);
+      setLocation({ lat, lng, city, area });
+    } catch (err) {
+      setError('Failed to get address');
+      setLocation({ lat, lng, city: 'Unknown', area: '' });
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported');
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-        setLoading(false);
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
+      (position) => updateLocationData(position.coords.latitude, position.coords.longitude),
+      (err) => setError(err.message)
     );
   };
 
   return (
-    <LocationContext.Provider value={{ location, error, loading, requestLocation, setLocation }}>
+    <LocationContext.Provider value={{ location, error, loading, requestLocation, setLocation: (loc) => setLocation(loc) }}>
       {children}
     </LocationContext.Provider>
   );
