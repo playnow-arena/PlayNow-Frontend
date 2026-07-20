@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MapPin, RefreshCw, BarChart3, CalendarDays, Wallet, TrendingUp } from 'lucide-react';
 import { formatSportTypes } from '../utils/sports';
@@ -171,6 +172,7 @@ const KpiCard = ({ title, value, icon, description }) => (
 
 const OwnerDashboard = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('venues');
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -884,6 +886,31 @@ const OwnerDashboard = () => {
       )}
     </div>
   );
+
+  // Belt-and-suspenders guard: if the user has owner role but zero venues
+  // (e.g. their last venue was deleted), show a friendly empty state.
+  if (!loading && venues.length === 0 && !pageMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0f1c] px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-full bg-[#39FF14]/10 border border-[#39FF14]/30 flex items-center justify-center mx-auto mb-6">
+            <MapPin size={36} className="text-[#39FF14]" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">You don&apos;t own any venues yet.</h2>
+          <p className="text-gray-400 mb-8 text-sm leading-relaxed">
+            Your owner account is active, but you have no venues assigned to it.
+            Apply to become a venue partner to get started.
+          </p>
+          <button
+            onClick={() => navigate('/partner/register')}
+            className="bg-[#39FF14] text-black font-bold px-6 py-3 rounded-2xl hover:bg-[#32e612] transition-colors duration-200"
+          >
+            Become a Venue Partner
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 pb-24 px-4 max-w-7xl mx-auto min-h-screen">
