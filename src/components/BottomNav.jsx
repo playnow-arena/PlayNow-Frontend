@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, MapPin, Trophy, Users, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
 const BottomNav = () => {
@@ -25,38 +26,42 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 w-full glass-mobile border-t border-white/5 pb-safe z-50">
-      <div className="flex justify-around items-center h-16 relative">
+    <div className="md:hidden fixed bottom-4 left-4 right-4 mx-auto max-w-md bg-black/40 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.1)] pb-safe z-50 px-1 py-1.5">
+      <div className="flex justify-around items-center h-12 relative w-full">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = path === item.path || (path.startsWith('/venues') && item.path === '/venues');
-          
+
           return (
-            <Link 
-              key={item.name} 
+            <Link
+              key={item.name}
               to={item.path}
               aria-label={item.name}
-              className={clsx(
-                "flex flex-col items-center justify-center w-full h-full transition-all btn-touch relative animate-fast-fade",
-                isActive ? "text-[#39FF14]" : "text-gray-500 hover:text-gray-300"
-              )}
+              className="flex flex-col items-center justify-center w-full h-full relative cursor-pointer select-none focus:outline-none rounded-2xl"
             >
               {isActive && (
-                <div className="absolute top-0 w-8 h-1 bg-[#39FF14] rounded-b-full shadow-[0_0_10px_rgba(57,255,20,0.8)]" />
+                <motion.div
+                  layoutId="activeTabBackground"
+                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                  className="absolute inset-0.5 rounded-[18px] bg-[#39FF14]/10 border border-[#39FF14]/25 shadow-[0_0_12px_rgba(57,255,20,0.1)] -z-10"
+                />
               )}
-              <Icon 
-                size={22} 
+              <motion.div
+                animate={{ scale: isActive ? 1.05 : 1 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                 className={clsx(
-                  "mb-1 transition-transform", 
-                  isActive && "scale-110 drop-shadow-[0_0_5px_rgba(57,255,20,0.5)]"
-                )} 
-              />
-              <span className={clsx(
-                "text-[10px] uppercase tracking-widest font-black transition-opacity",
-                isActive ? "opacity-100" : "opacity-60"
-              )}>
-                {item.name}
-              </span>
+                  "flex flex-col items-center justify-center transition-colors duration-200 w-full h-full",
+                  isActive ? "text-[#39FF14]" : "text-white/60 hover:text-white/95"
+                )}
+              >
+                <Icon size={18} className={clsx("mb-0.5", isActive && "drop-shadow-[0_0_4px_rgba(57,255,20,0.3)]")} />
+                <span className={clsx(
+                  "text-[8px] uppercase tracking-wider font-extrabold",
+                  isActive ? "text-[#39FF14]" : "text-white/50"
+                )}>
+                  {item.name}
+                </span>
+              </motion.div>
             </Link>
           );
         })}
