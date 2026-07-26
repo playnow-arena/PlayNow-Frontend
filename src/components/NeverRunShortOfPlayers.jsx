@@ -8,7 +8,7 @@ const NeverRunShortOfPlayers = () => (
     initial={{ opacity: 0, y: 24 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: '-80px' }}
-    transition={{ duration: 0.6, ease: 'easeOut' }}
+    transition={{ duration: 0.3, ease: 'easeOut' }}
     className="relative overflow-hidden rounded-3xl border border-[#39FF14]/25 bg-gradient-to-br from-[#172238] via-[#111827] to-[#0d1422] px-5 py-10 sm:px-10 md:px-16 md:py-14 text-center shadow-2xl"
   >
     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#39FF14] to-transparent opacity-80" />

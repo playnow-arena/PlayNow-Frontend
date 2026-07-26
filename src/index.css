@@ -20,7 +20,7 @@
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
   --color-info: #3B82F6;
-  
+
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -35,7 +35,7 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
-    font-size: 16px; 
+    font-size: 16px;
   }
 
   body {
@@ -49,9 +49,10 @@
 }
 
 @layer components {
-  /* Base Card */
+  /* Base Card — contain reduces style recalculation scope */
   .card {
     @apply bg-card border border-border rounded-2xl;
+    contain: layout style paint;
   }
 
   /* Buttons */
@@ -86,16 +87,28 @@
   display: none;
 }
 
-/* Marquee Animation */
+/* Marquee Animation — GPU composited via will-change */
 @keyframes marquee {
-  0% { transform: translateX(0); }
+  0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .quotes-marquee {
   animation: marquee 40s linear infinite;
+  will-change: transform;
 }
 .quotes-marquee:hover {
   animation-play-state: paused;
+}
+
+/* Skeleton pulse — lightweight opacity only, no layout change */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.skeleton {
+  background: #1f2937;
+  border-radius: 8px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 /* Global accessible focus state */
