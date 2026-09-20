@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { MapPin, RefreshCw, BarChart3, CalendarDays, Wallet, TrendingUp } from 'lucide-react';
 import { formatSportTypes } from '../utils/sports';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
@@ -272,6 +273,19 @@ const OwnerDashboard = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewBooking = () => {
+      loadDashboard();
+    };
+
+    socket.on('booking_received', handleNewBooking);
+    return () => socket.off('booking_received', handleNewBooking);
+  }, [socket]);
 
   useEffect(() => {
     if (!venues.length) return;

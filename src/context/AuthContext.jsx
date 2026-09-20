@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { requestNotificationPermissionAndToken } from '../services/firebaseMessaging';
 
 const AuthContext = createContext();
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
@@ -41,6 +42,10 @@ export const AuthProvider = ({ children }) => {
           if (!localStorage.getItem('playnow_token') && legacyToken) {
             localStorage.setItem('playnow_token', legacyToken);
           }
+          
+          // Trigger FCM registration after successful restore
+          requestNotificationPermissionAndToken().catch(err => console.warn('[FCM] Restore registration failed:', err));
+
         } catch (e) {
           console.error('Failed to parse saved user');
           localStorage.removeItem('playnow_user');
@@ -76,6 +81,9 @@ export const AuthProvider = ({ children }) => {
     if (userData.token) {
       localStorage.setItem('playnow_token', userData.token);
     }
+    
+    // Trigger FCM registration after login
+    requestNotificationPermissionAndToken().catch(err => console.warn('[FCM] Login registration failed:', err));
   };
 
   const logout = async () => {
@@ -101,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('playnow_user');
     localStorage.removeItem('playnow_token');
     localStorage.removeItem('token');
+    localStorage.removeItem('playnow_fcm_token');
   };
 
   const updateProfile = (userData) => {
