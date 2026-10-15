@@ -138,8 +138,43 @@ const Home = () => {
 
   return (
     <div className="pb-24 md:pb-10">
+      {/* Location label bar directly below navbar */}
+      <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-24 pb-4 flex flex-wrap items-center justify-between gap-4 relative z-20">
+        <button
+          onClick={openLocationModal}
+          className="flex items-center gap-2 bg-[#151b2b]/90 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-all shadow-lg backdrop-blur-md"
+        >
+          <MapPin size={14} className="text-[#39FF14]" />
+          {locationDisplay}
+        </button>
+
+        {!location && (
+          <button onClick={requestLocation} className="btn-primary text-xs px-4 py-2 shadow-lg">
+            Enable Location for Better Results
+          </button>
+        )}
+      </div>
+
+      {/* Location modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#151b2b] card p-6 w-full max-w-sm rounded-2xl border border-border">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Select Location</h3>
+              <button onClick={closeLocationModal}><X /></button>
+            </div>
+            <button onClick={handleGps} className="w-full btn-secondary mb-4 flex items-center justify-center gap-2">
+              <Navigation size={16} /> Use Current GPS
+            </button>
+            <div className="border-t border-border pt-4">
+              <p className="text-xs text-text-sub mb-2">Search City (Coming Soon)</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative pt-24 pb-16 px-4 md:pt-40 md:pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[85vh]">
+      <section className="relative pt-6 pb-16 px-4 md:pt-12 md:pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[85vh]">
         <div className="absolute inset-0 z-0 bg-gradient-energetic opacity-90" />
 
         {/* Static glow — no animation cost, still looks premium */}
@@ -149,42 +184,6 @@ const Home = () => {
         />
 
         <div className="max-w-7xl mx-auto relative z-10 w-full">
-          {/* Location button */}
-          <div className="text-right px-4 mb-4">
-            <button
-              onClick={openLocationModal}
-              className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-all"
-            >
-              <MapPin size={14} />
-              {locationDisplay}
-            </button>
-          </div>
-
-          {!location && (
-            <div className="px-4 mb-8 text-center">
-              <button onClick={requestLocation} className="btn-primary text-sm px-6 py-2">
-                Enable Location for Better Results
-              </button>
-            </div>
-          )}
-
-          {/* Location modal */}
-          {showLocationModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className="bg-[#151b2b] card p-6 w-full max-w-sm rounded-2xl border border-border">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold">Select Location</h3>
-                  <button onClick={closeLocationModal}><X /></button>
-                </div>
-                <button onClick={handleGps} className="w-full btn-secondary mb-4 flex items-center justify-center gap-2">
-                  <Navigation size={16} /> Use Current GPS
-                </button>
-                <div className="border-t border-border pt-4">
-                  <p className="text-xs text-text-sub mb-2">Search City (Coming Soon)</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Hero text — stagger with optimized durations */}
           <motion.div
