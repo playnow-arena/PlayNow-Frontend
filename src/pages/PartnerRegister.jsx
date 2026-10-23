@@ -262,7 +262,7 @@ const PartnerRegister = () => {
                 <input required value={formData.ownerName} onChange={(e) => updateField('ownerName', e.target.value)} placeholder="Owner or applicant name" className={inputClass} />
               </Field>
               <Field label="Applicant phone">
-                <input required value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} placeholder="98765 43210" className={inputClass} />
+                <input required value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} placeholder="applicant mobile number" className={inputClass} />
               </Field>
               <Field label="Applicant email">
                 <input type="email" value={formData.email} onChange={(e) => updateField('email', e.target.value)} placeholder="owner@example.com" className={inputClass} />
@@ -283,16 +283,16 @@ const PartnerRegister = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Venue name">
-                <input required value={formData.venueName} onChange={(e) => updateField('venueName', e.target.value)} placeholder="Aruna Sports Arena" className={inputClass} />
+                <input required value={formData.venueName} onChange={(e) => updateField('venueName', e.target.value)} placeholder="Venue name" className={inputClass} />
               </Field>
               <Field label="City">
-                <input required value={formData.city} onChange={(e) => updateField('city', e.target.value)} placeholder="Trichy" className={inputClass} />
+                <input required value={formData.city} onChange={(e) => updateField('city', e.target.value)} placeholder="City" className={inputClass} />
               </Field>
               <Field label="Area">
-                <input required value={formData.area} onChange={(e) => updateField('area', e.target.value)} placeholder="Thillai Nagar" className={inputClass} />
+                <input required value={formData.area} onChange={(e) => updateField('area', e.target.value)} placeholder="Area" className={inputClass} />
               </Field>
               <Field label="Landmark">
-                <input value={formData.landmark} onChange={(e) => updateField('landmark', e.target.value)} placeholder="Near main bus stand" className={inputClass} />
+                <input value={formData.landmark} onChange={(e) => updateField('landmark', e.target.value)} placeholder="Landmark" className={inputClass} />
               </Field>
               <div className="md:col-span-2">
                 <Field label="Full address">
