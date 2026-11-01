@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowRight, Building2, CheckCircle2, Plus, Trash2, User } from 'lucide-react';
+import { ArrowRight, Building2, CheckCircle2, MapPin, Plus, Trash2, User } from 'lucide-react';
+import MapLocationPicker from '../components/MapLocationPicker';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { normalizeSportTypes } from '../utils/sports';
@@ -29,6 +30,7 @@ const initialFormData = {
   city: '',
   area: '',
   landmark: '',
+  coordinates: null,
   inchargeName: '',
   inchargePhone: '',
   inchargeWhatsapp: '',
@@ -62,6 +64,7 @@ const PartnerRegister = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submittedVenueName, setSubmittedVenueName] = useState('');
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
 
   const updateField = (field, value) => {
@@ -127,6 +130,7 @@ const PartnerRegister = () => {
       city: formData.city,
       area: formData.area,
       landmark: formData.landmark,
+      ...(formData.coordinates ? { coordinates: formData.coordinates } : {}),
       sportTypes: [...new Set(courtGroups.flatMap((group) => group.sports))],
       pricePerHour: courtGroups.length ? Math.min(...courtGroups.map((group) => group.pricePerHour)) : undefined,
       contacts: {
@@ -299,6 +303,51 @@ const PartnerRegister = () => {
                   <textarea required value={formData.address} onChange={(e) => updateField('address', e.target.value)} placeholder="Full venue address" className={`${inputClass} h-28 resize-none`} />
                 </Field>
               </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Turf Location on Map</label>
+                {formData.coordinates ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-black/40 border border-[#39FF14]/30">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#39FF14]/10 border border-[#39FF14]/20 flex items-center justify-center text-[#39FF14] shrink-0">
+                        <MapPin size={20} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14]" /> Location Selected
+                        </p>
+                        <p className="text-xs font-mono text-gray-400 truncate">
+                          {formData.coordinates.lat.toFixed(5)}, {formData.coordinates.lng.toFixed(5)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPickerOpen(true)}
+                        className="px-4 py-2 text-xs font-black uppercase tracking-wider text-black bg-[#39FF14] hover:bg-[#32e612] rounded-xl transition shadow-lg shadow-[#39FF14]/10"
+                      >
+                        Change Location
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateField('coordinates', null)}
+                        className="px-3 py-2 text-xs font-bold text-gray-400 hover:text-red-400 rounded-xl hover:bg-white/5 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsMapPickerOpen(true)}
+                    className="w-full flex items-center justify-center gap-2.5 p-4 rounded-2xl bg-black/40 border border-dashed border-white/20 hover:border-[#39FF14] text-gray-300 hover:text-white transition group"
+                  >
+                    <MapPin size={18} className="text-[#39FF14] group-hover:scale-110 transition" />
+                    <span className="text-sm font-bold uppercase tracking-wider">Pick Your Turf Location</span>
+                  </button>
+                )}
+              </div>
             </div>
           </motion.section>
 
@@ -404,6 +453,12 @@ const PartnerRegister = () => {
           Already a partner? <Link to="/partner/login" className="text-[#39FF14] hover:underline">Login to Portal</Link>
         </p>
       </div>
+      <MapLocationPicker
+        isOpen={isMapPickerOpen}
+        initialCoordinates={formData.coordinates}
+        onConfirm={(coords) => updateField('coordinates', coords)}
+        onClose={() => setIsMapPickerOpen(false)}
+      />
     </div>
   );
 };
