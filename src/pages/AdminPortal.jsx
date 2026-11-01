@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Users, Building2, XCircle, AlertTriangle, BarChart3, Search, Mail, RefreshCw, Menu, X } from 'lucide-react';
+import { Shield, Users, Building2, XCircle, AlertTriangle, BarChart3, Search, Mail, RefreshCw, Menu, X, Trophy, Trash2, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -318,6 +318,15 @@ const AdminPortal = () => {
     venueId: '',
     date: '',
   });
+
+  // Admin Matches state
+  const [adminMatches, setAdminMatches] = useState([]);
+  const [adminMatchesLoading, setAdminMatchesLoading] = useState(false);
+  const [adminMatchesMessage, setAdminMatchesMessage] = useState('');
+  const [matchStatusFilter, setMatchStatusFilter] = useState('');
+  const [selectedMatchDetail, setSelectedMatchDetail] = useState(null);
+  const [matchActionConfirm, setMatchActionConfirm] = useState(null);
+  const [matchActionLoading, setMatchActionLoading] = useState(false);
   const [bookingCollectionMethods, setBookingCollectionMethods] = useState({});
   const [bookingCollectionLoadingId, setBookingCollectionLoadingId] = useState('');
   const [recurringRules, setRecurringRules] = useState([]);
@@ -1074,6 +1083,7 @@ const AdminPortal = () => {
   const navItems = [
     { id: 'owner-requests', label: 'Owner Requests', icon: Mail },
     { id: 'platform-bookings', label: 'Platform Bookings', icon: BarChart3 },
+    { id: 'matches', label: 'Open Matches', icon: Trophy },
     { id: 'users', label: 'Manage Users', icon: Users, comingSoon: true },
     { id: 'venues', label: 'Manage Venues', icon: Building2 },
     { id: 'recurring-blocks', label: 'Recurring Blocks', icon: AlertTriangle },
@@ -1085,6 +1095,89 @@ const AdminPortal = () => {
   const [metrics, setMetrics] = useState(null);
   const [metricsLoading, setMetricsLoading] = useState(false);
   const [metricsError, setMetricsError] = useState('');
+
+  const fetchAdminMatches = async (statusOverride) => {
+    setAdminMatchesLoading(true);
+    setAdminMatchesMessage('');
+    const token = localStorage.getItem('playnow_token');
+    if (!token) return;
+    try {
+      const activeFilter = statusOverride !== undefined ? statusOverride : matchStatusFilter;
+      const url = activeFilter ? apiUrl(`/api/matches/admin?status=${activeFilter}`) : apiUrl('/api/matches/admin');
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await readResponseBody(res);
+      if (res.ok) {
+        setAdminMatches(Array.isArray(data) ? data : []);
+      } else {
+        setAdminMatchesMessage(getVenueErrorMessage(data, 'Failed to load matches'));
+      }
+    } catch (err) {
+      console.error('Admin matches fetch error:', err);
+      setAdminMatchesMessage('Network error loading matches');
+    } finally {
+      setAdminMatchesLoading(false);
+    }
+  };
+
+  const handleAdminUpdateMatchStatus = async (matchId, newStatus) => {
+    setMatchActionLoading(true);
+    const token = localStorage.getItem('playnow_token');
+    try {
+      const res = await fetch(apiUrl(`/api/matches/admin/${matchId}/status`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await readResponseBody(res);
+      if (res.ok) {
+        setAdminMatchesMessage(`Match status updated to ${newStatus} successfully.`);
+        setMatchActionConfirm(null);
+        if (selectedMatchDetail?._id === matchId) {
+          setSelectedMatchDetail(data.match);
+        }
+        fetchAdminMatches();
+      } else {
+        setAdminMatchesMessage(getVenueErrorMessage(data, 'Failed to update match status'));
+      }
+    } catch (err) {
+      console.error('Update match status error:', err);
+      setAdminMatchesMessage('Network error updating match status');
+    } finally {
+      setMatchActionLoading(false);
+    }
+  };
+
+  const handleAdminDeleteMatch = async (matchId) => {
+    setMatchActionLoading(true);
+    const token = localStorage.getItem('playnow_token');
+    try {
+      const res = await fetch(apiUrl(`/api/matches/admin/${matchId}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await readResponseBody(res);
+      if (res.ok) {
+        setAdminMatchesMessage('Match deleted permanently.');
+        setMatchActionConfirm(null);
+        if (selectedMatchDetail?._id === matchId) {
+          setSelectedMatchDetail(null);
+        }
+        fetchAdminMatches();
+      } else {
+        setAdminMatchesMessage(getVenueErrorMessage(data, 'Failed to delete match'));
+      }
+    } catch (err) {
+      console.error('Delete match error:', err);
+      setAdminMatchesMessage('Network error deleting match');
+    } finally {
+      setMatchActionLoading(false);
+    }
+  };
 
   const fetchMetrics = async () => {
     setMetricsLoading(true);
@@ -1108,6 +1201,9 @@ const AdminPortal = () => {
   };
 
   useEffect(() => {
+    if (activeSection === 'matches') {
+      fetchAdminMatches();
+    }
     if (activeSection === 'notification-metrics') {
       fetchMetrics();
     }
@@ -1236,6 +1332,7 @@ const AdminPortal = () => {
                   if (activeSection === 'venues') fetchVenues();
                   if (activeSection === 'owner-requests') fetchOwnerRequests();
                   if (activeSection === 'platform-bookings') fetchAdminBookings();
+                  if (activeSection === 'matches') fetchAdminMatches();
                 }}
                 className="bg-[#151b2b] border border-gray-800 p-2 rounded-xl text-gray-400 hover:text-white transition"
               >
@@ -2585,7 +2682,370 @@ const AdminPortal = () => {
             </div>
           )}
 
-          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && activeSection !== 'recurring-blocks' && activeSection !== 'notification-metrics' && (
+          {activeSection === 'matches' && (
+            <div className="space-y-6">
+              {adminMatchesMessage && (
+                <div className="bg-[#151b2b] border border-[#39FF14]/40 text-[#39FF14] p-4 rounded-2xl flex items-center justify-between">
+                  <span>{adminMatchesMessage}</span>
+                  <button onClick={() => setAdminMatchesMessage('')} className="text-gray-400 hover:text-white">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
+              {/* Status Filter Tabs & Header */}
+              <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Trophy className="text-[#39FF14]" size={22} /> Open Match Management
+                    </h3>
+                    <p className="text-gray-400 text-sm mt-1">Monitor, cancel, close, or delete player-hosted matches.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                      {adminMatches.length} Total Matches
+                    </span>
+                  </div>
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-800">
+                  {[
+                    { label: 'All Matches', value: '' },
+                    { label: 'Open (Joinable)', value: 'open' },
+                    { label: 'Full', value: 'full' },
+                    { label: 'Started', value: 'started' },
+                    { label: 'Cancelled', value: 'cancelled' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => {
+                        setMatchStatusFilter(filter.value);
+                        fetchAdminMatches(filter.value);
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                        matchStatusFilter === filter.value
+                          ? 'bg-[#39FF14] text-black shadow-lg shadow-[#39FF14]/20'
+                          : 'bg-[#0a0f1c] text-gray-400 hover:text-white hover:bg-white/5 border border-gray-800'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Matches List */}
+              <div className="bg-[#151b2b] border border-gray-800 rounded-3xl overflow-hidden">
+                <div className="p-4 md:p-6 border-b border-gray-800 flex items-center justify-between">
+                  <h4 className="text-lg font-bold">Matches Listing</h4>
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                    Showing {adminMatches.length} matches
+                  </span>
+                </div>
+
+                {adminMatchesLoading ? (
+                  <div className="p-12 text-center text-gray-500 font-bold uppercase tracking-widest text-xs">
+                    <div className="w-10 h-10 border-4 border-[#39FF14]/20 border-t-[#39FF14] rounded-full animate-spin mx-auto mb-4" />
+                    Loading matches...
+                  </div>
+                ) : adminMatches.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500">
+                    No matches found matching the selected filter.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-800 overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="bg-[#0a0f1c] text-gray-400 text-xs uppercase tracking-wider">
+                          <th className="p-4">Sport / Code</th>
+                          <th className="p-4">Venue & Schedule</th>
+                          <th className="p-4">Host</th>
+                          <th className="p-4">Players / Slots</th>
+                          <th className="p-4">Amount</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800/60">
+                        {adminMatches.map((match) => {
+                          const joinedCount = match.joinedPlayers?.length || 0;
+                          const total = match.totalPlayers || 1;
+                          const spotsLeft = Math.max(total - joinedCount, 0);
+                          return (
+                            <tr key={match._id} className="hover:bg-white/[0.02] transition">
+                              <td className="p-4 align-top">
+                                <div className="font-bold text-white">{match.sport}</div>
+                                <div className="text-xs text-[#39FF14] font-mono mt-0.5">{match.matchCode || match._id.slice(-6).toUpperCase()}</div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="font-medium text-gray-200">{match.venue}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{match.date} at {match.time}</div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="font-medium text-gray-300">{match.host?.name || 'Unknown'}</div>
+                                <div className="text-xs text-gray-500">{match.contactPhone || match.host?.phone || 'No phone'}</div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="font-bold text-white">{joinedCount} / {total}</div>
+                                <div className={`text-xs mt-0.5 ${spotsLeft > 0 ? 'text-[#39FF14]' : 'text-gray-500'}`}>
+                                  {spotsLeft > 0 ? `${spotsLeft} spots left` : 'Full'}
+                                </div>
+                              </td>
+                              <td className="p-4 align-top font-bold text-white">
+                                ₹{match.totalAmount}
+                              </td>
+                              <td className="p-4 align-top">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                  match.status === 'open'
+                                    ? 'bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/30'
+                                    : match.status === 'full'
+                                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                                    : match.status === 'started'
+                                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
+                                    : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                                }`}>
+                                  {match.status}
+                                </span>
+                              </td>
+                              <td className="p-4 align-top text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => setSelectedMatchDetail(match)}
+                                    className="p-2 bg-gray-800 text-gray-300 hover:text-white rounded-lg transition hover:bg-gray-700 title='View Details'"
+                                    title="View Details"
+                                  >
+                                    <Eye size={16} />
+                                  </button>
+                                  {match.status === 'open' && (
+                                    <button
+                                      onClick={() => setMatchActionConfirm({ type: 'cancel', match })}
+                                      className="px-3 py-1.5 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded-lg text-xs font-bold transition border border-yellow-500/20"
+                                    >
+                                      Cancel
+                                    </button>
+                                  )}
+                                  {match.status === 'cancelled' && (
+                                    <button
+                                      onClick={() => setMatchActionConfirm({ type: 'open', match })}
+                                      className="px-3 py-1.5 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14] hover:text-black rounded-lg text-xs font-bold transition border border-[#39FF14]/20"
+                                    >
+                                      Re-open
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setMatchActionConfirm({ type: 'delete', match })}
+                                    className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition border border-red-500/20"
+                                    title="Permanently Delete"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Match Details Modal */}
+              {selectedMatchDetail && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4 overflow-y-auto">
+                  <div className="bg-[#151b2b] border border-gray-800 rounded-3xl max-w-2xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white">Match Details</h3>
+                        <p className="text-xs text-[#39FF14] font-mono mt-0.5">ID: {selectedMatchDetail._id}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedMatchDetail(null)}
+                        className="p-2 text-gray-400 hover:text-white rounded-lg transition"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800">
+                        <span className="text-gray-400 text-xs block mb-1">Sport</span>
+                        <span className="font-bold text-white text-base">{selectedMatchDetail.sport}</span>
+                      </div>
+                      <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800">
+                        <span className="text-gray-400 text-xs block mb-1">Venue</span>
+                        <span className="font-bold text-white text-base">{selectedMatchDetail.venue}</span>
+                      </div>
+                      <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800">
+                        <span className="text-gray-400 text-xs block mb-1">Schedule</span>
+                        <span className="font-bold text-white">{selectedMatchDetail.date} at {selectedMatchDetail.time}</span>
+                      </div>
+                      <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800">
+                        <span className="text-gray-400 text-xs block mb-1">Financials</span>
+                        <span className="font-bold text-[#39FF14]">₹{selectedMatchDetail.totalAmount} Total</span>
+                        <span className="text-xs text-gray-500 block mt-0.5">
+                          ₹{Math.floor(selectedMatchDetail.totalAmount / (selectedMatchDetail.totalPlayers || 1))} / player
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Host Information */}
+                    <div className="bg-[#0a0f1c] p-4 rounded-2xl border border-gray-800 space-y-2">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-gray-400">Host Information</h5>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">Host Name:</span>
+                        <span className="font-bold text-white">{selectedMatchDetail.host?.name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">Host Phone:</span>
+                        <span className="font-mono text-white">{selectedMatchDetail.host?.phone || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">Contact Mobile:</span>
+                        <span className="font-mono text-[#39FF14]">{selectedMatchDetail.contactPhone || 'N/A'}</span>
+                      </div>
+                    </div>
+
+                    {/* Joined Players */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                          Joined Players ({selectedMatchDetail.joinedPlayers?.length || 0} / {selectedMatchDetail.totalPlayers})
+                        </h5>
+                        <span className="text-xs text-[#39FF14] font-bold">
+                          {Math.max((selectedMatchDetail.totalPlayers || 1) - (selectedMatchDetail.joinedPlayers?.length || 0), 0)} spots remaining
+                        </span>
+                      </div>
+                      <div className="bg-[#0a0f1c] rounded-2xl border border-gray-800 divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
+                        {(selectedMatchDetail.joinedPlayers || []).map((p, idx) => (
+                          <div key={idx} className="p-3 flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="w-7 h-7 rounded-full bg-gray-800 text-[#39FF14] flex items-center justify-center text-xs font-bold">
+                                {(p.name || 'P').charAt(0)}
+                              </div>
+                              <span className="font-bold text-white">{p.name || 'Anonymous Player'}</span>
+                            </div>
+                            <span className="text-xs font-mono text-gray-400">{p.phone || p.playNowId || ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Modal Actions */}
+                    <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-800">
+                      {selectedMatchDetail.status === 'open' && (
+                        <button
+                          onClick={() => {
+                            setMatchActionConfirm({ type: 'cancel', match: selectedMatchDetail });
+                          }}
+                          className="px-4 py-2 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black rounded-xl text-sm font-bold transition border border-yellow-500/20"
+                        >
+                          Cancel Match
+                        </button>
+                      )}
+                      {selectedMatchDetail.status === 'cancelled' && (
+                        <button
+                          onClick={() => {
+                            setMatchActionConfirm({ type: 'open', match: selectedMatchDetail });
+                          }}
+                          className="px-4 py-2 bg-[#39FF14]/10 text-[#39FF14] hover:bg-[#39FF14] hover:text-black rounded-xl text-sm font-bold transition border border-[#39FF14]/20"
+                        >
+                          Re-open Match
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setMatchActionConfirm({ type: 'delete', match: selectedMatchDetail });
+                        }}
+                        className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl text-sm font-bold transition border border-red-500/20"
+                      >
+                        Delete Permanently
+                      </button>
+                      <button
+                        onClick={() => setSelectedMatchDetail(null)}
+                        className="px-4 py-2 bg-gray-800 text-white rounded-xl text-sm font-bold hover:bg-gray-700 transition"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmation Dialog Modal */}
+              {matchActionConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+                  <div className="bg-[#151b2b] border border-gray-800 rounded-3xl max-w-md w-full p-6 text-center space-y-4">
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto ${
+                      matchActionConfirm.type === 'delete'
+                        ? 'bg-red-500/20 text-red-400'
+                        : matchActionConfirm.type === 'cancel'
+                        ? 'bg-yellow-500/20 text-yellow-400'
+                        : 'bg-[#39FF14]/20 text-[#39FF14]'
+                    }`}>
+                      {matchActionConfirm.type === 'delete' ? (
+                        <Trash2 size={28} />
+                      ) : matchActionConfirm.type === 'cancel' ? (
+                        <AlertTriangle size={28} />
+                      ) : (
+                        <RefreshCw size={28} />
+                      )}
+                    </div>
+
+                    <h4 className="text-lg font-bold text-white">
+                      {matchActionConfirm.type === 'delete' && 'Permanently Delete Match?'}
+                      {matchActionConfirm.type === 'cancel' && 'Cancel / Close Match?'}
+                      {matchActionConfirm.type === 'open' && 'Re-open This Match?'}
+                    </h4>
+
+                    <p className="text-gray-400 text-sm">
+                      {matchActionConfirm.type === 'delete' &&
+                        `Are you sure you want to permanently delete the ${matchActionConfirm.match.sport} match at ${matchActionConfirm.match.venue}? This cannot be undone.`}
+                      {matchActionConfirm.type === 'cancel' &&
+                        `Are you sure you want to cancel the ${matchActionConfirm.match.sport} match at ${matchActionConfirm.match.venue}? Joined players will be notified and the match will be removed from Open Matches.`}
+                      {matchActionConfirm.type === 'open' &&
+                        `Re-opening this match will make it visible in Open Matches again and allow players to join.`}
+                    </p>
+
+                    <div className="flex gap-3 pt-4 border-t border-gray-800">
+                      <button
+                        onClick={() => setMatchActionConfirm(null)}
+                        disabled={matchActionLoading}
+                        className="flex-1 py-3 bg-gray-800 text-gray-300 font-bold rounded-xl text-sm hover:bg-gray-700 transition disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (matchActionConfirm.type === 'delete') {
+                            handleAdminDeleteMatch(matchActionConfirm.match._id);
+                          } else if (matchActionConfirm.type === 'cancel') {
+                            handleAdminUpdateMatchStatus(matchActionConfirm.match._id, 'cancelled');
+                          } else if (matchActionConfirm.type === 'open') {
+                            handleAdminUpdateMatchStatus(matchActionConfirm.match._id, 'open');
+                          }
+                        }}
+                        disabled={matchActionLoading}
+                        className={`flex-1 py-3 font-bold rounded-xl text-sm transition disabled:opacity-50 ${
+                          matchActionConfirm.type === 'delete'
+                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            : matchActionConfirm.type === 'cancel'
+                            ? 'bg-yellow-500 text-black hover:bg-yellow-400'
+                            : 'bg-[#39FF14] text-black hover:bg-[#32E612]'
+                        }`}
+                      >
+                        {matchActionLoading ? 'Processing...' : 'Confirm'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSection !== 'owner-requests' && activeSection !== 'platform-bookings' && activeSection !== 'venues' && activeSection !== 'recurring-blocks' && activeSection !== 'notification-metrics' && activeSection !== 'matches' && (
             <div className="bg-[#151b2b] border border-gray-800 rounded-3xl p-8 md:p-12 text-center opacity-50">
               <AlertTriangle size={48} className="text-yellow-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold">Coming Soon</h3>
