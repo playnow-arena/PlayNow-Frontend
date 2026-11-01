@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, X, Check, Loader2 } from 'lucide-react';
@@ -32,136 +32,120 @@ const DEFAULT_CENTER = {
   lng: 78.7047,
 };
 
-const MapLocationPicker = ({
-  isOpen,
-  initialCoordinates,
-  onConfirm,
-  onClose,
-}) => {
+const MapModalContent = ({ initialCoordinates, onConfirm, onClose }) => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
 
-  const [selectedCoords, setSelectedCoords] = useState(
-    initialCoordinates?.lat && initialCoordinates?.lng
-      ? { lat: Number(initialCoordinates.lat), lng: Number(initialCoordinates.lng) }
-      : null
-  );
+  const [selectedCoords, setSelectedCoords] = useState(() => {
+    if (initialCoordinates?.lat !== undefined && initialCoordinates?.lng !== undefined) {
+      return {
+        lat: Number(initialCoordinates.lat),
+        lng: Number(initialCoordinates.lng),
+      };
+    }
+    return null;
+  });
 
   const [locationPreview, setLocationPreview] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [geoError, setGeoError] = useState('');
 
-  // Sync selectedCoords with initialCoordinates when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      if (initialCoordinates?.lat && initialCoordinates?.lng) {
-        setSelectedCoords({
-          lat: Number(initialCoordinates.lat),
-          lng: Number(initialCoordinates.lng),
-        });
-      } else {
-        setSelectedCoords(null);
-      }
-      setGeoError('');
-      setLocationPreview('');
-    }
-  }, [isOpen, initialCoordinates]);
-
   // Fetch address preview when coordinates change
   useEffect(() => {
     let isCancelled = false;
     if (selectedCoords) {
-      reverseGeocode(selectedCoords.lat, selectedCoords.lng).then((res) => {
-        if (!isCancelled && res) {
-          const parts = [res.area, res.city].filter(Boolean);
-          setLocationPreview(parts.length ? parts.join(', ') : '');
-        }
-      }).catch(() => {});
-    } else {
-      setLocationPreview('');
+      reverseGeocode(selectedCoords.lat, selectedCoords.lng)
+        .then((res) => {
+          if (!isCancelled && res) {
+            const parts = [res.area, res.city].filter(Boolean);
+            setLocationPreview(parts.length ? parts.join(', ') : '');
+          }
+        })
+        .catch(() => {});
     }
     return () => {
       isCancelled = true;
     };
   }, [selectedCoords]);
 
-  // Initialize and manage the Leaflet map
+  // Initialize and manage the Leaflet map on mount
+  const initialCoordsRef = useRef(selectedCoords);
+
   useEffect(() => {
-    if (!isOpen || !mapContainerRef.current) return;
+    if (!mapContainerRef.current) return;
 
-    // Small delay to ensure modal container dimensions are settled
-    const timer = setTimeout(() => {
-      if (mapInstanceRef.current || !mapContainerRef.current) return;
+    const startLat = initialCoordsRef.current?.lat || DEFAULT_CENTER.lat;
+    const startLng = initialCoordsRef.current?.lng || DEFAULT_CENTER.lng;
+    const startZoom = initialCoordsRef.current ? 16 : 12;
 
-      const startLat = selectedCoords?.lat || DEFAULT_CENTER.lat;
-      const startLng = selectedCoords?.lng || DEFAULT_CENTER.lng;
-      const startZoom = selectedCoords ? 16 : 12;
+    const map = L.map(mapContainerRef.current, {
+      center: [startLat, startLng],
+      zoom: startZoom,
+      zoomControl: false,
+    });
 
-      const map = L.map(mapContainerRef.current, {
-        center: [startLat, startLng],
-        zoom: startZoom,
-        zoomControl: false,
-      });
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map);
+    const turfIcon = createTurfIcon();
 
-      const turfIcon = createTurfIcon();
+    const placeMarker = (lat, lng) => {
+      const roundedLat = Number(lat.toFixed(6));
+      const roundedLng = Number(lng.toFixed(6));
 
-      const placeMarker = (lat, lng) => {
-        const roundedLat = Number(lat.toFixed(6));
-        const roundedLng = Number(lng.toFixed(6));
+      if (markerRef.current) {
+        markerRef.current.setLatLng([roundedLat, roundedLng]);
+      } else {
+        const marker = L.marker([roundedLat, roundedLng], {
+          icon: turfIcon,
+          draggable: true,
+        }).addTo(map);
 
-        if (markerRef.current) {
-          markerRef.current.setLatLng([roundedLat, roundedLng]);
-        } else {
-          const marker = L.marker([roundedLat, roundedLng], {
-            icon: turfIcon,
-            draggable: true,
-          }).addTo(map);
-
-          marker.on('dragend', (e) => {
-            const pos = e.target.getLatLng();
-            setSelectedCoords({
-              lat: Number(pos.lat.toFixed(6)),
-              lng: Number(pos.lng.toFixed(6)),
-            });
+        marker.on('dragend', (e) => {
+          const pos = e.target.getLatLng();
+          setSelectedCoords({
+            lat: Number(pos.lat.toFixed(6)),
+            lng: Number(pos.lng.toFixed(6)),
           });
+        });
 
-          markerRef.current = marker;
-        }
-
-        setSelectedCoords({ lat: roundedLat, lng: roundedLng });
-      };
-
-      // If initial coordinates exist, place the marker
-      if (selectedCoords) {
-        placeMarker(selectedCoords.lat, selectedCoords.lng);
+        markerRef.current = marker;
       }
 
-      // Handle map clicks to place/move marker
-      map.on('click', (e) => {
-        placeMarker(e.latlng.lat, e.latlng.lng);
-      });
+      setSelectedCoords({ lat: roundedLat, lng: roundedLng });
+    };
 
-      mapInstanceRef.current = map;
+    // If initial coordinates exist, place the marker
+    if (initialCoordsRef.current) {
+      placeMarker(initialCoordsRef.current.lat, initialCoordsRef.current.lng);
+    }
+
+    // Handle map clicks to place/move marker
+    map.on('click', (e) => {
+      placeMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    mapInstanceRef.current = map;
+
+    // Small timeout to ensure proper sizing
+    const resizeTimer = setTimeout(() => {
       map.invalidateSize();
-    }, 150);
+    }, 200);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(resizeTimer);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markerRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, []); // Run once on mount
 
   // Handle GPS Locate button
   const handleUseCurrentLocation = () => {
@@ -219,11 +203,19 @@ const MapLocationPicker = ({
       setGeoError('Please click on the map to select your turf location.');
       return;
     }
-    onConfirm(selectedCoords);
+    const lat = Number(selectedCoords.lat);
+    const lng = Number(selectedCoords.lng);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      setGeoError('Invalid latitude. Latitude must be between -90 and 90.');
+      return;
+    }
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+      setGeoError('Invalid longitude. Longitude must be between -180 and 180.');
+      return;
+    }
+    onConfirm({ lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) });
     onClose();
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
@@ -268,7 +260,7 @@ const MapLocationPicker = ({
           <div className="text-xs font-mono text-gray-300 flex items-center gap-2">
             {selectedCoords ? (
               <span className="bg-[#39FF14]/10 border border-[#39FF14]/30 text-[#39FF14] px-2.5 py-1 rounded-lg font-bold">
-                {selectedCoords.lat.toFixed(5)}, {selectedCoords.lng.toFixed(5)}
+                Lat: {selectedCoords.lat.toFixed(6)}, Lng: {selectedCoords.lng.toFixed(6)}
                 {locationPreview && <span className="ml-1.5 text-gray-400 font-sans font-normal">({locationPreview})</span>}
               </span>
             ) : (
@@ -315,6 +307,23 @@ const MapLocationPicker = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const MapLocationPicker = ({
+  isOpen,
+  initialCoordinates,
+  onConfirm,
+  onClose,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <MapModalContent
+      initialCoordinates={initialCoordinates}
+      onConfirm={onConfirm}
+      onClose={onClose}
+    />
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowRight, Building2, CheckCircle2, MapPin, Plus, Trash2, User } from 'lucide-react';
 import MapLocationPicker from '../components/MapLocationPicker';
 import { motion } from 'framer-motion';
@@ -130,7 +130,14 @@ const PartnerRegister = () => {
       city: formData.city,
       area: formData.area,
       landmark: formData.landmark,
-      ...(formData.coordinates ? { coordinates: formData.coordinates } : {}),
+      ...(formData.coordinates ? {
+        coordinates: {
+          lat: Number(formData.coordinates.lat),
+          lng: Number(formData.coordinates.lng),
+        },
+        latitude: Number(formData.coordinates.lat),
+        longitude: Number(formData.coordinates.lng),
+      } : {}),
       sportTypes: [...new Set(courtGroups.flatMap((group) => group.sports))],
       pricePerHour: courtGroups.length ? Math.min(...courtGroups.map((group) => group.pricePerHour)) : undefined,
       contacts: {
@@ -304,36 +311,33 @@ const PartnerRegister = () => {
                 </Field>
               </div>
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Turf Location on Map</label>
-                {formData.coordinates ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-black/40 border border-[#39FF14]/30">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-[#39FF14]/10 border border-[#39FF14]/20 flex items-center justify-center text-[#39FF14] shrink-0">
-                        <MapPin size={20} />
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Turf Location</label>
+                {formData.coordinates?.lat !== undefined && formData.coordinates?.lng !== undefined ? (
+                  <div className="p-5 rounded-2xl bg-black/40 border border-[#39FF14]/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#39FF14]" />
+                        <span className="text-xs font-black uppercase tracking-wider text-white">Location Selected</span>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14]" /> Location Selected
-                        </p>
-                        <p className="text-xs font-mono text-gray-400 truncate">
-                          {formData.coordinates.lat.toFixed(5)}, {formData.coordinates.lng.toFixed(5)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsMapPickerOpen(true)}
-                        className="px-4 py-2 text-xs font-black uppercase tracking-wider text-black bg-[#39FF14] hover:bg-[#32e612] rounded-xl transition shadow-lg shadow-[#39FF14]/10"
-                      >
-                        Change Location
-                      </button>
                       <button
                         type="button"
                         onClick={() => updateField('coordinates', null)}
-                        className="px-3 py-2 text-xs font-bold text-gray-400 hover:text-red-400 rounded-xl hover:bg-white/5 transition"
+                        className="text-xs font-bold text-gray-500 hover:text-red-400 transition"
                       >
                         Remove
+                      </button>
+                    </div>
+                    <div className="font-mono text-sm text-gray-300 space-y-1 bg-black/30 p-3 rounded-xl border border-white/5">
+                      <p><span className="text-gray-500 font-bold">Lat:</span> {Number(formData.coordinates.lat).toFixed(6)}</p>
+                      <p><span className="text-gray-500 font-bold">Lng:</span> {Number(formData.coordinates.lng).toFixed(6)}</p>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPickerOpen(true)}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#39FF14] hover:bg-[#32e612] text-black text-xs font-black uppercase tracking-wider transition shadow-lg shadow-[#39FF14]/10"
+                      >
+                        <MapPin size={14} /> Change Location
                       </button>
                     </div>
                   </div>
