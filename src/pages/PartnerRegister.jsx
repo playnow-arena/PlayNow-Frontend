@@ -109,6 +109,27 @@ const PartnerRegister = () => {
     }));
   };
 
+  // Handle map location confirm: merge coordinates, latitude, and longitude into form state in one update
+  const handleMapConfirm = (coords) => {
+    setFormData((current) => ({
+      ...current,
+      coordinates: { lat: coords.lat, lng: coords.lng },
+      latitude: coords.lat,
+      longitude: coords.lng,
+    }));
+    setIsMapPickerOpen(false);
+  };
+
+  // Handle removing the selected location
+  const handleRemoveLocation = () => {
+    setFormData((current) => ({
+      ...current,
+      coordinates: null,
+      latitude: undefined,
+      longitude: undefined,
+    }));
+  };
+
   const buildPayload = () => {
     const courtGroups = formData.courtGroups
       .map((group) => ({
@@ -321,7 +342,7 @@ const PartnerRegister = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => updateField('coordinates', null)}
+                        onClick={handleRemoveLocation}
                         className="text-xs font-bold text-gray-500 hover:text-red-400 transition"
                       >
                         Remove
@@ -460,7 +481,7 @@ const PartnerRegister = () => {
       <MapLocationPicker
         isOpen={isMapPickerOpen}
         initialCoordinates={formData.coordinates}
-        onConfirm={(coords) => updateField('coordinates', coords)}
+        onConfirm={handleMapConfirm}
         onClose={() => setIsMapPickerOpen(false)}
       />
     </div>
