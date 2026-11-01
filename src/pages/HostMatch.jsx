@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, MapPin, Calendar, Clock, DollarSign, CheckCircle2, ArrowRight, Copy, Check } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, DollarSign, Phone, CheckCircle2, ArrowRight, Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { generateMatchId, createMatchLink } from '../utils/matchLink';
 import { normalizeSportName } from '../utils/sports';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
+const isValidIndianMobile = (phone) => {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const mobile = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+  return /^[6-9]\d{9}$/.test(mobile);
+};
 
 const HostMatch = () => {
   const navigate = useNavigate();
@@ -17,7 +23,9 @@ const HostMatch = () => {
     time: '',
     totalPlayers: 4,
     totalAmount: 1200,
+    contactPhone: '',
   });
+  const [phoneError, setPhoneError] = useState('');
   const [matchLink, setMatchLink] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -25,6 +33,20 @@ const HostMatch = () => {
 
   const handleNext = async (e) => {
     e.preventDefault();
+
+    // Validate phone on step 1 before advancing
+    if (step === 1) {
+      if (!formData.contactPhone) {
+        setPhoneError('Please enter a contact mobile number');
+        return;
+      }
+      if (!isValidIndianMobile(formData.contactPhone)) {
+        setPhoneError('Enter a valid 10-digit Indian mobile number (starting with 6–9)');
+        return;
+      }
+      setPhoneError('');
+    }
+
     if (step < 3) {
       setStep(step + 1);
     } else {
@@ -170,12 +192,35 @@ const HostMatch = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Contact Mobile Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Contact Mobile Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                  <input
+                    type="tel"
+                    placeholder="Enter mobile number (10 digits)"
+                    value={formData.contactPhone}
+                    onChange={(e) => {
+                      setFormData({ ...formData, contactPhone: e.target.value });
+                      if (phoneError) setPhoneError('');
+                    }}
+                    maxLength={13}
+                    className={`w-full bg-[#0a0f1c] border rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-[#39FF14] ${phoneError ? 'border-red-500' : 'border-gray-700'}`}
+                  />
+                </div>
+                {phoneError && (
+                  <p className="text-red-400 text-xs mt-1">{phoneError}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">Other players will use this number to contact you.</p>
+              </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold border-b border-gray-800 pb-3 mb-5">Players & Split Cost</h2>
+              <h2 className="text-xl font-bold border-b border-gray-800 pb-3 mb-5">Players &amp; Split Cost</h2>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Total Amount for Booking (₹)</label>
                 <div className="relative">
@@ -201,7 +246,7 @@ const HostMatch = () => {
 
           {step === 3 && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold border-b border-gray-800 pb-3 mb-5">Review & Publish</h2>
+              <h2 className="text-xl font-bold border-b border-gray-800 pb-3 mb-5">Review &amp; Publish</h2>
               
               <div className="bg-[#0a0f1c] p-4 rounded-xl border border-gray-800 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
@@ -215,6 +260,10 @@ const HostMatch = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                   <span className="text-gray-400">Time</span>
                   <span className="font-bold break-words sm:text-right">{formData.date} at {formData.time}</span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                  <span className="text-gray-400">Contact</span>
+                  <span className="font-bold break-words sm:text-right">{formData.contactPhone}</span>
                 </div>
                 <div className="border-t border-gray-800 pt-3 flex flex-col sm:flex-row sm:justify-between gap-1 text-[#39FF14]">
                   <span>Cost per player</span>

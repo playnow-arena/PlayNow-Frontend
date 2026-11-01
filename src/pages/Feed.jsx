@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { normalizeSportName } from '../utils/sports';
 import MatchCard from '../components/MatchCard';
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
 const Feed = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
 
   useEffect(() => {
     const fetchMatches = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/matches`);
         const data = await res.json();
-
         setMatches(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Error fetching matches:', err);
@@ -24,6 +22,16 @@ const Feed = () => {
 
     fetchMatches();
   }, []);
+
+  // Called by MatchCard after a successful join.
+  // If the updated match is now full (no open slots), remove it from the feed.
+  const handleJoined = (updatedMatch) => {
+    setMatches((prev) =>
+      prev
+        .map((m) => (m._id === updatedMatch._id ? updatedMatch : m))
+        .filter((m) => m.status === 'open' && m.joinedPlayers?.length < m.totalPlayers)
+    );
+  };
 
   return (
     <div className="pt-20 md:pt-24 pb-24 px-4 max-w-xl mx-auto min-h-screen w-full overflow-x-hidden">
@@ -50,7 +58,7 @@ const Feed = () => {
       ) : (
         <div className="space-y-6">
           {matches.map((match) => (
-            <MatchCard key={match._id} match={match} />
+            <MatchCard key={match._id} match={match} onJoined={handleJoined} />
           ))}
         </div>
       )}

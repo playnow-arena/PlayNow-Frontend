@@ -1,15 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Users, MapPin, Calendar, Clock, Share2, Copy, Check, Info } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, Share2, Check, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
-const MatchCard = ({ match }) => {
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://playnow-backend-khtk.onrender.com').replace(/\/$/, '');
+
+const MatchCard = ({ match, onJoined }) => {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   const joinedCount = match.joinedPlayers?.length || 0;
   const totalPlayers = match.totalPlayers || 1;
   const spotsLeft = Math.max(totalPlayers - joinedCount, 0);
+  const neededPlayers = spotsLeft; // alias for clarity
   const pricePerPlayer = Math.floor((match.totalAmount || 0) / totalPlayers);
+
+  const currentUserId = user?.id || user?._id;
+  const alreadyJoined = currentUserId
+    ? match.joinedPlayers?.some(
+        (p) => (p._id || p).toString() === currentUserId.toString()
+      )
+    : false;
+
+  const isHost = currentUserId
+    ? (match.host?._id || match.host)?.toString() === currentUserId.toString()
+    : false;
+
+  // Show Join button when: match is open, has slots, user is logged in, hasn't joined, and isn't the host
+  const canJoin =
+    match.status === 'open' &&
+    spotsLeft > 0 &&
+    !!currentUserId &&
+    !alreadyJoined &&
+    !isHost;
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -45,8 +71,35 @@ const MatchCard = ({ match }) => {
     window.open(`https://maps.google.com/?q=${encodeURIComponent(match.venue)}`, '_blank');
   };
 
+  const handleJoin = async () => {
+    if (!currentUserId) return;
+    setJoining(true);
+    setJoinError('');
+    try {
+      const token = localStorage.getItem('playnow_token') || localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/matches/${match._id}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setJoinError(data.message || 'Failed to join match');
+      } else {
+        // Notify parent (Feed) so it can update/remove this card
+        if (onJoined) onJoined(data.match);
+      }
+    } catch (err) {
+      setJoinError('Network error. Please try again.');
+    } finally {
+      setJoining(false);
+    }
+  };
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-[#151b2b] rounded-3xl border border-gray-800 p-5 space-y-4 shadow-lg"
@@ -81,6 +134,11 @@ const MatchCard = ({ match }) => {
                 <Users size={14} /> {joinedCount}/{totalPlayers}
             </span>
         </div>
+        {neededPlayers > 0 && (
+          <div className="text-xs text-gray-400">
+            Needed: <span className="text-white font-semibold">{neededPlayers} player{neededPlayers !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -88,9 +146,9 @@ const MatchCard = ({ match }) => {
            <MapPin size={16} /> View Map
         </button>
         <div className="flex -space-x-2">
-            {match.joinedPlayers.slice(0, 3).map((p, i) => (
+            {match.joinedPlayers?.slice(0, 3).map((p, i) => (
                 <div key={i} className="w-8 h-8 rounded-full bg-gray-700 border-2 border-[#151b2b] flex items-center justify-center text-[10px] font-bold">
-                    {p.name?.charAt(0) || 'P'}
+                    {(p.name || p)?.charAt(0) || 'P'}
                 </div>
             ))}
             {joinedCount > 3 && (
@@ -100,6 +158,39 @@ const MatchCard = ({ match }) => {
             )}
         </div>
       </div>
+
+      {/* Join button — shown only when eligible */}
+      {canJoin && (
+        <button
+          onClick={handleJoin}
+          disabled={joining}
+          className="w-full flex items-center justify-center gap-2 bg-[#39FF14] text-black font-bold py-2.5 rounded-xl hover:bg-[#32E612] transition shadow-[0_0_15px_rgba(57,255,20,0.3)] disabled:opacity-60"
+        >
+          {joining ? <Loader2 size={16} className="animate-spin" /> : null}
+          {joining ? 'Joining...' : 'Join'}
+        </button>
+      )}
+
+      {/* Status badges for non-joinable states */}
+      {alreadyJoined && (
+        <div className="w-full text-center text-xs font-bold text-[#39FF14] py-1">
+          ✓ You've joined this match
+        </div>
+      )}
+      {match.status === 'full' && !alreadyJoined && (
+        <div className="w-full text-center text-xs font-bold text-gray-500 py-1">
+          Match Full
+        </div>
+      )}
+      {match.status === 'started' && (
+        <div className="w-full text-center text-xs font-bold text-orange-400 py-1">
+          Match Started
+        </div>
+      )}
+
+      {joinError && (
+        <p className="text-xs text-red-400 text-center">{joinError}</p>
+      )}
 
       <div className="text-center text-sm font-bold text-gray-500 py-1">
         Ends in: <span className="text-white">{timeLeft}</span>
