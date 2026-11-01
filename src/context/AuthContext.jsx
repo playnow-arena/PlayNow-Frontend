@@ -61,6 +61,11 @@ export const AuthProvider = ({ children }) => {
             const refreshedUser = normalizeUser(await res.json());
             setUser(refreshedUser);
             localStorage.setItem('playnow_user', JSON.stringify(refreshedUser));
+          } else if (res.status === 401) {
+            localStorage.removeItem('playnow_user');
+            localStorage.removeItem('playnow_token');
+            localStorage.removeItem('token');
+            setUser(null);
           }
         } catch (e) {
           console.error('Failed to refresh saved user');
